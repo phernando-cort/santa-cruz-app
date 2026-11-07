@@ -59,6 +59,8 @@ Con esto, lo que se publica en un teléfono aparece en todos.
 
 ## Archivos
 
+- `src/admin.html` + `src/admin.js` — PÁGINA DE ADMINISTRACIÓN separada (no enlazada desde la app): entra con tu contraseña o cuenta de editor y cambia todo; la app lo refleja al instante. En GitHub Pages vive en `/src/admin.html` (guárdala en favoritos, no la compartas).
+
 - `src/cloud-config.js` — URL + clave anon + hash admin (EDITA TÚ).
 - `src/sync-cloud.js` — adaptador (misma interfaz que el servidor Perchance).
 - `src/sync.js` — usa la nube si está configurada; si no, Perchance; si no, local.

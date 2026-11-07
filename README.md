@@ -55,3 +55,13 @@ git push -u origin main
 
 - Contenido: citas bíblicas cortas de dominio público (KJV), oraciones tradicionales de dominio público y textos propios de ejemplo. Los textos completos con derechos **no** están incluidos a propósito (la app enlaza a fuentes oficiales).
 - Si la publicas como abierta, añade un archivo `LICENSE` (p. ej. MIT).
+
+## Página de administración (solo tú)
+
+- Abre `src/admin.html` en tu web desplegada, p. ej.:
+  `https://TU-USUARIO.github.io/santa-cruz-app/src/admin.html`
+  (guárdala en favoritos; no está enlazada desde la app y los buscadores la ignoran).
+- Entra con tu **contraseña de administrador** o con una **cuenta de editor**.
+- Pestañas: **✏️ Contenidos** (corrige TODA la info: parroquia, eventos, Misas/intenciones, clero, grupos…),
+  **🔔 Avisos** (publicar/borrar avisos de la app), **👥 Cuentas** (crear cuentas con invitación, roles, códigos).
+- Todo cambio se refleja **automáticamente en la app** en segundos (Realtime).
