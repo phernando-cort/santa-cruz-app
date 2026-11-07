@@ -48,3 +48,37 @@ begin
     null;
   end;
 end $$;
+
+-- ============================================================
+-- Contenidos editables del sitio (para que el editor corrija todo).
+-- Ejecutar también UNA vez (si ya ejecutaste la parte de arriba, pega
+-- solo desde aquí). Clave -> JSON. RLS pública (modelo demo parroquial).
+-- ============================================================
+create table if not exists public.site_content (
+  key        text    not null primary key,
+  body       jsonb   not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.site_content enable row level security;
+
+drop policy if exists "public read"   on public.site_content;
+drop policy if exists "public insert" on public.site_content;
+drop policy if exists "public update" on public.site_content;
+drop policy if exists "public delete" on public.site_content;
+
+create policy "public read"   on public.site_content for select using (true);
+create policy "public insert" on public.site_content for insert with check (true);
+create policy "public update" on public.site_content for update using (true) with check (true);
+create policy "public delete" on public.site_content for delete using (true);
+
+alter table public.site_content replica identity full;
+
+do $$
+begin
+  begin
+    execute 'alter publication supabase_realtime add table public.site_content';
+  exception when duplicate_object then
+    null;
+  end;
+end $$;

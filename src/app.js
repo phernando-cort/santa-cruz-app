@@ -1,4 +1,4 @@
-import { PARISHES, WEEK, WEEK_EN, INSPIRATIONS, INSP_EN, PRAYERS, ROSARY_MYSTERIES, mysteriesForWeekday, EVENTS, BULLETINS, GROUPS, CLERGY, MESSAGES, CATEGORIES, SAINTS, CANTOS, NEWS, MINISTRY_ROLES, MINISTRY_SEED, FIELES_SEED, MURO_SEED, INTENCIONES_SEED, ART, DIRECTORY_SEED, GIVING_PROJECTS } from "./data.js";
+import { PARISHES, WEEK, WEEK_EN, INSPIRATIONS, INSP_EN, PRAYERS, ROSARY_MYSTERIES, mysteriesForWeekday, EVENTS, BULLETINS, GROUPS, CLERGY, MESSAGES, CATEGORIES, SAINTS, CANTOS, NEWS, MINISTRY_ROLES, MINISTRY_SEED, FIELES_SEED, MURO_SEED, INTENCIONES_SEED, ART, DIRECTORY_SEED, GIVING_PROJECTS, REAL_EVENTS, DATED_SEEDS, BULLETIN_FALLBACK, SACRAMENT_INFO, PARISH_YT, PARISH_BULLETIN_PAGE, Content, CONTENT_TITLES, CONTENT_ORDER, schedMasses, schedBaseMasses, schedAllDates, schedOverridden } from "./content.js";
 import { Sync } from "./sync.js";
 window.Sync = Sync; // handle de diagnóstico (consola/tests): Sync.online, Sync.data, Sync.auth(...)
 import { LANGS, setLang, getLang, t, catName, recName, dayName, localeOf, PRAY_I18N, INT_ES, INT_TYPES, intTypeName } from "./i18n.js";
@@ -9,7 +9,6 @@ import { saintFor, rankOf } from "./saints.js";
 import { ORDINARY } from "./missal.js";
 import { CONFESION_EXAMS } from "./confesion.js";
 import { ADVIENTO_GUIDE, REFLEX_FAMILIA, FAMILIA_ADVIENTO } from "./pastoral.js";
-import { REAL_EVENTS, DATED_SEEDS, BULLETIN_FALLBACK, SACRAMENT_INFO, PARISH_YT, PARISH_BULLETIN_PAGE } from "./calendario-extra.js";
 
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => [...r.querySelectorAll(s)];
@@ -160,6 +159,11 @@ Sync._dump = () => ({
   editors: state.editors.map(n => ({ id: n }))
 });
 Sync.onUpdate = () => { try { render(); renderMore(); renderCommunity(); renderHome(); renderCalendar(); renderPray(); } catch(e) {} };
+// Contenidos editables (nube site_content, caché local): el editor corrige todo sin código.
+Content.can = () => { try { return canEdit(); } catch(e){ return false; } };
+Content.onChange = () => { try { render(); renderMore(); renderCommunity(); renderHome(); renderCalendar(); renderPray(); } catch(e) {} };
+Content.load();
+window.Content = Content; // diagnóstico (consola/tests)
 setLang(state.lang);
 if (!PARISHES.some(p=>p.id===state.parishId)) state.parishId = PARISHES[0].id;
 if (!/^\d{4}-\d{2}-\d{2}$/.test(state.readingDate)) state.readingDate = toISO(new Date());
@@ -598,7 +602,7 @@ function renderHome(){
     const tStr = tD.toLocaleDateString(localeOf(), {weekday:"long", day:"numeric", month:"long", year:"numeric"});
     const isEn = getLang()==="en";
     // Solo Santa Cruz y capillas (como en el boletín y el calendario de intenciones): fuera Sagrada Familia y Santuario.
-    const allSched = (window.ParishSchedule && window.ParishSchedule.masses && window.ParishSchedule.masses[tIso]) || [];
+    const allSched = schedMasses(tIso);
     const schedList = allSched.filter(mm=>!/sagrada familia|santuario/i.test(String(mm.pl||"")));
     const tDaily = dailyFor(tIso);
     const tDd = (state.dayData && state.litcalDate===tIso) ? state.dayData : null;
@@ -1869,6 +1873,150 @@ function accountMgrHTML(){
     </div></div>`; }).join("") : `<p class="small">${t("accEmpty")}</p>`;
   return h;
 }
+// ================= Contenidos editables: el editor cambia TODO =================
+// Los valores fijos viven en data.js / calendario-extra.js / parish-schedule.js.
+// Aquí el editor (admin o editor) los corrige desde la app; se guardan en la
+// nube (Supabase `site_content`) y llegan a todos los teléfonos al instante.
+const cui = { block: "parishes", pedit: "", evList: "events.seed", evEdit: null, schedDate: "", massEdit: null, jsonKey: "links", jsonText: null, jsonErr: "", evErr: "", err: "" };
+// Guardado de contenidos SIN diálogos (los errores salen en la sección, nunca congelan la app).
+function cSave(promise, done){
+  (async()=>{
+    try { await promise; cui.err = ""; if(done) done(); else renderMore(); }
+    catch(e){
+      const m = String((e && e.message) || e || "");
+      cui.err = m.includes("editors") ? t("srvNeedName") : m.includes("flood") ? t("srvBusy")
+        : (m.includes("srv") || m.includes("net") || m.includes("Failed to fetch"))
+          ? (cbEN() ? "Cloud save failed. In Supabase run the site_content SQL (src/cloud/supabase-schema.sql, second part), then retry." : "No se pudo guardar en la nube. En Supabase ejecuta el SQL de site_content (src/cloud/supabase-schema.sql, segunda parte) y reintenta.")
+          : m;
+      try { renderMore(); } catch(e2){}
+    }
+  })();
+  return true;
+}
+const CB_SHORT = { parishes:"⛪ Parroquia", "events.seed":"📅 Semanales", "events.real":"📅 Verificados", "events.dated":"📅 Fechas únicas", schedule:"⛪ Misas/fecha", links:"🔗 Enlaces", sacraments:"🤲 Sacramentos", "bulletin.fallback":"📄 Boletín", clergy:"⛪ Clero", groups:"👥 Grupos", giving:"💛 Donativos", "news.seed":"🌎 Noticias", "bulletins.seed":"📄 Boletines", "messages.seed":"🔔 Avisos", "cantos.seed":"🎵 Cantos", "prayers.trad":"🙏 Oraciones", inspirations:"✨ Inspiración", week:"📖 Lecturas", saints:"✨ Santos", "muro.seed":"🧱 Muro", "intenciones.seed":"🎉 Intenciones", "directory.seed":"📇 Directorio", "ministry.seed":"🙌 Ministerio", art:"🖼️ Imágenes", categories:"🏷️ Categorías", "ministry.roles":"🙌 Roles", fieles:"👥 Fieles" };
+const CB_JSON = ["links","bulletin.fallback","sacraments","inspirations","week","prayers.trad","clergy","groups","giving","news.seed","bulletins.seed","messages.seed","cantos.seed","saints","muro.seed","intenciones.seed","directory.seed","ministry.seed","ministry.roles","fieles","art","categories"];
+const CB_DAYS = [["sun","Dom","Sun"],["mon","Lun","Mon"],["tue","Mar","Tue"],["wed","Mié","Wed"],["thu","Jue","Thu"],["fri","Vie","Fri"],["sat","Sáb","Sat"]];
+function cbEN(){ return getLang() === "en"; }
+function cEvList(key){ return key === "events.real" ? REAL_EVENTS : key === "events.dated" ? DATED_SEEDS : EVENTS; }
+function cOvTag(key){ return Content.overridden(key) ? ` <span class="tag gold">${cbEN() ? "edited" : "editado"}</span>` : ""; }
+function contentMgrHTML(ED){
+  const en = cbEN();
+  let h = `<section class="card" id="sec-contenido"><h3>✏️ ${en ? "Site content" : "Contenidos"}</h3>
+    <p class="sub">${en ? "As an editor you can fix ALL parish info here. Changes reach every phone." : "Como editor puedes corregir TODA la información aquí. Los cambios llegan a todos los teléfonos."}</p>`;
+  if(!ED) return h + lockNote() + `</section>`;
+  if(!cui.pedit || !PARISHES.some(p => p.id === cui.pedit)) cui.pedit = state.parishId;
+  if(!cui.schedDate || !/^\d{4}-\d{2}-\d{2}$/.test(cui.schedDate)) cui.schedDate = toISO(new Date());
+  if(cui.err) h += `<div class="notice">⚠️ ${esc(cui.err)}</div>`;
+  h += `<div class="chipRow">${CONTENT_ORDER.map(k => `<button class="fchip ${cui.block === k ? "active" : ""}" data-action="content-block" data-b="${k}">${CB_SHORT[k] || k}${Content.overridden(k) ? " ●" : ""}</button>`).join("")}</div>`;
+  if(cui.block === "parishes") h += contentParishHTML();
+  else if(cui.block === "schedule") h += contentSchedHTML();
+  else if(cui.block && cui.block.indexOf("events.") === 0) h += contentEventsHTML();
+  else h += contentJsonHTML(cui.block);
+  return h + `</section>`;
+}
+function contentParishHTML(){
+  const en = cbEN();
+  const p = PARISHES.find(x => x.id === cui.pedit) || PARISHES[0];
+  const mt = p.massTimes || {};
+  const ta = (id, arr) => `<textarea id="${id}" rows="3">${esc((arr || []).join("\n"))}</textarea>`;
+  return `<div class="chipRow">${PARISHES.map(x => `<button class="fchip ${x.id === p.id ? "active" : ""}" data-action="content-pedit" data-id="${esc(x.id)}">${esc(x.name)}</button>`).join("")}</div>
+  ${cOvTag("parishes")}
+  <div class="grid2"><div><label>${en ? "Name" : "Nombre"}</label><input id="cp-name" value="${esc(p.name || "")}"></div>
+  <div><label>${en ? "City" : "Ciudad"}</label><input id="cp-city" value="${esc(p.city || "")}"></div></div>
+  <label>${en ? "Address" : "Dirección"}</label><input id="cp-address" value="${esc(p.address || "")}">
+  <div class="grid2"><div><label>${en ? "Phone" : "Teléfono"}</label><input id="cp-phone" value="${esc(p.phone || "")}"></div>
+  <div><label>Web</label><input id="cp-web" value="${esc(p.web || "")}" inputmode="url"></div></div>
+  <label>${en ? "Priest" : "Párroco"}</label><input id="cp-priest" value="${esc(p.priest || "")}">
+  <label>${en ? "Welcome message" : "Bienvenida"}</label><textarea id="cp-greeting" rows="2">${esc(p.greeting || "")}</textarea>
+  <div class="grid2"><div><label>${en ? "Sunday Masses (one per line)" : "Misas domingo (una por línea)"}</label>${ta("cp-sun", mt.Sunday)}</div>
+  <div><label>${en ? "Saturday (one per line)" : "Sábado (una por línea)"}</label>${ta("cp-sat", mt.Saturday)}</div></div>
+  <label>${en ? "Weekdays (one per line)" : "Entre semana (una por línea)"}</label>${ta("cp-daily", mt.Daily)}
+  <div class="grid2"><div><label>${en ? "Confessions" : "Confesiones"}</label><input id="cp-conf" value="${esc(p.confession || "")}"></div>
+  <div><label>${en ? "Adoration" : "Adoración"}</label><input id="cp-ador" value="${esc(p.adoration || "")}"></div></div>
+  <div class="btnRow"><button class="btn btnNavy" data-action="content-parish-save">${en ? "Save" : "Guardar"}</button>
+  <button class="btn btnGhost" data-action="content-reset" data-b="parishes">${en ? "Reset" : "Restablecer"}</button></div>`;
+}
+function contentEventsHTML(){
+  const en = cbEN();
+  const key = cui.evList, dated = key === "events.dated";
+  const list = cEvList(key);
+  const cats = Array.isArray(CATEGORIES) && CATEGORIES.length ? CATEGORIES : ["Comunidad"];
+  const ed = cui.evEdit && cui.evEdit !== "new" ? list.find(e => e.id === cui.evEdit) : null;
+  const fe = ed || {};
+  let h = `<div class="chipRow">${["events.seed", "events.real", "events.dated"].map(k => `<button class="fchip ${key === k ? "active" : ""}" data-action="content-evlist" data-b="${k}">${CB_SHORT[k]}${Content.overridden(k) ? " ●" : ""}</button>`).join("")}</div>${cOvTag(key)}`;
+  h += list.map(e => `<div class="eventRow"><div style="flex:1"><b>${esc(e.title)}</b><div class="small">${esc(e.date || (CB_DAYS.find(d => d[0] === e.day) || ["", e.day || ""])[cbEN() ? 2 : 1])} · ${esc(e.time || "")} · ${esc(e.category || "")}${e.location ? " · " + esc(e.location) : ""}</div></div>
+    <button class="btn btnGhost" data-action="content-ev-edit" data-id="${esc(e.id)}">${en ? "Edit" : "Editar"}</button>
+    <button class="btn btnGhost" data-action="content-ev-del" data-id="${esc(e.id)}">${en ? "Delete" : "Borrar"}</button></div>`).join("") || `<p class="small">${en ? "No events." : "Sin eventos."}</p>`;
+  if(cui.evErr) h += `<div class="notice">${esc(cui.evErr)}</div>`;
+  if(cui.evEdit){
+    h += `<h4 style="margin:10px 0 2px">${ed ? (en ? "Edit event" : "Editar evento") : (en ? "New event" : "Nuevo evento")}</h4>
+    <label>${en ? "Title" : "Título"}</label><input id="ce-title" value="${esc(fe.title || "")}">
+    <div class="grid2"><div><label>${en ? "Weekday" : "Día semana"}</label><select id="ce-day">${CB_DAYS.map(d => `<option value="${d[0]}" ${fe.day === d[0] ? "selected" : ""}>${d[cbEN() ? 2 : 1]}</option>`).join("")}</select></div>
+    <div><label>${en ? "Date (YYYY-MM-DD)" : "Fecha (AAAA-MM-DD)"}${dated ? " *" : ""}</label><input id="ce-date" value="${esc(fe.date || "")}" placeholder="2026-12-12"></div></div>
+    <div class="grid2"><div><label>${en ? "Time" : "Hora"}</label><input id="ce-time" value="${esc(fe.time || "")}" placeholder="6:00 PM"></div>
+    <div><label>${en ? "Category" : "Categoría"}</label><select id="ce-cat">${cats.map(c => `<option ${fe.category === c ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></div></div>
+    <label>${en ? "Place" : "Lugar"}</label><input id="ce-place" value="${esc(fe.location || "")}">
+    <label>${en ? "Description" : "Descripción"}</label><textarea id="ce-desc" rows="2">${esc(fe.desc || "")}</textarea>
+    <div class="grid2"><div><label>${en ? "Mass tag (optional)" : "Etiqueta de Misa (opcional)"}</label><input id="ce-mass" value="${esc(fe.mass || "")}"></div>
+    <div><label>⭐ ${en ? "Featured" : "Destacado"}</label><input type="checkbox" id="ce-special" ${fe.special ? "checked" : ""}></div></div>
+    <div class="btnRow"><button class="btn btnNavy" data-action="content-ev-save">${en ? "Save" : "Guardar"}</button>
+    <button class="btn btnGhost" data-action="content-ev-cancel">${en ? "Cancel" : "Cancelar"}</button></div>`;
+  } else {
+    h += `<div class="btnRow"><button class="btn btnNavy" data-action="content-ev-new">${en ? "＋ New event" : "＋ Nuevo evento"}</button>
+    <button class="btn btnGhost" data-action="content-reset" data-b="${key}">${en ? "Reset list" : "Restablecer lista"}</button></div>`;
+  }
+  return h;
+}
+function contentSchedHTML(){
+  const en = cbEN();
+  const iso = cui.schedDate;
+  const base = schedBaseMasses(iso);
+  const over = schedOverridden(iso);
+  const cur = schedMasses(iso);
+  const ed = cui.massEdit && cui.massEdit !== "new" ? cur.find(m => massKey(m) === cui.massEdit) : null;
+  let h = `<p class="small">${en ? "Daily Masses and intentions. Edited dates win over the generated schedule." : "Misas e intenciones de cada fecha. Lo editado gana al horario generado."}${over ? ` <span class="tag gold">${en ? "edited" : "editado"}</span>` : ""}</p>
+  <div class="btnRow"><input id="cs-date" type="date" value="${esc(iso)}" style="flex:1"><button class="btn btnNavy" data-action="content-sched-go">${en ? "View" : "Ver"}</button></div>`;
+  h += cur.map(m => `<div class="eventRow"><div style="flex:1"><b>${esc(m.t || "")}${m.e ? " – " + esc(m.e) : ""}</b> · ${esc(m.pl || "")}<div class="small">${(m.int || []).length} ${en ? "intentions" : "intenciones"}</div></div>
+    <button class="btn btnGhost" data-action="content-mass-edit" data-id="${esc(massKey(m))}">${en ? "Edit" : "Editar"}</button>
+    <button class="btn btnGhost" data-action="content-mass-del" data-id="${esc(massKey(m))}">${en ? "Delete" : "Borrar"}</button></div>`).join("") || `<p class="small">${en ? "No Masses this date." : "Sin Misas esta fecha."}</p>`;
+  if(!over && base.length) h += `<p class="small">${en ? "Showing generated schedule." : "Mostrando horario generado."}</p>`;
+  if(cui.massEdit){
+    const fm = ed || { t: "", e: "", pl: "", int: [] };
+    h += `<h4 style="margin:10px 0 2px">${ed ? (en ? "Edit Mass" : "Editar Misa") : (en ? "New Mass" : "Nueva Misa")}</h4>
+    <div class="grid2"><div><label>${en ? "Time" : "Hora"} *</label><input id="cm-t" value="${esc(fm.t || "")}" placeholder="7:00"></div>
+    <div><label>${en ? "Ends" : "Termina"}</label><input id="cm-e" value="${esc(fm.e || "")}" placeholder="7:30"></div></div>
+    <label>${en ? "Place" : "Lugar"}</label><input id="cm-pl" value="${esc(fm.pl || "")}" placeholder="${esc(parish().name)}">
+    <label>${en ? "Intentions (one per line)" : "Intenciones (una por línea)"}</label><textarea id="cm-int" rows="4">${esc((fm.int || []).join("\n"))}</textarea>
+    <div class="btnRow"><button class="btn btnNavy" data-action="content-mass-save">${en ? "Save" : "Guardar"}</button>
+    <button class="btn btnGhost" data-action="content-mass-cancel">${en ? "Cancel" : "Cancelar"}</button></div>`;
+  } else {
+    h += `<div class="btnRow"><button class="btn btnNavy" data-action="content-mass-new">${en ? "＋ Add Mass" : "＋ Agregar Misa"}</button>
+    ${over ? `<button class="btn btnGhost" data-action="content-sched-reset">${en ? "Reset date" : "Restablecer fecha"}</button>` : ""}</div>`;
+  }
+  return h;
+}
+function massKey(m){ return (m.t || "") + "|" + (m.pl || "") + "|" + ((m.int || [])[0] || ""); }
+function contentJsonHTML(key){
+  const en = cbEN();
+  if(!key || CB_JSON.indexOf(key) < 0) key = cui.jsonKey = "links";
+  cui.jsonKey = key;
+  const cur = {};
+  try { Object.assign(cur, { v: jsonCurrentOf(key) }); } catch(e){}
+  const txt = cui.jsonText != null ? cui.jsonText : JSON.stringify(cur.v, null, 2);
+  return `<div class="chipRow">${CB_JSON.map(k => `<button class="fchip ${key === k ? "active" : ""}" data-action="content-json-pick" data-b="${k}">${CB_SHORT[k] || k}${Content.overridden(k) ? " ●" : ""}</button>`).join("")}</div>
+  <h4 style="margin:8px 0 2px">${esc(CONTENT_TITLES[key] || key)}${cOvTag(key)}</h4>
+  <p class="small">${en ? "Advanced: edit as JSON. Keep the same structure." : "Avanzado: edita como JSON. Mantén la misma estructura."}</p>
+  ${cui.jsonErr ? `<div class="notice">${esc(cui.jsonErr)}</div>` : ""}
+  <textarea id="cj-text" rows="12" spellcheck="false" style="font-family:monospace;font-size:12px">${esc(txt)}</textarea>
+  <div class="btnRow"><button class="btn btnNavy" data-action="content-json-save">${en ? "Save" : "Guardar"}</button>
+  <button class="btn btnGhost" data-action="content-json-reset">${en ? "Reset" : "Restablecer"}</button></div>`;
+}
+function jsonCurrentOf(key){
+  const got = Content.get(key);
+  if(got !== undefined) return got;
+  const cur = Content.currentOf(key);
+  return cur === undefined ? null : cur;
+}
 function renderMore(){
   const p = parish();
   const ED = canEdit();
@@ -1883,7 +2031,7 @@ function renderMore(){
   const mm = { ...(state.ministry[state.ministryMass] || {}), ...((Sync.online && Sync.ministrySrv[state.ministryMass]) || {}) };
   $("#view-more").innerHTML = `
     <h2 class="serif" style="margin:4px 0">${t("moreTitle")}</h2>
-    <div class="subnav">${[["sec-idioma","🌐"],["sec-admin","🔐"],["sec-clero","⛪"],["sec-alertas","🔔"],["sec-intenciones","🎉"],["sec-pastoral","🤲"],["sec-boletines","📄"],["sec-documentos","📁"],["sec-noticias","🌎"],["sec-donativos","💛"]].map(([id,l])=>`<button data-action="jump" data-to="${id}">${l}</button>`).join("")}</div>
+    <div class="subnav">${[["sec-idioma","🌐"],["sec-admin","🔐"],["sec-contenido","✏️"],["sec-clero","⛪"],["sec-alertas","🔔"],["sec-intenciones","🎉"],["sec-pastoral","🤲"],["sec-boletines","📄"],["sec-documentos","📁"],["sec-noticias","🌎"],["sec-donativos","💛"]].map(([id,l])=>`<button data-action="jump" data-to="${id}">${l}</button>`).join("")}</div>
 
     <section class="card" id="sec-idioma"><h3>🌐 ${t("language")}</h3><p class="sub">${t("languageSub")}</p>
       <div class="chipRow">${LANGS.map(l=>`<button class="fchip ${state.lang===l.id?"active":""}" data-action="lang-set" data-l="${l.id}">${l.native}</button>`).join("")}</div>
@@ -1905,6 +2053,8 @@ function renderMore(){
       <div class="btnRow"><button class="btn btnGhost" data-action="admin-logout">${t("adminLogout")}</button></div>`:""}
       ${ED? accountMgrHTML():""}
     </section>
+
+    ${contentMgrHTML(ED)}
 
     <section class="card" id="sec-clero"><h3>${t("clergyTitle")}</h3><p class="sub">${t("clergySub")}</p>
       ${CLERGY.map(c=>`<div class="eventRow"><div class="avatar">${esc(c.name.replace(/^(P\.|Diác\.|Hna\.)\s*/,"").slice(0,1))}</div>
@@ -2411,6 +2561,75 @@ document.addEventListener("click", e=>{
     state.muroExtra=state.muroExtra.filter(m=>m.id!==el.dataset.id);
     if(it&&!it.mine&&!state.muroHidden.includes(el.dataset.id)){ state.muroHidden.push(el.dataset.id); store.set("muro.hidden", state.muroHidden); }
     store.set("muro.extra", state.muroExtra); renderMore(); }
+  // ---- Contenidos editables (el editor cambia TODO) ----
+  else if(a==="content-block"){ cui.block = el.dataset.b; cui.jsonText = null; cui.jsonErr = ""; cui.evErr = ""; cui.err = ""; renderMore(); }
+  else if(a==="content-pedit"){ cui.pedit = el.dataset.id; renderMore(); }
+  else if(a==="content-parish-save"){ if(!canEdit()) return;
+    const lines = id => val("#"+id).split("\n").map(s=>s.trim()).filter(Boolean);
+    const arr = PARISHES.map(p => p.id === cui.pedit ? { ...p, name: val("#cp-name") || p.name, city: val("#cp-city"), address: val("#cp-address"), phone: val("#cp-phone"), web: val("#cp-web"), priest: val("#cp-priest"), greeting: val("#cp-greeting"), confession: val("#cp-conf"), adoration: val("#cp-ador"), massTimes: { Sunday: lines("cp-sun"), Saturday: lines("cp-sat"), Daily: lines("cp-daily") } } : p);
+    if(!arr.find(p => p.id === cui.pedit)) return;
+    cSave(Content.save("parishes", arr), ()=>{ renderMore(); render(); renderHome(); }); }
+  else if(a==="content-reset"){ if(!canEdit()) return;
+    cui.jsonText = null; cui.jsonErr = ""; cui.evErr = ""; cui.evEdit = null; cui.massEdit = null;
+    cSave(Content.reset(el.dataset.b), ()=>{ renderMore(); render(); renderHome(); renderCalendar(); }); }
+  else if(a==="content-evlist"){ cui.evList = el.dataset.b; cui.evEdit = null; cui.evErr = ""; renderMore(); }
+  else if(a==="content-ev-new"){ if(!canEdit()) return; cui.evEdit = "new"; cui.evErr = ""; renderMore(); }
+  else if(a==="content-ev-edit"){ if(!canEdit()) return; cui.evEdit = el.dataset.id; cui.evErr = ""; renderMore(); }
+  else if(a==="content-ev-cancel"){ cui.evEdit = null; cui.evErr = ""; renderMore(); }
+  else if(a==="content-ev-save"){ if(!canEdit()) return;
+    const key = cui.evList, dated = key === "events.dated";
+    const t2 = val("#ce-title"); let dt = val("#ce-date");
+    if(!t2){ cui.evErr = cbEN() ? "Title is required." : "Falta el título."; renderMore(); return; }
+    if(dated && !/^\d{4}-\d{2}-\d{2}$/.test(dt)){ cui.evErr = cbEN() ? "Date required (YYYY-MM-DD)." : "Falta la fecha (AAAA-MM-DD)."; renderMore(); return; }
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(dt)) dt = "";
+    const rec = { id: (cui.evEdit && cui.evEdit !== "new") ? cui.evEdit : "c" + Date.now(), title: t2, day: $("#ce-day")?.value || "sun", ...(dt ? { date: dt } : {}), time: val("#ce-time") || "—", category: $("#ce-cat")?.value || "Comunidad", location: val("#ce-place"), desc: val("#ce-desc"), recurring: dated ? "Única" : "Semanal", ...($("#ce-special")?.checked ? { special: true } : {}) };
+    const mtag = val("#ce-mass"); if(mtag) rec.mass = mtag;
+    const arr = cEvList(key).slice();
+    const ix = arr.findIndex(e => e.id === rec.id);
+    if(ix >= 0) arr[ix] = { ...arr[ix], ...rec }; else arr.unshift(rec);
+    cui.evErr = ""; cui.evEdit = null;
+    cSave(Content.save(key, arr), ()=>{ renderMore(); renderCalendar(); renderHome(); }); }
+  else if(a==="content-ev-del"){ if(!canEdit()) return;
+    const key = cui.evList;
+    const arr = cEvList(key).filter(e => e.id !== el.dataset.id);
+    if(cui.evEdit === el.dataset.id) cui.evEdit = null;
+    cSave(Content.save(key, arr), ()=>{ renderMore(); renderCalendar(); renderHome(); }); }
+  else if(a==="content-sched-go"){ cui.schedDate = val("#cs-date") || cui.schedDate; cui.massEdit = null; renderMore(); renderCalendar(); }
+  else if(a==="content-mass-new"){ if(!canEdit()) return; cui.massEdit = "new"; renderMore(); }
+  else if(a==="content-mass-edit"){ if(!canEdit()) return; cui.massEdit = el.dataset.id; renderMore(); }
+  else if(a==="content-mass-cancel"){ cui.massEdit = null; renderMore(); }
+  else if(a==="content-mass-save"){ if(!canEdit()) return;
+    const t2 = val("#cm-t"); if(!t2){ renderMore(); return; }
+    const iso = cui.schedDate;
+    const cur = schedMasses(iso).slice();
+    let prev = {}, ix = -1;
+    if(cui.massEdit && cui.massEdit !== "new"){ ix = cur.findIndex(m => massKey(m) === cui.massEdit); if(ix >= 0) prev = cur[ix]; }
+    const rec = { t: t2, e: val("#cm-e"), pl: val("#cm-pl") || parish().name, lg: prev.lg || "", k: prev.k || "", ce: prev.ce || "", de: prev.de || "", full: prev.full || 0, int: val("#cm-int").split("\n").map(s => s.trim()).filter(Boolean), ti: prev.ti || "" };
+    if(ix >= 0) cur[ix] = rec; else cur.push(rec);
+    cur.sort((x, y) => String(x.t).localeCompare(String(y.t)));
+    const all = { ...((Content.get("schedule")) || { masses: {} }) };
+    all.masses = { ...(all.masses || {}) }; all.masses[iso] = cur;
+    cui.massEdit = null;
+    cSave(Content.save("schedule", all), ()=>{ renderMore(); renderCalendar(); renderHome(); }); }
+  else if(a==="content-mass-del"){ if(!canEdit()) return;
+    const iso = cui.schedDate;
+    const cur = schedMasses(iso).filter(m => massKey(m) !== el.dataset.id);
+    const all = { ...((Content.get("schedule")) || { masses: {} }) };
+    all.masses = { ...(all.masses || {}) }; all.masses[iso] = cur;
+    if(cui.massEdit === el.dataset.id) cui.massEdit = null;
+    cSave(Content.save("schedule", all), ()=>{ renderMore(); renderCalendar(); renderHome(); }); }
+  else if(a==="content-sched-reset"){ if(!canEdit()) return;
+    const all = { ...((Content.get("schedule")) || { masses: {} }) };
+    all.masses = { ...(all.masses || {}) }; delete all.masses[cui.schedDate];
+    cui.massEdit = null;
+    if(!Object.keys(all.masses).length){ cSave(Content.reset("schedule"), ()=>{ renderMore(); renderCalendar(); }); }
+    else cSave(Content.save("schedule", all), ()=>{ renderMore(); renderCalendar(); }); }
+  else if(a==="content-json-save"){ if(!canEdit()) return;
+    const raw = $("#cj-text")?.value ?? "";
+    let v; try { v = JSON.parse(raw); } catch(e){ cui.jsonText = raw; cui.jsonErr = (cbEN() ? "Invalid JSON: " : "JSON inválido: ") + String(e.message || e); renderMore(); return; }
+    cui.jsonText = raw; cui.jsonErr = "";
+    (async()=>{ try { await Content.save(cui.jsonKey, v); cui.jsonText = null; cui.jsonErr = ""; } catch(e){ cui.jsonErr = String((e && e.message) || e); } renderMore(); renderHome(); renderCalendar(); })();
+    return; }
   else if(a==="ministry-save"){ if(!canEdit()) return; const mm2=state.ministry[state.ministryMass]||{};
     $$("#sec-ministerios [data-minrole]").forEach(inp=>{ mm2[inp.dataset.minrole]=inp.value.trim(); });
     state.ministry[state.ministryMass]=mm2;
