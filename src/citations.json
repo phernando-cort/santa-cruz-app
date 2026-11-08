@@ -1,0 +1,104 @@
+{
+  "layer": 1,
+  "note": "citation_id only — public domain, no lectionary text",
+  "days": [
+    {
+      "key": "sun",
+      "weekday": "Domingo",
+      "feast": "Día del Señor",
+      "rank": "Solemnidad",
+      "color": "blanco",
+      "season": "Tiempo Ordinario",
+      "citations": {
+        "first": "Hch 2:1–11",
+        "psalm": "Sal 104",
+        "second": "1 Cor 12:3–13",
+        "gospel": "Jn 20:19–23"
+      }
+    },
+    {
+      "key": "mon",
+      "weekday": "Lunes",
+      "feast": "María, Madre de la Iglesia",
+      "rank": "Memoria",
+      "color": "blanco",
+      "season": "Tiempo Ordinario",
+      "citations": {
+        "first": "Gén 3:9–20",
+        "psalm": "Sal 87",
+        "second": "—",
+        "gospel": "Jn 19:25–34"
+      }
+    },
+    {
+      "key": "tue",
+      "weekday": "Martes",
+      "feast": "Feria",
+      "rank": "Ferial",
+      "color": "verde",
+      "season": "Tiempo Ordinario",
+      "citations": {
+        "first": "Sant 4:1–10",
+        "psalm": "Sal 55",
+        "second": "—",
+        "gospel": "Mc 9:30–37"
+      }
+    },
+    {
+      "key": "wed",
+      "weekday": "Miércoles",
+      "feast": "San Carlos Lwanga y compañeros",
+      "rank": "Memoria",
+      "color": "rojo",
+      "season": "Tiempo Ordinario",
+      "citations": {
+        "first": "1 Jn 5:1–5",
+        "psalm": "Sal 124",
+        "second": "—",
+        "gospel": "Mt 10:17–22"
+      }
+    },
+    {
+      "key": "thu",
+      "weekday": "Jueves",
+      "feast": "Jueves eucarístico",
+      "rank": "Ferial",
+      "color": "verde",
+      "season": "Tiempo Ordinario",
+      "citations": {
+        "first": "Sant 5:1–6",
+        "psalm": "Sal 49",
+        "second": "—",
+        "gospel": "Mc 9:41–50"
+      }
+    },
+    {
+      "key": "fri",
+      "weekday": "Viernes",
+      "feast": "Sagrado Corazón de Jesús",
+      "rank": "Solemnidad",
+      "color": "blanco",
+      "season": "Tiempo Ordinario",
+      "citations": {
+        "first": "Ez 34:11–16",
+        "psalm": "Sal 23",
+        "second": "Rom 5:5–11",
+        "gospel": "Lc 15:3–7"
+      }
+    },
+    {
+      "key": "sat",
+      "weekday": "Sábado",
+      "feast": "Inmaculado Corazón de María",
+      "rank": "Memoria",
+      "color": "blanco",
+      "season": "Tiempo Ordinario",
+      "citations": {
+        "first": "Is 61:9–11",
+        "psalm": "1 Sam 2",
+        "second": "—",
+        "gospel": "Lc 2:41–51"
+      }
+    }
+  ]
+}

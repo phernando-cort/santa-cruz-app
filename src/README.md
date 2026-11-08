@@ -1,56 +1,67 @@
-# My Parish — demo parish app
+# Backend compartido (Supabase) — muro, mensajes y avisos entre todos
 
-Original demo inspired by the parish-app category (see `scratch/CURRENT_TASK.md`).
-Not affiliated with, and containing no copied content from, myparishapp.com.
+GitHub Pages solo sirve archivos estáticos: **no puede guardar datos compartidos por sí solo**.
+Por eso la app usa Supabase (gratis, sin tarjeta) como base de datos en tiempo real.
+Con esto, lo que se publica en un teléfono aparece en todos.
 
-## Run
-Open the live preview. No build step — `index.html` loads `src/styles.css` + `src/app.js` (module), which imports `src/data.js`.
+## A. Crear el proyecto (una vez, ~10 min)
 
-## Files
-- `index.html` — app shell: top bar, 5 tab views, tab bar, parish + builder sheets.
-- `src/styles.css` — all styling: adobe-wall theme, light-only (elderly readability), modern dark section titles, big touch targets.
-- `src/missal.js` — Ordinario de la Misa / Order of Mass (short people's parts + structure, ES+EN, parish redaction).
-- `src/data.js` — sample parishes, week of readings (citations + original reflections), inspirations, traditional prayers, events, bulletins, groups, messages.
-- `src/app.js` — rendering + interactions, localStorage persistence (parish, favorites, groups, home layout).
-  Cuentas por invitación (coll `users` del servidor): puerta con 3 modos (invitación/contraseña/
-  administrador), gestor de invitaciones en Administración (crear, enviar por correo/SMS, cambiar
-  permiso, nuevo código, quitar acceso), cambio de contraseña en Comunidad → Perfil.
-  Pestañas: Inicio, Lecturas, **Comunidad** (perfil, requisitos, directorio, grupos,
-  mensajes, medios, **agenda parroquial**: celebraciones próximas, Misas especiales,
-  actividades de los grupos, colectas y todas las actividades del mes entrante), Oración,
-  **Vocación** (Hijos de la Sagrada Familia: llamado, formación,
-  contacto web y formulario vocacional por correo), Más. Letra ajustable (🔠, zoom 1/1.15/1.3 guardado).
-  Como editor, en Más → Contenidos se edita TODO (cada campo de cada lista: grupos, directorio
-  con apellido/grupos/miembros/clero, eventos con celebrante, avisos con destinatario, intenciones
-  con misa enlazada, boletines con PDF, oraciones con tema libre/en latín, cantos, donativos, muro) y se reordena con ↑ ↓ (listas,
-  eventos, inspiración, tabla de ministerios y oraciones agrupadas por tema).
-- `main.pjs` — `$meta` + tiny tagline (data lives in `src/` for structure).
-- `src/confesion.js` — 8 exámenes de conciencia USCCB (texto completo, ES+EN) para la guía de confesión.
-- `src/pastoral.js` — guía de bendición de la corona de Adviento + reflexión familiar (ES+EN) + guía «Preparando el corazón en familia» del P. Hernando (ES+EN).
-- `src/calendario-extra.js` — eventos reales verificados (hcccsantacruz.org + boletines): 8 recurrentes (Bible Study, rosarios, unción, adoración, SVdP, Las Palmas, Celadoras), 3 fechas únicas (Guadalupe, Navidad, María Madre de Dios), requisitos de sacramentos (ES+EN), boletín fallback, URLs parroquiales.
-- `src/manyanet.js` — textos de vocaciones a los Hijos de la Sagrada Familia (ES+EN) + URLs de las 4 fotos (uploads, de manyanet-us.org). La tarjeta de donativo a los Hijos vive en la sección Vocaciones (`vocacionesHTML`), con enlace a la página de apoyo.
-- `src/usccb-prayers.js` — 222 oraciones de usccb.org/prayers/list (generado; lazy via `import()` solo al abrir Oraciones).
+1. Entra a https://supabase.com → **Start your project** → crea cuenta (GitHub/Google/email).
+2. **New project**:
+   - *Name*: `santa-cruz-app`
+   - *Database Password*: inventa una larga y guárdala (solo la usa Supabase por dentro).
+   - *Region*: la más cercana (p.ej. `East US` para Nuevo México).
+   - **Create new project** → espera ~2 min.
+3. Menú izquierdo → **SQL Editor** → **New query** → abre el archivo
+   `src/cloud/supabase-schema.sql` de este repo, pega TODO su contenido → **Run**.
+   Debe decir `Success. No rows returned`.
+4. Menú → **Project Settings (⚙) → API** → copia:
+   - **Project URL** (`https://xyzcompany.supabase.co`)
+   - **anon · public** (clave larga; es pública por diseño).
+5. Pega esos dos valores en `src/cloud-config.js`:
+   - `SUPABASE_URL`, `SUPABASE_ANON_KEY`.
+6. Sube los cambios a GitHub (web o `git push`). GitHub Pages despliega solo.
 
-## Enlace de administrador (página separada, sin código)
-- `src/admin.html` + `src/admin.js` — página privada de edición, SOLO botones y
-  formularios (usa `src/content-ui.js`, la misma UI que Más → Contenidos).
-  Todo Guardar se aplica al instante en la app (misma nube Supabase).
-- Cómo abrirla: en la app, Más → Administración → «🔗 Página de
-  administración» → **Abrir administración** (o **Copiar enlace** y guárdalo
-  en favoritos). En GitHub Pages el enlace es `…/src/admin.html`.
-- Entrada: contraseña maestra o cuenta de editor/admin. Pestañas: ✏️ Contenidos
-  (todo: parroquia, eventos, Misas/fecha, oraciones por temas con ↑ ↓,
-  grupos, directorio, cantos, donativos…), 🔔 Avisos, 👥 Cuentas (solo admin).
+## B. Probar que comparten (2 teléfonos)
 
-## Content notes (keep these true)
-- Scripture: citations + short public-domain (KJV) quotes only. Full lectionary texts intentionally NOT included — link users to missal/usccb.org.
-- Prayers: traditional public-domain texts only.
-- Devotionals/bulletins/messages: original sample writing.
-- Giving: proyectos con metas/avances/agradecimientos; el pago real se hace en el sitio seguro OSV Hub de la parroquia (hcccsantacruz.org/giving) y la app lleva el registro local; la capilla del Santísimo tiene mensaje mensual + galería de fotos (admin, sincronizado).
+1. Abre la URL de GitHub Pages en dos teléfonos.
+2. En uno: Comunidad → Muro → publica algo.
+3. En el otro: espera unos segundos (llega solo por Realtime) o cambia de pestaña.
+4. Si no llega: revisa que AMBOS tengan la misma `SUPABASE_URL` desplegada
+   (Pages tarda 1–2 min en actualizar) y que el SQL se ejecutó sin errores.
 
-## Leccionario por capas
-- Layer 0 `src/lectionary/source/` — HTML crudo, inmutable.
-- Layer 1 `src/lectionary/citations.json` — solo citation_id (dominio público).
-- Layer 2 `src/lectionary/display.js` — presentación por traductor: textos oficiales solo como enlaces con licencia; RVR1909/KJV vía getbible como alternativa pública.
-- Add real readings via a licensed feed; add push via `server-plugin` + `upload-plugin` editable bulletins.
-- Multi-parish merge: currently parish switch swaps context; to merge calendars, union EVENTS across followed parishes.
+## C. Administración
+
+- La contraseña de administrador te la entregó el asistente por el chat.
+  **Guárdala fuera del repo** (solo su hash está en `src/cloud-config.js`).
+- Entrar: Más → Administración → pega la contraseña → modo admin.
+- Como admin puedes: aprobar/borrar avisos y muro, gestionar editores,
+  crear cuentas por invitación (Comunidad → Perfil / Administración).
+- Si pierdes la contraseña: genera otra con
+  `node -e "console.log(require('crypto').randomBytes(12).toString('base64'))"`,
+  calcula su SHA-256 y reemplaza `ADMIN_SHA256` en `src/cloud-config.js`.
+
+## D. Límites del plan gratis (suficiente para una parroquia)
+
+- 500 MB de base de datos, ~200 conexiones, Realtime incluido.
+- Los textos de la app son pequeños (avisos/muro/intenciones): caben decenas de miles.
+- Las FOTOS no van a la base de datos (serían pesadas): la app las sube a
+  `upload-plugin` de Perchance o se guardan locales. Si necesitas galería
+  compartida pesada, usa Supabase Storage (pregunta y te lo conecto).
+
+## E. Seguridad
+
+- Modo actual (demo): lectura/escritura pública con validación en el cliente;
+  los botones de borrar/administrar solo los ve el admin o editores.
+  Igual que la versión Perchance: suficiente para avisos y muro parroquial.
+- Si publicas datos sensibles (directorios con teléfonos), pide el **modo
+  estricto**: políticas RLS por rol + borrado solo-admin en el servidor.
+
+## Archivos
+
+- `src/admin.html` + `src/admin.js` — PÁGINA DE ADMINISTRACIÓN separada (no enlazada desde la app): entra con tu contraseña o cuenta de editor y cambia todo; la app lo refleja al instante. En GitHub Pages vive en `/src/admin.html` (guárdala en favoritos, no la compartas).
+
+- `src/cloud-config.js` — URL + clave anon + hash admin (EDITA TÚ).
+- `src/sync-cloud.js` — adaptador (misma interfaz que el servidor Perchance).
+- `src/sync.js` — usa la nube si está configurada; si no, Perchance; si no, local.
+- `src/cloud/supabase-schema.sql` — este esquema (ejecutar una vez).

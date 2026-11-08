@@ -1336,6 +1336,7 @@ function vocacionesHTML(){
 }
 const VOC_MAIL = "info@manyanet-us.org";
 function renderVocacion(){
+  const vv = $("#view-vocacion"); if(!vv) return; // shell antiguo sin esta vista: no romper el resto
   const isEn = getLang()==="en";
   const stages = isEn ? [
     ["Aspirancy", "“Come and see.” (Jn 1:39)", "First contact and discernment: get to know the community and listen to God's call."],
@@ -1350,7 +1351,7 @@ function renderVocacion(){
     ["Escolasticado", "«Vayan por todo el mundo y proclamen el Evangelio.» (Mc 16,15)", "Estudios académicos, profesionales y pastorales uniendo oración, comunidad y servicio."],
     ["Formación permanente", "«Yo estoy con ustedes siempre.» (Mt 28,20)", "Crecimiento continuo toda la vida religiosa, fiel y abierto al Espíritu."]
   ];
-  $("#view-vocacion").innerHTML = `
+  vv.innerHTML = `
     <h2 class="serif" style="margin:4px 0">🌱 ${isEn?"Vocation · Sons of the Holy Family":"Vocación · Hijos de la Sagrada Familia"}</h2>
     <p class="small" style="margin:2px 0 6px">${isEn?"Brothers and priests serving families, youth and the Church in the spirit of Nazareth.":"Hermanos y sacerdotes al servicio de las familias, los jóvenes y la Iglesia en el espíritu de Nazaret."}</p>
     <section class="card"><img class="artBanner" src="${MANYANET_IMG.crest}" alt="Hijos de la Sagrada Familia" loading="lazy" style="object-fit:contain;background:#fff">
