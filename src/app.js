@@ -7,6 +7,7 @@ import { officialReadingLinks, fetchPassage } from "./lectionary/display.js";
 import { getDayData } from "./lectionary/litcal.js";
 import { dailyFor } from "./daily-citations.js";
 import { rankOf, saintsForDay, saintPrayerText } from "./saints.js";
+import { getWeekEvents, isRoutineMass, isSpecialMass, isGroupMeeting, fmtDay, fmtTime } from "./gcal.js";
 import { fetchUsccbDay, usccbWhich } from "./usccb.js";
 import { ORDINARY } from "./missal.js";
 import { CONFESION_EXAMS } from "./confesion.js";
@@ -132,6 +133,7 @@ const state = {
   goalOpen: null,
   bulletinOpen: null,
   litcalEvent: null, litcalDate: "", dayData: null,
+  gcal: {ready:false, events:[], live:false},
   modules: (()=>{ // Migración 1 vez (2026-11-08): la foto-encabezado (hero) vuelve a encenderse
     const defs = {hero:true, actions:true, inspire:true, events:true, bulletin:true, giving:true}; // aunque se hubiera apagado sin querer en "Personalizar inicio".
     const saved = store.get("home.modules", null) || {};
@@ -536,6 +538,18 @@ function alertRow(a){
       </div></div></div>`;
 }
 
+// ---------- calendario Google de la parroquia (semana + Misas especiales) ----------
+let gcalBusy = false;
+async function refreshGCal(){
+  if(gcalBusy) return; gcalBusy = true;
+  try {
+    const { events, live } = await getWeekEvents();
+    state.gcal = { ready:true, events: events || [], live: !!live };
+  } catch(e) { state.gcal = { ready:true, events: [], live:false }; }
+  gcalBusy = false;
+  try { if(state.tab === "home") renderHome(); } catch(e) {}
+}
+
 // ---------- sheets ----------
 function openSheet(id){ $("#"+id)?.classList.add("open"); }
 function closeSheets(){ $$(".sheet").forEach(s=>s.classList.remove("open")); }
@@ -694,22 +708,23 @@ function renderHome(){
       </details></div>`;
     const bdayToday = collectAlerts(0);
     const intAll = allIntenciones();
+    const gEv = (state.gcal && state.gcal.events) || [];
+    const specMass = gEv.filter(e=>isSpecialMass(e.t));
+    const specMassHtml = specMass.length ? `<div class="small" style="margin-top:6px"><b>🕯️ ${isEn?"Special Masses we pray for this week":"Misas especiales por las que oramos esta semana"}:</b></div>`
+      + specMass.map(e=>`<div class="intentLine">• <b>${esc(e.t)}</b> <span class="small">· ${esc(fmtDay(e.date, isEn))}${e.s.length>10?` · ${esc(fmtTime(e.s))}`:""}${e.l?` · ${esc(e.l)}`:""}</span></div>`).join("") : "";
     const rezHtml = sonsHtml
       + (bdayToday.length?bdayToday.map(a=>`<div class="massToday"><div class="massPlace">${a.type==="bday"?"🎂":"💒"} ${esc(a.name)}</div><div class="small">${a.type==="bday"?(isEn?"Birthday":"Cumpleaños"):(isEn?"Anniversary":"Aniversario")} · ${esc(a.date.toLocaleDateString(localeOf(),{day:"numeric",month:"long"}))} · ${esc(a.family)}</div></div>`).join(""):"")
-      + (intAll.length?`<div class="small" style="margin-top:6px"><b>🙏 ${isEn?`Intentions requested by our people (${intAll.length})`:`Intenciones que pide nuestra gente (${intAll.length})`}:</b></div>`+intAll.map(intRowHTML).join(""):`<p class="small">${isEn?"No intentions yet. Add yours in More → Intentions.":"Aún no hay intenciones. Añade la tuya en Más → Intenciones."}</p>`);
-    // — 5 · Próxima semana (parroquia + diócesis + conferencia + Vaticano) —
-    const wk = [];
-    for(const ev of [...allEvents()]){ const nd = nextOccurrence(ev); if(!nd) continue;
-      const diff = Math.round((new Date(nd.getFullYear(),nd.getMonth(),nd.getDate())-new Date(tD.getFullYear(),tD.getMonth(),tD.getDate()))/86400000);
-      if(diff>0 && diff<=7) wk.push({ev, nd}); }
-    wk.sort((a,b2)=>a.nd-b2.nd);
-    const wkHtml = wk.slice(0,6).map(({ev,nd})=>`<div class="massToday"><div class="massPlace">⛪ ${esc(ev.title)}</div>
-      <div class="small">📅 ${esc(nd.toLocaleDateString(localeOf(),{weekday:"long",day:"numeric",month:"short"}))} · ${esc(ev.time)}${ev.location?` · ${esc(ev.location)}`:""}</div></div>`).join("")
-      || `<p class="small">${isEn?"See the full calendar.":"Ver el calendario completo."}</p>`;
-    const newsBy = (c)=>allNews().filter(n=>n.cat===c).slice(0,2);
-    const dio = newsBy("Diócesis"), conf = newsBy("País"), vat = newsBy("Iglesia");
-    const newsHtml = [[isEn?"Diocese of Santa Fe":"Diócesis de Santa Fe",dio],[isEn?"Bishops' Conference (USA)":"Conferencia Episcopal (EE.UU.)",conf],[isEn?"Vatican":"Vaticano",vat]]
-      .map(([lab,arr])=>`<div class="small" style="margin-top:6px"><b>🌎 ${esc(lab)}:</b></div>`+(arr.length?arr.map(n=>`<div class="intentLine">• <b>${esc(n.title)}</b> <span class="small">— ${esc(String(n.body||"").slice(0,110))}…</span></div>`).join(""):`<div class="small">—</div>`)).join("");
+      + (intAll.length?`<div class="small" style="margin-top:6px"><b>🙏 ${isEn?`Intentions requested by our people (${intAll.length})`:`Intenciones que pide nuestra gente (${intAll.length})`}:</b></div>`+intAll.map(intRowHTML).join(""):`<p class="small">${isEn?"No intentions yet. Add yours in More → Intentions.":"Aún no hay intenciones. Añade la tuya en Más → Intenciones."}</p>`)
+      + specMassHtml;
+    // — 5 · Esta semana: solo lo próximo, del calendario Google de la parroquia —
+    const wkList = gEv.filter(e=>!isRoutineMass(e.t));
+    const wkIcon = (e)=> isSpecialMass(e.t) ? "🕯️" : (isGroupMeeting(e.t) ? "👥" : "📌");
+    const wkHtml = !state.gcal.ready
+      ? `<p class="small">⏳ ${isEn?"Loading parish calendar…":"Cargando el calendario parroquial…"}</p>`
+      : (wkList.length ? wkList.map(e=>`<div class="massToday"><div class="massPlace">${wkIcon(e)} ${esc(e.t)}</div>
+        <div class="small">📅 ${esc(fmtDay(e.date, isEn))}${e.s.length>10?` · ${esc(fmtTime(e.s))}`:""}${e.l?` · ${esc(e.l)}`:""}</div>
+        ${e.d?`<div class="small">${esc(String(e.d).slice(0,140))}</div>`:""}</div>`).join("")
+      : `<p class="small">${isEn?"Nothing else coming up this week.":"Nada más próximo esta semana."}</p>`);
     todayHtml = `
     <section class="card" style="border-color:var(--terra)">
       <h3>☀️ ${isEn?"TODAY AT THE PARISH":"HOY EN LA PARROQUIA"}<span class="sub2" style="text-transform:capitalize">${esc(tStr)}</span></h3>
@@ -722,7 +737,8 @@ function renderHome(){
         <div class="btnRow"><button class="btn btnGhost" data-action="home-saint">${isEn?"Saint of the day":"Ver santoral"}</button></div></div>
       <div class="todayBlock"><h4>🙏 ${isEn?"We join in prayer for the following intentions":"Nos unimos en oración por las siguientes intenciones"}</h4>${rezHtml}
         <div class="btnRow"><button class="btn btnGhost" data-action="more-focus" data-focus="sec-intenciones">${isEn?"Intentions":"Intenciones"}</button></div></div>
-      <div class="todayBlock"><h4>📅 ${isEn?"Next week — get ready":"Próxima semana — prepárate"}</h4>${wkHtml}${newsHtml}</div>
+      <div class="todayBlock"><h4>📅 ${isEn?"This week at the parish":"Esta semana en la parroquia"}</h4>${wkHtml}
+        <div class="btnRow"><button class="btn btnGhost" data-action="tab" data-tab="calendar">${isEn?"Full calendar":"Calendario completo"}</button><button class="btn btnGhost" data-action="ext" data-url="https://www.hcccsantacruz.org/events">${isEn?"Parish site ↗":"Sitio parroquial ↗"}</button></div></div>
     </section>`;
     if(todayHtml) cards.push({id:"today", html: todayHtml});
   }catch(e2){}
@@ -2643,5 +2659,6 @@ document.addEventListener("click", e=>{
 
 setFavicon();
 render();
+refreshGCal();
 Sync.connect();
 setTimeout(fireAutoAlert, 2000);
