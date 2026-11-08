@@ -595,7 +595,7 @@ function renderHome(){
   const ints = allIntenciones().slice(0,2);
   const nw = allNews()[0];
   const hi = state.userName ? `${esc(state.userName.split(" ")[0])}` : t("hi");
-  const mt = (arr) => arr.map(x=>`<span class="chip">☀ ${esc(x)}</span>`).join("");
+  const mt = (arr) => arr.map(x=>`<span class="chip">✳ ${esc(x)}</span>`).join("");
   const cards = [];
   // ===== HOY EN LA PARROQUIA: 1 Misa (lecturas+ordinario) · 2 intenciones por Misa · 3 especiales · 4 santo · 5 próxima semana =====
   let todayHtml = "";
