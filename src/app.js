@@ -640,30 +640,27 @@ function renderHome(){
       if(cc.gospel) tCites.push(cc.gospel);
     } else if(tDaily){ tCites = tDaily.readings.map(r=>r.citation); }
     const tSaint = saintsForDay(tFeast, tIso.slice(5), isEn?"en":"es")[0] || null;
-    // — 1 · La Misa: lecturas + común de la Misa —
-    const ord = ORDINARY[isEn?"en":"es"];
+    // — 1 · La Misa: solo citas + fiesta (el texto completo vive en la pestaña Lecturas) —
     const readHtml = tCites.length
-      ? `<div class="readCite">${tCites.map(c=>`📖 ${esc(c)}`).join("<br>")}</div>
+      ? `<div class="readCite">📖 ${tCites.map(c=>esc(c)).join(" · ")}</div>
          ${tFeast?`<div class="small"><b>${esc(tFeast)}</b>${tColor?` · ${esc(litColorName(tColor))}`:""}</div>`:""}`
       : `<p class="small">${isEn?"See the Readings tab.":"Ver la pestaña Lecturas."}</p>`;
-    const ordHtml = `<details class="ordDet"><summary>📜 ${isEn?"Order of Mass — what the people say":"El común de la Misa — lo que dice el pueblo"}</summary>
-      ${ord.map(s=>`<div class="ordSec"><b>${esc(s.t)}</b><div class="small">${esc(s.n)}</div>${s.r.map(x=>`<div class="ordLine">• ${esc(x)}</div>`).join("")}</div>`).join("")}</details>`;
     // — 2 · Intenciones de cada Misa del día (celebrante + ministros) —
     const genSched = isEn
       ? "General schedule (Santa Cruz): Mon–Wed 7am & 6pm (Tue evening in Spanish) · Thu–Fri 7am · Sat 5:30pm Vigil · Sun 7am, 8:30am Spanish, 10:30am, 12:30pm, 6pm. Confessions Sat 4pm."
       : "Horario general (Santa Cruz): Lun–Mié 7am y 6pm (mar. en español) · Jue–Vie 7am · Sáb 5:30pm Vigilia · Dom 7am, 8:30am español, 10:30am, 12:30pm, 6pm. Confesiones sáb 4pm.";
     const massHtml = schedList.length ? schedList.map((mm)=>{
+      const nInt = (mm.int||[]).length;
       const mins = ministryForTime(mm.t);
       const cel = String(mm.ce||"").split("·").map(s=>celebFull(s)).filter(Boolean).join(" · ");
       const ints = (mm.int||[]).slice(0,4).map(x=>`<div class="intentLine">• ${esc(x)}</div>`).join("")
-        + ((mm.int||[]).length>4?`<div class="small">+${(mm.int||[]).length-4} ${isEn?"more":"más"}…</div>`:"");
+        + (nInt>4?`<div class="small">+${nInt-4} ${isEn?"more":"más"}…</div>`:"");
       const minList = mins ? ["Sacerdote","Diácono","Encargado/a de Misa","Lectores","Coro"]
         .map(r=>mins.roles[r]&&mins.roles[r]!=="Por asignar"?`${esc(r)}: <b>${esc(mins.roles[r])}</b>`:"").filter(Boolean).join(" · ") : "";
-      return `<div class="massToday"><div class="massTime">⏰ ${esc(mm.t||"")} ${mm.e?`<span class="small">– ${esc(mm.e)}</span>`:""}</div>
-        <div class="massPlace">⛪ ${esc(mm.pl||parish().name)}${mm.k?` · <span class="tag gold">${esc(mm.k)}</span>`:""}</div>
+      return `<details class="massToday"><summary>⏰ <b>${esc(mm.t||"")}</b> · ⛪ ${esc(mm.pl||parish().name)} · 🕯️ ${nInt||(isEn?"no intentions":"sin intenciones")}</summary>
         ${cel?`<div class="small">🙏 <b>${isEn?"Celebrant":"Celebrante"}:</b> ${esc(cel)}${mm.de?` · Diác. ${esc(mm.de)}`:""}</div>`:""}
-        ${ints?`<div style="margin-top:4px"><div class="small"><b>🕯️ ${esc(t("intentMassL"))}:</b></div>${ints}</div>`:`<div class="small">🕯️ ${isEn?"No intentions published":"Sin intenciones publicadas"}</div>`}
-        ${mins?`<div class="small" style="margin-top:4px">🙌 <b>${esc(t("ministersL"))} (${esc(mins.mass)}):</b> ${minList||esc(t("incompleteL"))}</div>`:""}</div>`;
+        ${ints?`<div style="margin-top:4px">${ints}</div>`:""}
+        ${mins&&minList?`<div class="small" style="margin-top:4px">🙌 <b>${esc(t("ministersL"))}:</b> ${minList}</div>`:""}</details>`;
     }).join("") : `<p class="small">${esc(genSched)}</p>`;
     // — 3 · Celebraciones especiales de hoy + próximas fechas fijas —
     const dw = tD.getDay(), dt = tD.getDate();
@@ -681,16 +678,13 @@ function renderHome(){
       {t:isEn?"Mass · Santo Niño de Atocha Chapel":"Misa · Capilla Santo Niño de Atocha", w:isEn?"1st Saturday · 7:00am":"Primer sábado · 7:00am", today:isFirstSat, nx:nextMonthly(6,1)},
       {t:isEn?"Mass · San Isidro Chapel, La Mesilla":"Misa · Capilla San Isidro, La Mesilla", w:isEn?"3rd Thursday · 6:00pm":"Tercer jueves · 6:00pm", today:isThirdThu, nx:nextMonthly(4,3)}
     ];
-    const specHtml = specs.map(s=>`<div class="massToday"><div class="massPlace">${s.today?`<span class="tag red">${esc(t("todayTag"))}</span> `:""}🕯️ ${esc(s.t)}</div>
-      <div class="small">${esc(s.w)}${s.today?"":` · ${isEn?"Next":"Próx"}: <b>${esc(fmtD(s.nx))}</b>`}</div></div>`).join("")
-      + `<div class="small" style="margin-top:6px">✝️ ${isEn?"Confessions: Saturdays 4:00pm and by appointment.":"Confesiones: sábados 4:00pm y con cita."}</div>
-      <div class="small">${esc(genSched)}</div>`;
+    const specHtml = specs.map(s=>`<div class="small">${s.today?`<span class="tag red">${esc(t("todayTag"))}</span> `:""}🕯️ <b>${esc(s.t)}</b> · ${esc(s.w)}${s.today?"":` · ${isEn?"Next":"Próx"}: <b>${esc(fmtD(s.nx))}</b>`}</div>`).join("");
     // — 4 · Santo del día —
     const saintHtml = tSaint
       ? `<div class="saintToday">${tSaint.image?`<img class="saintImg" src="${esc(tSaint.image)}" alt="${esc(tSaint.name.slice(0,1))}" loading="lazy">`:`<div class="avatar">${esc(tSaint.name.slice(0,1))}</div>`}
           <div style="flex:1"><b style="font-size:17px">${esc(tSaint.name)}</b>
           ${tSaint.era?`<div class="small">· ${esc(tSaint.era)}</div>`:""}
-          <div style="font-size:14.5px;line-height:1.55;margin-top:4px">${esc(String(tSaint.bio||"").slice(0,220))}${String(tSaint.bio||"").length>220?"…":""}</div></div></div>`
+          <div style="font-size:14.5px;line-height:1.55;margin-top:4px">${esc(String(tSaint.bio||"").slice(0,140))}${String(tSaint.bio||"").length>140?"…":""}</div></div></div>`
       : `<p class="small">${esc(t("ferialNote"))}</p>`;
     // — 4b · Nos unimos en oración: intención de los Hijos (manyanet-us.org) + celebraciones del día + TODAS las intenciones de la gente —
     const SONS_INTENTION = isEn
@@ -709,28 +703,25 @@ function renderHome(){
     const bdayToday = collectAlerts(0);
     const intAll = allIntenciones();
     const gEv = (state.gcal && state.gcal.events) || [];
-    const specMass = gEv.filter(e=>isSpecialMass(e.t));
-    const specMassHtml = specMass.length ? `<div class="small" style="margin-top:6px"><b>🕯️ ${isEn?"Special Masses we pray for this week":"Misas especiales por las que oramos esta semana"}:</b></div>`
-      + specMass.map(e=>`<div class="intentLine">• <b>${esc(e.t)}</b> <span class="small">· ${esc(fmtDay(e.date, isEn))}${e.s.length>10?` · ${esc(fmtTime(e.s))}`:""}${e.l?` · ${esc(e.l)}`:""}</span></div>`).join("") : "";
+    // Las Misas especiales ya se listan abajo en "Esta semana" (🕯️): aquí solo el resumen para no duplicar.
+    const nSpec = gEv.filter(e=>isSpecialMass(e.t)).length;
     const rezHtml = sonsHtml
-      + (bdayToday.length?bdayToday.map(a=>`<div class="massToday"><div class="massPlace">${a.type==="bday"?"🎂":"💒"} ${esc(a.name)}</div><div class="small">${a.type==="bday"?(isEn?"Birthday":"Cumpleaños"):(isEn?"Anniversary":"Aniversario")} · ${esc(a.date.toLocaleDateString(localeOf(),{day:"numeric",month:"long"}))} · ${esc(a.family)}</div></div>`).join(""):"")
-      + (intAll.length?`<div class="small" style="margin-top:6px"><b>🙏 ${isEn?`Intentions requested by our people (${intAll.length})`:`Intenciones que pide nuestra gente (${intAll.length})`}:</b></div>`+intAll.map(intRowHTML).join(""):`<p class="small">${isEn?"No intentions yet. Add yours in More → Intentions.":"Aún no hay intenciones. Añade la tuya en Más → Intenciones."}</p>`)
-      + specMassHtml;
-    // — 5 · Esta semana: solo lo próximo, del calendario Google de la parroquia —
+      + (bdayToday.length?bdayToday.map(a=>`<div class="small">${a.type==="bday"?"🎂":"💒"} <b>${esc(a.name)}</b> · ${esc(a.date.toLocaleDateString(localeOf(),{day:"numeric",month:"long"}))}</div>`).join(""):"")
+      + (intAll.length?`<div class="small" style="margin-top:6px"><b>🙏 ${isEn?`Intentions from our people (${intAll.length})`:`Intenciones de nuestra gente (${intAll.length})`}:</b></div>`+intAll.slice(0,2).map(intRowHTML).join("")+(intAll.length>2?`<div class="small">+${intAll.length-2} ${isEn?"more in Intentions →":"más en Intenciones →"}</div>`:"")+ (nSpec?`<div class="small">🕯️ +${nSpec} ${isEn?"special Masses listed below":"misas especiales listadas abajo"}</div>`:""):`<p class="small">${isEn?"No intentions yet. Add yours in More → Intentions.":"Aún no hay intenciones. Añade la tuya en Más → Intenciones."}</p>`);
+    // — 5 · Esta semana: resumen (5 próximos + resto en Calendario) —
     const wkList = gEv.filter(e=>!isRoutineMass(e.t));
     const wkIcon = (e)=> isSpecialMass(e.t) ? "🕯️" : (isGroupMeeting(e.t) ? "👥" : "📌");
     const wkHtml = !state.gcal.ready
       ? `<p class="small">⏳ ${isEn?"Loading parish calendar…":"Cargando el calendario parroquial…"}</p>`
-      : (wkList.length ? wkList.map(e=>`<div class="massToday"><div class="massPlace">${wkIcon(e)} ${esc(e.t)}</div>
-        <div class="small">📅 ${esc(fmtDay(e.date, isEn))}${e.s.length>10?` · ${esc(fmtTime(e.s))}`:""}${e.l?` · ${esc(e.l)}`:""}</div>
-        ${e.d?`<div class="small">${esc(String(e.d).slice(0,140))}</div>`:""}</div>`).join("")
+      : (wkList.length ? wkList.slice(0,5).map(e=>`<div class="small">${wkIcon(e)} <b>${esc(e.t)}</b> · ${esc(fmtDay(e.date, isEn))}${e.s.length>10?` · ${esc(fmtTime(e.s))}`:""}${e.l?` · ${esc(e.l)}`:""}</div>`).join("")
+        + (wkList.length>5?`<div class="small">+${wkList.length-5} ${isEn?"more in Calendar →":"más en Calendario →"}</div>`:"")
       : `<p class="small">${isEn?"Nothing else coming up this week.":"Nada más próximo esta semana."}</p>`);
     todayHtml = `
     <section class="card" style="border-color:var(--terra)">
       <h3>☀️ ${isEn?"TODAY AT THE PARISH":"HOY EN LA PARROQUIA"}<span class="sub2" style="text-transform:capitalize">${esc(tStr)}</span></h3>
-      <div class="todayBlock"><h4>⛪ ${isEn?"Today's Mass: readings & Order of Mass":"La Misa de hoy: lecturas y común"}</h4>${readHtml}${ordHtml}
+      <div class="todayBlock"><h4>⛪ ${isEn?"Today's Mass: readings":"La Misa de hoy: lecturas"}</h4>${readHtml}
         <div class="btnRow"><button class="btn btnNavy" data-action="home-readings">${isEn?"Read today's readings":"Leer las lecturas"}</button></div></div>
-      <div class="todayBlock"><h4>🕯️ ${isEn?"Intentions of each Mass today":"Intenciones de cada Misa de hoy"} (${schedList.length||"—"})</h4>${massHtml}
+      <div class="todayBlock"><h4>🕯️ ${isEn?"Today's Masses":"Misas de hoy"} (${schedList.length||"—"})</h4>${massHtml}
         <div class="btnRow"><button class="btn btnGhost" data-action="tab" data-tab="calendar">${isEn?"Full calendar":"Calendario completo"}</button></div></div>
       <div class="todayBlock"><h4>⭐ ${isEn?"Special celebrations":"Celebraciones especiales"}</h4>${specHtml}</div>
       <div class="todayBlock"><h4>✨ ${esc(t("saintDay"))}</h4>${saintHtml}
@@ -777,7 +768,7 @@ function renderHome(){
       <p class="sub">${t("confessionT")}: ${esc(p.confession)} · ${t("adorationT")}: ${esc(p.adoration)}</p>
       <div class="grid2">
         <button class="quickBtn" data-action="pray-mode" data-mode="rosario"><div class="ic">📿</div><div class="t">${t("prayRosary")}</div><div class="d">${t("prayRosarySub")}</div></button>
-        <button class="quickBtn" data-action="tab" data-tab="calendar"><div class="ic">📅</div><div class="t">${t("thisWeek")}</div><div class="d">${allEvents().length} ${t("activitiesCount")}</div></button>
+        <button class="quickBtn" data-action="tab" data-tab="calendar"><div class="ic">📅</div><div class="t">${t("thisWeek")}</div><div class="d">${((state.gcal&&state.gcal.events)||[]).filter(e=>!isRoutineMass(e.t)).length||allEvents().length} ${t("activitiesCount")}</div></button>
         <button class="quickBtn" data-action="more-focus" data-focus="sec-donativos"><div class="ic">💛</div><div class="t">${t("give")}</div><div class="d">${t("giveSub")}</div></button>
         <button class="quickBtn" data-action="pray-mode" data-mode="santos"><div class="ic">✨</div><div class="t">${t("saintDay")}</div><div class="d">${SAINTS.length} ${t("saintsCount")}</div></button>
       </div></section>`});
@@ -793,13 +784,8 @@ function renderHome(){
         <div style="flex:1"><b>${esc(ev.title)}</b><div class="small">${esc(ev.time)} · ${esc(ev.location||"")}</div></div>
         <button class="btn btnGhost" data-action="rem-toggle" data-id="${ev.id}">✓</button></div>`;}).join("")}
     </section>`});
-  if(state.modules.events!==false) cards.push({id:"events", html:`
-    <section class="card"><h3>${t("upcoming")}</h3><p class="sub">${esc(p.name)} · ${t("upcomingSub")}</p>
-      ${upcoming.map(ev=>`<div class="eventRow"><div class="dateBox"><div class="dw">${esc(dayName(ev.day).slice(0,3).toUpperCase())}</div><div class="dn">${esc(ev.time.split(" ")[0].replace(":00",""))}</div></div>
-        <div style="flex:1"><div><span class="catDot" style="background:${catColor(ev.category)}"></span><b>${esc(ev.title)}</b></div>
-        <div class="small">${esc(ev.time)} · ${esc(ev.location||"")}</div></div>
-        <button class="btn btnGhost" data-action="rem-toggle" data-id="${ev.id}">${state.reminders.includes(ev.id)?"✓":"🔔"}</button></div>`).join("")}
-    </section>`});
+  // "Próximas actividades" se eliminó del Inicio: duplicaba "Esta semana en la parroquia" (arriba).
+  // El detalle completo vive en la pestaña Calendario.
   const homeAlerts = collectAlerts(14).slice(0,3);
   if(homeAlerts.length) cards.push({id:"alerts", html:`
     <section class="card"><h3>🔔 ${t("soonDates")} <span class="tag gold">${homeAlerts.length}</span></h3>
@@ -823,9 +809,7 @@ function renderHome(){
     cards.push({id:"bulletin", html:`
     <section class="card"><img class="artBanner" src="${ART.luminarias}" alt="Luminarias" loading="lazy"><h3>📄 ${t("bulLiveT")}</h3><p class="sub">${esc(bulletinLabel(bl))} · ${t("bulLiveSub")}</p>
       <div class="btnRow">${bl.view?`<button class="btn btnNavy" data-action="ext" data-url="${esc(bl.view)}">${t("bulView")}</button>`:""}
-      ${bl.pdf?`<button class="btn btnGhost" data-action="ext" data-url="${esc(bl.pdf)}">${t("bulPdf")} 📕</button>`:""}
-      <button class="btn btnGhost" data-action="ext" data-url="${PARISH_BULLETIN_PAGE}">${t("bulPage")} ↗</button></div>
-      <div class="btnRow"><button class="btn btnGhost" data-action="more-focus" data-focus="sec-boletines">${t("read")}</button></div>
+      ${bl.pdf?`<button class="btn btnGhost" data-action="ext" data-url="${esc(bl.pdf)}">${t("bulPdf")} 📕</button>`:""}</div>
     </section>`}); }
   if(state.modules.giving!==false) cards.push({id:"giving", html:`
     <section class="card"><h3>💛 ${t("weekendOff")}</h3><p class="sub">${t("weekendOffSub")}</p>
@@ -834,13 +818,43 @@ function renderHome(){
         <button class="btn btnGold" data-action="more-focus" data-focus="sec-donativos">${t("donateTo")} $${state.givingAmt}</button>
       </div></section>`});
   cards.push({id:"tail", html:`<div class="notice">${t("demoNotice")} <button class="backLink" data-action="builder-open">${t("customizeHome")} →</button></div>`});
+  // — Pastoral en casa: confesión, oración y comunión (siempre visibles, en este orden) —
+  const hEn = getLang()==="en";
+  const confessCard = `<section class="card" id="sec-home-confess" style="border-color:var(--gold)"><h3>🕊️ ${hEn?"Prepare your next confession":"Prepara tu próxima confesión"}</h3>
+    <p class="sub">⛪ ${hEn?"Confessions":"Confesiones"}: ${esc(p.confession)}</p>
+    <h4 style="margin:8px 0 2px">💜 ${hEn?"Act of Contrition":"Acto de contrición"}</h4>
+    <p class="prayerText">${esc(prayerText("acto-contricion"))}</p>
+    <div class="btnRow"><button class="btn btnGhost" data-action="pray-aloud" data-id="acto-contricion">${esc(t("listen"))}</button></div>
+    <h4 style="margin:10px 0 2px">🔍 ${hEn?`Examinations of conscience (USCCB, ${CONFESION_EXAMS.length})`:`Exámenes de conciencia (USCCB, ${CONFESION_EXAMS.length})`}</h4>
+    ${CONFESION_EXAMS.map(e=>`<details class="ordDet"><summary>${esc(hEn?e.ten:e.tes)} <span class="tag">${esc(e.lang==="es"?"ES":"EN")}</span></summary>
+      <div class="ordSec"><p class="prayerText" style="font-size:15px">${esc(e.text)}</p></div></details>`).join("")}
+    <div class="btnRow"><button class="btn btnNavy" data-action="pray-mode" data-mode="confesion">${hEn?"Full confession guide":"Guía completa de confesión"} →</button></div>
+  </section>`;
+  const prayCard = `<section class="card" id="sec-home-pray"><h3>🙏 ${hEn?"Need us to pray for you?":"¿Necesitas que oremos por ti?"}</h3>
+    <p class="sub">${hEn?"Write your intention here. The office and the pastoral team receive it (private).":"Escribe tu intención aquí. La oficina y el equipo pastoral la reciben (privado)."}</p>
+    ${state._homePrayerSent?`<div class="notice">${esc(state._homePrayerSent)}</div>`:""}
+    <label>${t("pvNamesL")}</label><textarea id="hpNames" placeholder="…"></textarea>
+    <label>${t("pvKindL")}</label><select id="hpKind"><option value="enfermos">${t("pvSick")}</option><option value="difuntos">${t("pvDep")}</option></select>
+    <div class="btnRow"><button class="btn btnGold" data-action="home-prayer-add">${t("sendMsg")}</button></div>
+  </section>`;
+  const visitCard = `<section class="card" id="sec-home-visit"><h3>🏠 ${hEn?"Need Communion brought to your home?":"¿Necesitas que lleven la comunión a tu casa?"}</h3>
+    <p class="sub">${hEn?"Write to us and our ministers will bring Communion to your home.":"Escríbenos y nuestros ministros llevarán la comunión a tu casa."}</p>
+    ${state._homeVisitSent?`<div class="notice">${esc(state._homeVisitSent)}</div>`:""}
+    <label>${hEn?"Name of the sick person":"Nombre de la persona enferma"}</label><input id="hcSick" placeholder="…">
+    <label>${hEn?"Home address":"Dirección de la casa"}</label><input id="hcAddr" placeholder="…">
+    <div class="grid2"><div><label>${t("yourName")}</label><input id="hcContact" value="${esc(state.userName||"")}" placeholder="…"></div>
+    <div><label>${t("phoneL")}</label><input id="hcPhone" inputmode="tel" placeholder="(505) …"></div></div>
+    <label>${t("messageL")}</label><textarea id="hcNotes" placeholder="…"></textarea>
+    <div class="btnRow"><button class="btn btnGold bigBtn" data-action="home-visit-add">${t("sendMsg")}</button></div>
+    <div class="small">✉️ <a href="mailto:holycross.admoffice@gmail.com">holycross.admoffice@gmail.com</a> · ☎ <a href="tel:+15057533345">(505) 753-3345</a></div>
+  </section>`;
   const rank = Object.fromEntries(state.order.map((id,i)=>[id,i]));
   const heroCard = cards.find(c=>c.id==="hero");
   const todayCard = cards.find(c=>c.id==="today");
   const padreCard = cards.find(c=>c.id==="padre");
   const rest = cards.filter(c=>c.id!=="hero"&&c.id!=="today"&&c.id!=="padre");
   rest.sort((a,b2)=>(rank[a.id]??99)-(rank[b2.id]??99));
-  $("#view-home").innerHTML = (heroCard?heroCard.html:"") + (todayCard?todayCard.html:"") + (padreCard?padreCard.html:"") + rest.map(c=>c.html).join("");
+  $("#view-home").innerHTML = (heroCard?heroCard.html:"") + (todayCard?todayCard.html:"") + (padreCard?padreCard.html:"") + confessCard + prayCard + visitCard + rest.map(c=>c.html).join("");
 }
 
 // ---------- LECTURAS ----------
@@ -937,7 +951,7 @@ function usccbPaneHTML(R){
   const saved = state.usccbTexts[key];
   if(saved && saved.loading) return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text (USCCB)":"Texto oficial (USCCB)")}</h4><p class="small">⏳ ${esc(en?"Loading official text…":"Cargando texto oficial…")}</p></div>`;
   if(saved && saved.error) return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text (USCCB)":"Texto oficial (USCCB)")}</h4>
-    <div class="notice">${esc(en?"No connection. The citations and the public-domain text below still work offline.":"Sin conexión. Las citas y el texto de dominio público de abajo siguen funcionando sin internet.")}</div>
+    <div class="notice">${esc(en?"No connection. Try again when you have internet.":"Sin conexión. Reintenta cuando tengas internet.")}</div>
     <div class="btnRow"><button class="btn btnGhost" data-action="usccb-load">↻ ${esc(en?"Retry":"Reintentar")}</button></div></div>`;
   if(saved && saved.sections){
     const secs = saved.sections.map(s=>`
@@ -947,7 +961,8 @@ function usccbPaneHTML(R){
       <div class="massText" style="font-size:${state.readingFont}px">${secs}</div>
       <div class="btnRow"><button class="btn btnNavy" data-action="usccb-listen">🔊 ${esc(en?"Listen":"Escuchar")}</button>
       ${state.speaking?`<button class="btn btnGhost" data-action="stop-voice">${esc(en?"Stop":"Detener")}</button>`:""}
-      ${saved.url?`<button class="btn btnGhost" data-action="ext" data-url="${esc(saved.url)}">USCCB ↗</button>`:""}</div>
+      <button class="btn btnGhost" data-action="font-dec" aria-label="A-">A−</button>
+      <button class="btn btnGhost" data-action="font-inc" aria-label="A+">A+</button></div>
       <p class="small">© United States Conference of Catholic Bishops — ${esc(en?"shown from bible.usccb.org":"mostrado desde bible.usccb.org")}.</p></div>`;
   }
   return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text of the Mass (USCCB)":"Texto oficial de la Misa (USCCB)")}</h4>
@@ -973,6 +988,11 @@ function speakUsccb(){
 function renderReadings(){
   if(state.tab==="readings") ensureLitCal();
   state.readingDate = clampReadingDate(state.readingDate);
+  // El texto oficial USCCB carga solo, dentro de la app (sin botón previo).
+  if(state.tab==="readings"){
+    const uk = usccbKey(state.readingDate);
+    if(!state.usccbTexts[uk]){ loadUsccbDay(); return; }
+  }
   const R = readingDayData();
   const d = new Date(R.iso+"T12:00:00");
   const wdIdx = d.getDay();
@@ -1002,26 +1022,9 @@ function renderReadings(){
       ${saintsDayHTML(R)}
       ${usccbPaneHTML(R)}
       ${R.list.length?`
-      <div class="btnRow">
-        <button class="btn btnNavy" data-action="read-all">${esc(allLoaded?t("hideTexts"):t("readAll"))}</button>
-        <button class="btn btnNavy" data-action="listen-all">🔊 ${esc(t("listenAll"))}</button>
-      </div>
-      <div class="btnRow" style="align-items:center">
-        <span class="small">${esc(t("textSize"))}:</span>
-        <button class="btn btnGhost" data-action="font-dec" aria-label="A-">A−</button>
-        <b style="min-width:44px;text-align:center">${state.readingFont}px</b>
-        <button class="btn btnGhost" data-action="font-inc" aria-label="A+">A+</button>
-        ${state.speaking?`<button class="btn btnGhost" data-action="stop-voice">${esc(t("stop"))}</button>`:""}
-      </div>
-      ${readingRowsHTML(R)}
       ${(R.isToday&&R.dd&&R.dd.quote)?`<div class="verseBox">“${esc(R.dd.quote)}”<br><span class="small">— ${esc(R.feast)}</span></div>`:""}`
       :`<p class="small">${esc(t("noResults"))}</p>`}`
       :`<p class="small">${esc(t("readingsRange"))}</p>`}
-      <div class="notice" style="margin-top:10px">📖 ${esc(getLang()==="en"?"Official USCCB text is read above, inside the app.":"El texto oficial USCCB se lee arriba, dentro de la app.")}</div>
-      <div class="btnRow" style="margin-top:8px">
-        ${(R.isToday&&R.dd&&R.dd.usccbLink)?`<button class="btn btnGold" data-action="ext" data-url="${esc(R.dd.usccbLink)}">📖 ${esc(getLang()==="en"?"Official text for today":"Texto oficial de hoy")}</button>`:""}
-        ${officialReadingLinks(getLang).map(l=>`<button class="btn btnNavy" data-action="ext" data-url="${esc(l.url)}">${esc(l.label)}</button>`).join("")}
-      </div>
     </section>
     <section class="card"><div class="small"><b>${esc(t("meditation"))}</b> · ${esc(wM.weekday)}</div>
       <h3 class="serif" style="font-size:19px">${esc(wM.reflectionTitle)}</h3>
@@ -2555,6 +2558,23 @@ document.addEventListener("click", e=>{
     const rec={id:"pp"+Date.now(), from:state.userName||"Feligresía", time:dstr, channel:"Oración privada", to:"all",
       title:"🙏 "+(k==="difuntos"?t("pvDep"):t("pvSick"))+" (privado)", body:nms, priv:"privada"};
     const done=()=>{ store.set("msgs.unread", true); state._pastoralSent=t("sentOk"); renderMore(); setTimeout(()=>{ $("#sec-pastoral")?.scrollIntoView({behavior:"smooth"}); },80); };
+    if(pubBoth(2, rec, done)) return;
+    state.pastoralExtra.unshift({...rec, mine:true}); store.set("pastoral.extra", state.pastoralExtra); done(); }
+  else if(a==="home-prayer-add"){ const nms=val("#hpNames"); if(!nms) return;
+    const dstr = new Date().toLocaleString(localeOf(),{day:"numeric",month:"short"});
+    const k=$("#hpKind")?.value||"enfermos";
+    const rec={id:"pp"+Date.now(), from:state.userName||"Feligresía", time:dstr, channel:"Oración privada", to:"all",
+      title:"🙏 "+(k==="difuntos"?t("pvDep"):t("pvSick"))+" (privado)", body:nms, priv:"privada"};
+    const done=()=>{ store.set("msgs.unread", true); state._homePrayerSent=t("sentOk"); renderHome(); setTimeout(()=>{ $("#sec-home-pray")?.scrollIntoView({behavior:"smooth"}); },80); };
+    if(pubBoth(2, rec, done)) return;
+    state.pastoralExtra.unshift({...rec, mine:true}); store.set("pastoral.extra", state.pastoralExtra); done(); }
+  else if(a==="home-visit-add"){ const s=val("#hcSick"); if(!s) return;
+    const dstr = new Date().toLocaleString(localeOf(),{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+    const contact=[val("#hcContact"),val("#hcPhone")].filter(Boolean).join(" · ");
+    const rec={id:"pv"+Date.now(), from:val("#hcContact")||state.userName||"Feligresía", time:dstr, channel:"Pastoral de enfermos", to:"g10",
+      title:"🏠 "+t("visitCom")+" · "+s,
+      body:s+" · "+(val("#hcAddr")||"—")+" · "+(contact||"—")+(val("#hcNotes")?" · "+val("#hcNotes"):""), priv:"visita"};
+    const done=()=>{ store.set("msgs.unread", true); state._homeVisitSent=t("sentOk"); renderHome(); setTimeout(()=>{ $("#sec-home-visit")?.scrollIntoView({behavior:"smooth"}); },80); };
     if(pubBoth(2, rec, done)) return;
     state.pastoralExtra.unshift({...rec, mine:true}); store.set("pastoral.extra", state.pastoralExtra); done(); }
   else if(a==="pastoral-del"){ if(!canEdit()) return; const id=el.dataset.id;

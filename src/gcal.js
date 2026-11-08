@@ -195,6 +195,20 @@ export async function loadLiveICS() {
   return null;
 }
 const normT = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9áéíóúñü ]/gi, "").replace(/\s+/g, " ").trim();
+// Lo que NUNCA sale en la app, aunque venga en el calendario Google:
+// otras sedes (Santuario, Sagrada Familia / Holy Family) y citas personales
+// del padre (anulaciones, visitas/citas particulares, day off, bloques internos).
+// Solo eventos, Misas y actividades de la parroquia.
+export function isExcludedCal(t, l, d) {
+  const s = `${t || ""} ${l || ""} ${d || ""}`;
+  if (/santuario|sanctuary/i.test(s)) return true;
+  if (/holy family|sagrada familia|\bHFP\b/i.test(s)) return true;
+  if (/annul|anulaci/i.test(s)) return true;
+  if (/\bday off\b|d[ií]a libre/i.test(s)) return true;
+  if (/\bappointment\b|\bcita\b|\bmeeting with\b|\breuni[oó]n con\b|\bvisita de\b/i.test(s)) return true;
+  if (/^hccc confession/i.test(String(t || "").trim())) return true;
+  return false;
+}
 // Misas de rutina (ya tienen sus bloques): se excluyen de "eventos".
 // Las especiales (funeral, aniversario...) NO son rutina: van aparte.
 export function isRoutineMass(t) {
@@ -267,6 +281,7 @@ export async function getWeekEvents() {
   for (const sg of singles) {
     const date = sg.s.slice(0, 10);
     if (date < fromD || date > toD) continue;
+    if (isExcludedCal(sg.t, sg.l, sg.d)) continue;
     if (sg.e && sg.e < now.wall && date === fromD) continue;
     evs.push({ date, s: sg.s, e: sg.e, t: sg.t, l: sg.l, d: sg.d, src: "cal", live: !!sg.live });
   }
@@ -274,6 +289,7 @@ export async function getWeekEvents() {
     for (const occ of expandRule(r, fromD, toD)) {
       const ov = r.u ? overByKey[`${r.u}|${occ.date}`] : null;
       const ev = ov || { t: r.t, l: r.l, d: r.d };
+      if (isExcludedCal(ev.t, ev.l, ev.d)) continue;
       const s = ov ? ov.s : occ.s, e = ov ? ov.e : occ.e;
       if (occ.date === fromD && e && e < now.wall) continue;
       if (occ.date === fromD && s && s < now.wall && (!e || e <= s)) continue;
