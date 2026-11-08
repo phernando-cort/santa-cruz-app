@@ -729,9 +729,11 @@ function renderHome(){
   }catch(e2){}
   if(state.modules.hero!==false) cards.push({id:"hero", html:`
     <section class="hero">
-      <div class="heroTop" style="background-image:url('${ART.hero}')">
+      <div class="heroTop">
+        <img class="heroImg" src="${esc(ART.hero)}" alt="Iglesia histórica de Santa Cruz de la Cañada">
         <img class="heroSeal" src="${APP_ICON}" alt="Sello de Santa Cruz de la Cañada">
-        <div class="heroTitle"><span class="todayKicker">✠ ${esc(getLang()==="en"?WEEK_EN[wEs.key].weekday:wEs.weekday)} · ${esc(getLang()==="en"?WEEK_EN[wEs.key].feast:wEs.feast)}</span><h2>${esc(p.name)}</h2></div>
+        <span class="heroKicker">✠ ${esc(getLang()==="en"?WEEK_EN[wEs.key].weekday:wEs.weekday)} · ${esc(getLang()==="en"?WEEK_EN[wEs.key].feast:wEs.feast)}</span>
+        <div class="heroTitle"><h2>${esc(p.name)}</h2></div>
       </div>
       <div class="heroBody"><p>${esc(p.greeting)}</p>
       <div class="massRow">${mt(p.massTimes.Sunday)}</div>

@@ -79,9 +79,13 @@ h2.serif{
 
 .hero{background:var(--card); color:var(--ink); border-radius:var(--radius);
   padding:0 0 16px; box-shadow:var(--shadow); border:2px solid var(--line); position:relative; overflow:hidden}
-.hero .heroTop{position:relative; min-height:196px; background-size:cover; background-position:center; display:flex; align-items:flex-end}
-.hero .heroTop::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(46,28,14,.12) 0%, rgba(46,28,14,0) 35%, rgba(46,28,14,.88) 100%)}
-.hero .heroTitle{position:relative; z-index:1; color:#fff8e8; padding:18px 16px 14px; width:100%}
+.hero .heroTop{position:relative; display:block; overflow:hidden}
+.hero .heroImg{display:block; width:100%; height:auto}
+.heroKicker{position:absolute; top:12px; left:12px; z-index:2; display:inline-block; background:linear-gradient(135deg,var(--gold2),var(--gold)); color:#3a2112; font-size:13.5px; font-weight:800;
+  letter-spacing:.04em; padding:6px 14px; border-radius:99px;
+  box-shadow:0 3px 10px rgba(0,0,0,.4); border:1px solid rgba(255,250,240,.6)}
+.hero .heroTitle{position:absolute; left:0; right:0; bottom:0; z-index:1; color:#fff8e8; padding:44px 16px 14px; width:100%;
+  background:linear-gradient(180deg, rgba(46,28,14,0) 0%, rgba(46,28,14,.88) 72%)}
 .hero .heroTitle h2{margin:2px 0 0; font-family:Georgia,'Palatino Linotype','Book Antiqua',Palatino,'Times New Roman',serif;
   font-size:36px; line-height:1.08; font-weight:700; letter-spacing:.01em; background:none; padding:0; border:0; box-shadow:none;
   color:#f7e3a1; background:linear-gradient(180deg,#fff8dc 5%,#f7e3a1 45%,#e0aa42 85%,#c99a2c 100%);
