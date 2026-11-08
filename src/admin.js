@@ -1,6 +1,7 @@
 // Página de administración SEPARADA (src/admin.html) — no enlazada desde la app.
 // Solo accede quien tenga la contraseña de admin o una cuenta de editor/admin.
-// Todo lo que cambia aquí se guarda en Supabase y la app lo refleja al instante.
+// Todo lo que cambia aquí se guarda en la nube y la app lo refleja al instante.
+// SIN CÓDIGO: todo se edita con botones y formularios (content-ui.js compartida).
 import { Content, PARISHES } from "./content.js";
 import { contentMgrHTML, handleContentAction } from "./content-ui.js";
 import { Sync } from "./sync.js";
@@ -13,9 +14,21 @@ async function hashPw(salt, pw){ let h = salt + "::" + pw; for(let i = 0; i < 50
 function newSalt(){ return [...crypto.getRandomValues(new Uint8Array(16))].map(x => x.toString(16).padStart(2, "0")).join(""); }
 function newCode(){ const c = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; const r = crypto.getRandomValues(new Uint8Array(8)); let s = ""; for(const x of r) s += c[x % c.length]; return "SC-" + s.slice(0, 4) + "-" + s.slice(4); }
 
-const A = { tab: "contenidos", parish: "santa-cruz", session: null, msg: "", accMsg: "", codes: {} };
+const A = { tab: "contenidos", parish: "santa-cruz", session: null, msg: "", accMsg: "", linkMsg: "", codes: {}, appUrl: "" };
 try { A.session = JSON.parse(localStorage.getItem("admin.session") || "null"); } catch(e){ A.session = null; }
 function saveSession(){ try { localStorage.setItem("admin.session", JSON.stringify(A.session)); } catch(e){} }
+// URL de la app (para el botón "← Ver la app"): la que nos abrió, si viene de allí.
+try {
+  const ref = document.referrer || "";
+  if(ref && !/admin\.html/.test(ref)) A.appUrl = ref;
+} catch(e){}
+
+// URL de ESTA página (el enlace de administrador que se puede guardar).
+function adminUrl(){ try { return location.href.split("#")[0]; } catch(e){ return ""; } }
+function appGuess(){
+  if(A.appUrl) return A.appUrl;
+  try { return new URL("../", location.href).href; } catch(e){ return ""; }
+}
 
 Sync.getParish = () => A.parish;
 Sync.getUser = () => (A.session && A.session.name) || "";
@@ -26,19 +39,42 @@ function adminCtx(){
   return { ED: canContent(), parishId: A.parish, parishName: p.name, refresh: render };
 }
 
+function statusPill(){
+  const on = !!Sync.online;
+  return `<span class="pill ${on ? "on" : ""}">${on ? "🟢 nube conectada — los cambios llegan a la app al instante" : "🟡 conectando… (sin nube solo lectura local)"}</span>`;
+}
+
 function renderLogin(root){
   root.innerHTML = `<div class="card"><div class="adminTop"><h2 class="serif">🔐 Administración</h2></div>
-    <p class="sub">Página privada de edición. Todo cambio se refleja al instante en la app. No compartas este enlace.</p>
+    <p class="sub">Página privada de edición. Todo con botones, sin código. Todo cambio se refleja en la app al instante. No compartas este enlace.</p>
+    <p>${statusPill()}${Content.error ? " · contenido: " + esc(Content.error) : ""}</p>
     ${A.msg ? `<div class="notice">${esc(A.msg)}</div>` : ""}
     <h4>Contraseña maestra</h4>
     <label>Contraseña de administrador</label>
-    <input id="alMaster" type="password" autocomplete="off" placeholder="••••••••">
+    <div class="linkBox"><input id="alMaster" type="password" autocomplete="off" placeholder="••••••••">
+    <button class="btn btnGhost" data-action="adm-show" data-t="alMaster" title="mostrar">👁️</button></div>
     <div class="btnRow"><button class="btn btnNavy" data-action="adm-master">Entrar como admin</button></div>
     <h4 style="margin-top:14px">Cuenta de editor</h4>
     <label>Nombre</label><input id="alName" autocomplete="username" placeholder="Tu nombre">
-    <label>Contraseña</label><input id="alPw" type="password" autocomplete="current-password" placeholder="••••••••">
+    <label>Contraseña</label>
+    <div class="linkBox"><input id="alPw" type="password" autocomplete="current-password" placeholder="••••••••">
+    <button class="btn btnGhost" data-action="adm-show" data-t="alPw" title="mostrar">👁️</button></div>
     <div class="btnRow"><button class="btn btnGold" data-action="adm-user">Entrar como editor</button></div>
-    <p class="small">${Sync.online ? "🟢 nube conectada" : "🟡 conectando… (sin nube solo lectura local)"}</p>
+    <p class="small">¿Olvidaste tu acceso? Pídele al admin un código de invitación nuevo.</p>
+  </div>`;
+}
+
+function linkCard(){
+  const au = adminUrl(), ap = appGuess();
+  return `<div class="card" id="sec-enlace"><h3>🔗 Enlace de administrador</h3>
+    <p class="sub">Guarda esta página en favoritos: es tu enlace separado para trabajar en la web. Todo con botones, sin código.</p>
+    <label>Este enlace (administración)</label>
+    <div class="linkBox"><input id="alLink" readonly value="${esc(au)}">
+    <button class="btn btnNavy" data-action="adm-copy-admin">Copiar</button></div>
+    ${A.linkMsg ? `<div class="notice">${esc(A.linkMsg)}</div>` : ""}
+    <div class="btnRow"><button class="btn btnGhost" data-action="adm-back">← Ver la app</button>
+    <button class="btn btnGhost" data-action="adm-refresh">↻ Recargar</button></div>
+    ${ap ? `<p class="small">App: ${esc(ap)}</p>` : ""}
   </div>`;
 }
 
@@ -48,14 +84,16 @@ function renderMain(root){
   let h = `<div class="card"><div class="adminTop"><h2 class="serif">🔐 Administración</h2>
     <span class="tag gold">${s.admin ? "admin" : esc(s.role || "editor")}</span><b>${esc(s.name || "")}</b>
     <span style="margin-left:auto"></span><button class="btn btnGhost" data-action="adm-logout">Salir</button></div>
-    <p class="small">${Sync.online ? "🟢 nube conectada — los cambios llegan a la app al instante" : "🟡 sin nube — revisa tu conexión"}${Content.error ? " · contenido: " + esc(Content.error) : ""}</p>
+    <p class="small">${statusPill()}${Content.error ? " · contenido: " + esc(Content.error) : ""}</p>
     <label>Parroquia (para avisos)</label><select id="alParish">${PARISHES.map(p => `<option value="${esc(p.id)}" ${p.id === A.parish ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select>
     <div class="subnav" style="margin-top:10px">${tabs.map(([id, l]) => `<button class="${A.tab === id ? "active" : ""}" data-action="adm-tab" data-t="${id}">${l}</button>`).join("")}</div>
     ${A.msg ? `<div class="notice">${esc(A.msg)}</div>` : ""}
   </div>`;
+  h += linkCard();
   if(A.tab === "contenidos") h += contentMgrHTML(adminCtx());
   if(A.tab === "avisos") h += avisosHTML();
   if(A.tab === "cuentas" && s.admin) h += cuentasHTML();
+  h += `<div class="card"><p class="small">Todo se edita con botones y formularios, sin código. Cada Guardar se aplica al instante en la app.</p></div>`;
   root.innerHTML = h;
 }
 
@@ -118,6 +156,25 @@ async function onClick(ev){
   if(!el || (rootEl && !rootEl.contains(el))) return;
   const a = el.dataset.action;
   if(a.indexOf("content-") === 0){ handleContentAction(a, el, adminCtx()); return; }
+  if(a === "adm-show"){ const t = document.getElementById(el.dataset.t); if(t) t.type = t.type === "password" ? "text" : "password"; return; }
+  if(a === "adm-back"){
+    if(A.appUrl){ location.href = A.appUrl; return; }
+    if(window.opener){ try { window.close(); } catch(e){} return; }
+    try { history.back(); } catch(e){}
+    return;
+  }
+  if(a === "adm-copy-admin"){
+    const u = adminUrl();
+    try { await navigator.clipboard.writeText(u); A.linkMsg = "Enlace copiado ✓ Guárdalo en favoritos."; }
+    catch(e){ A.linkMsg = u; }
+    render(); return;
+  }
+  if(a === "adm-refresh"){
+    render();
+    try { await Sync.refresh(); } catch(e){}
+    try { await Content.load(); } catch(e){}
+    render(); return;
+  }
   if(a === "adm-tab"){ A.tab = el.dataset.t; A.msg = ""; render(); return; }
   if(a === "adm-master"){
     const pw = val("#alMaster"); if(!pw) return;

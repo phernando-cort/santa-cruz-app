@@ -12,10 +12,15 @@
   .adminWrap{ max-width:960px; margin:0 auto; padding:12px 12px 80px; }
   .adminTop{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .adminTop h2{ margin:0; }
+  .linkBox{ display:flex; gap:8px; }
+  .linkBox input{ flex:1; }
+  .pill{ font-size:12px; padding:2px 10px; border-radius:99px; background:#eef2e6; }
+  .pill.on{ background:#dff0d8; }
 </style>
 </head>
 <body>
-<div class="adminWrap" id="adminRoot"><div class="card"><h3>⏳ Cargando administración…</h3><p class="sub">Conectando con la nube.</p></div></div>
+<div class="adminWrap" id="adminRoot"><div class="card"><h3>⏳ Cargando administración…</h3><p class="sub">Conectando con la nube. Todo con botones, sin código.</p></div></div>
+<noscript><div class="adminWrap"><div class="card"><h3>🔐 Administración</h3><p>Activa JavaScript para usar la página de administración.</p></div></div></noscript>
 <script type="module" src="./admin.js"></script>
 </body>
 </html>

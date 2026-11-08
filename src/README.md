@@ -31,6 +31,17 @@ Open the live preview. No build step — `index.html` loads `src/styles.css` + `
 - `src/manyanet.js` — textos de vocaciones a los Hijos de la Sagrada Familia (ES+EN) + URLs de las 4 fotos (uploads, de manyanet-us.org). La tarjeta de donativo a los Hijos vive en la sección Vocaciones (`vocacionesHTML`), con enlace a la página de apoyo.
 - `src/usccb-prayers.js` — 222 oraciones de usccb.org/prayers/list (generado; lazy via `import()` solo al abrir Oraciones).
 
+## Enlace de administrador (página separada, sin código)
+- `src/admin.html` + `src/admin.js` — página privada de edición, SOLO botones y
+  formularios (usa `src/content-ui.js`, la misma UI que Más → Contenidos).
+  Todo Guardar se aplica al instante en la app (misma nube Supabase).
+- Cómo abrirla: en la app, Más → Administración → «🔗 Página de
+  administración» → **Abrir administración** (o **Copiar enlace** y guárdalo
+  en favoritos). En GitHub Pages el enlace es `…/src/admin.html`.
+- Entrada: contraseña maestra o cuenta de editor/admin. Pestañas: ✏️ Contenidos
+  (todo: parroquia, eventos, Misas/fecha, oraciones por temas con ↑ ↓,
+  grupos, directorio, cantos, donativos…), 🔔 Avisos, 👥 Cuentas (solo admin).
+
 ## Content notes (keep these true)
 - Scripture: citations + short public-domain (KJV) quotes only. Full lectionary texts intentionally NOT included — link users to missal/usccb.org.
 - Prayers: traditional public-domain texts only.

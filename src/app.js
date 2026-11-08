@@ -294,6 +294,8 @@ function nextDateStr(ev){
 function startMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
 function toISO(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 function parish(){ return PARISHES.find(p=>p.id===state.parishId); }
+// Enlace de administrador por separado (src/admin.html): misma nube, cambios al instante.
+function adminPageUrl(){ try { return new URL("src/admin.html", location.href).href; } catch(e){ return "src/admin.html"; } }
 function catColor(c){ return { Misa:"#8a6d1f", Adoración:"#7a4fa3", Formación:"#2f6db9", Jóvenes:"#c2553a", Servicio:"#3d7a52", Comunidad:"#5b6b7f", Sacramentos:"#964b6e" }[c] || "#888"; }
 const DAYKEY_IDX = { sun:0, mon:1, tue:2, wed:3, thu:4, fri:5, sat:6 };
 function nextDateForDayKey(day){
@@ -2020,6 +2022,11 @@ function renderMore(){
       <div class="btnRow"><input id="admEditor" placeholder="${esc(t("editorPh"))}" style="flex:1"><button class="btn btnNavy" data-action="editor-add">${t("addEditorBtn")}</button></div>
       <div class="btnRow"><button class="btn btnGhost" data-action="admin-logout">${t("adminLogout")}</button></div>`:""}
       ${ED? accountMgrHTML():""}
+      <h4 style="margin:12px 0 2px">🔗 Página de administración (enlace separado)</h4>
+      <p class="small">Trabaja en la web con solo botones, sin código. Lo que cambies ahí llega a la app al instante.</p>
+      ${state._admLinkMsg?`<div class="notice">${esc(state._admLinkMsg)}</div>`:""}
+      <div class="btnRow"><button class="btn btnNavy" data-action="admin-open">Abrir administración</button><button class="btn btnGhost" data-action="admin-copy">Copiar enlace</button></div>
+      <label>Enlace</label><input id="admLink" readonly value="${esc(adminPageUrl())}">
     </section>
 
     ${contentMgrHTML(appCtx())}
@@ -2429,6 +2436,10 @@ document.addEventListener("click", e=>{
     if(pin && pin===store.get("admin.pin","1234")){ state.admin=true; store.set("admin.auth", true); state._admMsg=""; }
     else state._admMsg=t("wrongPin"); renderMore(); }
   else if(a==="admin-logout"){ Sync.logout(); state.admin=false; store.set("admin.auth", false); state._admMsg=""; renderMore(); }
+  else if(a==="admin-open"){ try { window.open(adminPageUrl(), "_blank", "noopener"); } catch(e){} }
+  else if(a==="admin-copy"){ const u=adminPageUrl();
+    if(navigator.clipboard) navigator.clipboard.writeText(u).then(()=>{ state._admLinkMsg="Enlace copiado ✓ Guárdalo en favoritos."; renderMore(); }).catch(()=>{ state._admLinkMsg="No se pudo copiar solo: selecciona el campo Enlace y cópialo."; renderMore(); });
+    else { state._admLinkMsg="Selecciona el campo Enlace y cópialo."; renderMore(); } }
   else if(a==="gate-mode"){ state.gateMode = el.dataset.m || "invite"; state._gateMsg = ""; renderGate(); }
   else if(a==="gate-redeem"){
     const n = val("#gateName"), c = normCode($("#gateCode")?.value);
