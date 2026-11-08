@@ -678,32 +678,25 @@ function renderHome(){
           ${tSaint.era?`<div class="small">· ${esc(tSaint.era)}</div>`:""}
           <div style="font-size:14.5px;line-height:1.55;margin-top:4px">${esc(String(tSaint.bio||"").slice(0,220))}${String(tSaint.bio||"").length>220?"…":""}</div></div></div>`
       : `<p class="small">${esc(t("ferialNote"))}</p>`;
-    // — 4b · Hoy rezamos por (petición de los Hijos + cumpleaños/aniversarios/difuntos + intenciones) —
-    const doy = Math.floor((tD - new Date(tD.getFullYear(),0,0))/86400000);
-    const SONS = isEn ? [
-      "For vocations to the Sons of the Holy Family",
-      "For the families of our parish",
-      "For our youth and children",
-      "For the sick and the homebound",
-      "For our faithful departed",
-      "For missionaries and seminarians",
-      "For peace in families and in the world"
-    ] : [
-      "Por las vocaciones a los Hijos de la Sagrada Familia",
-      "Por las familias de nuestra parroquia",
-      "Por los jóvenes y niños",
-      "Por los enfermos y quienes no pueden salir de casa",
-      "Por nuestros fieles difuntos",
-      "Por los misioneros y seminaristas",
-      "Por la paz en las familias y en el mundo"
-    ];
-    const sonsToday = SONS[doy % SONS.length];
+    // — 4b · Nos unimos en oración: intención de los Hijos (manyanet-us.org) + celebraciones del día + TODAS las intenciones de la gente —
+    const SONS_INTENTION = isEn
+      ? "For vocations to the Sons of the Holy Family and the perseverance of their seminarians, brothers and priests — and for families, that they may grow as true domestic churches."
+      : "Por las vocaciones a los Hijos de la Sagrada Familia y la perseverancia de sus seminaristas, hermanos y sacerdotes — y por las familias, para que crezcan como verdaderas iglesias domésticas.";
+    const SONS_PRAYER = isEn
+      ? "Lord Jesus, who wished to spend thirty years of your mortal life in the family of Nazareth, we ask you to call many young men to follow more closely your way of life in our religious family, that desires to perpetuate and realize in our time your virtues and examples of domestic sanctity. Grant us the grace, in our entire ministry, to help families grow in natural and spiritual virtue, according to your will, so that, becoming true domestic churches, they may welcome and accompany, as a true gift, the grace of religious and priestly vocation for their children. Make of us, for young people, joyful witnesses of the Gospel of Nazareth, so that they also feel personally challenged by the urgent needs of the family institution and the present reality of the youth. Mary Most Holy and Saint Joseph, most loving parents and first teachers of Jesus, look upon each one of us with your benevolence and upon all who come to experience our way of life; grant us all the grace to be called brothers of Jesus in this your family. Jesus, Mary, and Joseph, community of faith, hope, and charity, of praise and service, school of the Gospel, norm of consecrated life and model of family living, make us participants in your life and images of your holiness, so that, like Saint Joseph Manyanet, and through his intercession, we may be, in the Church and for the Church, sons, witnesses, and apostles of the mystery of Nazareth. Amen."
+      : "Señor Jesús, que quisiste pasar treinta años de tu vida mortal en la familia de Nazaret, te pedimos que llames a muchos jóvenes a seguir más de cerca tu modo de vida en nuestra familia religiosa, que desea perpetuar y hacer realidad en nuestro tiempo tus virtudes y ejemplos de santidad doméstica. Concédenos la gracia, en todo nuestro ministerio, de ayudar a las familias a crecer en virtud natural y espiritual, según tu voluntad, para que, convertidas en verdaderas iglesias domésticas, acojan y acompañen, como verdadero don, la gracia de la vocación religiosa y sacerdotal de sus hijos. Haz de nosotros, para los jóvenes, testigos gozosos del Evangelio de Nazaret, para que también ellos se sientan interpelados por las necesidades urgentes de la familia y la realidad actual de la juventud. María Santísima y san José, padres amantísimos y primeros maestros de Jesús, mirad con benevolencia a cada uno de nosotros y a todos los que vienen a conocer nuestro modo de vida; concedednos a todos la gracia de ser llamados hermanos de Jesús en esta tu familia. Jesús, María y José, comunidad de fe, esperanza y caridad, de alabanza y servicio, escuela del Evangelio, norma de la vida consagrada y modelo de la vida familiar, hacednos partícipes de vuestra vida e imágenes de vuestra santidad, para que, como san José Manyanet, y por su intercesión, seamos, en la Iglesia y para la Iglesia, hijos, testigos y apóstoles del misterio de Nazaret. Amén.";
+    const sonsHtml = `<div class="massToday"><div class="massPlace">🕊️ ${isEn?"Intention of the Sons of the Holy Family":"Intención de los Hijos de la Sagrada Familia"}</div>
+      <div class="intentLine">• <b>${esc(SONS_INTENTION)}</b></div>
+      <div class="small">manyanet-us.org · ${isEn?"Spiritual advocacy for vocations":"Apoyo espiritual por las vocaciones"}</div>
+      <details class="ordDet"><summary>📜 ${isEn?"Prayer for our Congregation":"Oración por nuestra Congregación"}</summary>
+        <div class="small" style="white-space:pre-line">${esc(SONS_PRAYER)}</div>
+        <div class="btnRow"><button class="btn btnGhost" data-action="ext" data-url="https://www.manyanet-us.org/vocations-support-prayer">manyanet-us.org ↗</button></div>
+      </details></div>`;
     const bdayToday = collectAlerts(0);
-    const intToday = allIntenciones().slice(0,3);
-    const rezHtml = `<div class="massToday"><div class="massPlace">🕊️ ${isEn?"Sons' petition of the day":"Petición de los Hijos hoy"}</div>
-      <div class="intentLine">• <b>${esc(sonsToday)}</b></div></div>`
+    const intAll = allIntenciones();
+    const rezHtml = sonsHtml
       + (bdayToday.length?bdayToday.map(a=>`<div class="massToday"><div class="massPlace">${a.type==="bday"?"🎂":"💒"} ${esc(a.name)}</div><div class="small">${a.type==="bday"?(isEn?"Birthday":"Cumpleaños"):(isEn?"Anniversary":"Aniversario")} · ${esc(a.date.toLocaleDateString(localeOf(),{day:"numeric",month:"long"}))} · ${esc(a.family)}</div></div>`).join(""):"")
-      + (intToday.length?`<div class="small" style="margin-top:6px"><b>🙏 ${isEn?"Special intentions":"Intenciones especiales"}:</b></div>`+intToday.map(i=>`<div class="intentLine">• <b>${esc(i.names)}</b> <span class="small">· ${esc(intTypeName(i.type))} · ${esc(i.date)}</span></div>`).join(""):"");
+      + (intAll.length?`<div class="small" style="margin-top:6px"><b>🙏 ${isEn?`Intentions requested by our people (${intAll.length})`:`Intenciones que pide nuestra gente (${intAll.length})`}:</b></div>`+intAll.map(intRowHTML).join(""):`<p class="small">${isEn?"No intentions yet. Add yours in More → Intentions.":"Aún no hay intenciones. Añade la tuya en Más → Intenciones."}</p>`);
     // — 5 · Próxima semana (parroquia + diócesis + conferencia + Vaticano) —
     const wk = [];
     for(const ev of [...allEvents()]){ const nd = nextOccurrence(ev); if(!nd) continue;
@@ -727,7 +720,7 @@ function renderHome(){
       <div class="todayBlock"><h4>⭐ ${isEn?"Special celebrations":"Celebraciones especiales"}</h4>${specHtml}</div>
       <div class="todayBlock"><h4>✨ ${esc(t("saintDay"))}</h4>${saintHtml}
         <div class="btnRow"><button class="btn btnGhost" data-action="home-saint">${isEn?"Saint of the day":"Ver santoral"}</button></div></div>
-      <div class="todayBlock"><h4>🙏 ${isEn?"Today we pray for":"Hoy rezamos por"}</h4>${rezHtml}
+      <div class="todayBlock"><h4>🙏 ${isEn?"We join in prayer for the following intentions":"Nos unimos en oración por las siguientes intenciones"}</h4>${rezHtml}
         <div class="btnRow"><button class="btn btnGhost" data-action="more-focus" data-focus="sec-intenciones">${isEn?"Intentions":"Intenciones"}</button></div></div>
       <div class="todayBlock"><h4>📅 ${isEn?"Next week — get ready":"Próxima semana — prepárate"}</h4>${wkHtml}${newsHtml}</div>
     </section>`;
