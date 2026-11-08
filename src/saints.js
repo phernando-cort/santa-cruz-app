@@ -182,3 +182,32 @@ function extraSaint(key, lang) {
   const L = lang === "en" ? "en" : "es";
   return { kind: "extra", name: X.name, era: L === "en" ? (X.era_en || "") : (X.era_es || ""), patron: L === "en" ? (X.patron_en || []) : (X.patron_es || []), bio: L === "en" ? X.bio_en : X.bio_es, image: null, wiki: X.wiki || null };
 }
+// Todos los santos de un día (MM-DD) según las fechas de la fuente.
+// Para "el santo de cada día, con biografía, foto y oración".
+export function saintsOfDate(mmdd, lang) {
+  const D = data();
+  if (!D || !/^\d{2}-\d{2}$/.test(String(mmdd || ""))) return [];
+  const L = lang === "en" ? "en" : "es";
+  const out = [];
+  for (const name of Object.keys(D)) {
+    const e = D[name];
+    const dates = String(e[6] || "").split(",").map(s => s.trim());
+    if (!dates.includes(mmdd)) continue;
+    const [era, patronage, , summary, image, wiki] = e;
+    out.push({
+      kind: "vendor", name,
+      era: L === "en" ? (era || "") : (eraEs(era || "") || ""),
+      patron: patronEs(patronage, L),
+      bio: L === "en" ? summary : (esBio()[name] || summary),
+      bioEs: !!esBio()[name],
+      image: image ? SAINT_IMG_HOST + image : null, wiki: wiki || null,
+    });
+  }
+  return out;
+}
+// Oración breve de intercesión (redacción propia, ES+EN) para el santo del día.
+export function saintPrayerText(name, lang) {
+  const n = String(name || "").replace(/^Saints?\s+/i, "").trim() || name;
+  if (lang === "en") return `${n}, friend of God and faithful witness of Christ, pray for us before the Lord, that we may live in his love today and always. Amen.`;
+  return `${n}, amigo de Dios y testigo fiel de Cristo, ruega por nosotros ante el Señor, para que vivamos en su amor hoy y siempre. Amén.`;
+}

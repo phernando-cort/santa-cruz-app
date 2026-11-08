@@ -16,26 +16,15 @@ export function usccbCode(d = new Date()) {
   return mm + dd + yy;
 }
 
-// Licensed-source links per language (Layer 2 "translators" for official texts).
+// Enlaces oficiales: solo USCCB (los textos oficiales se leen dentro de la app).
 export function officialReadingLinks(getLang) {
   const code = usccbCode(new Date());
   const L = getLang();
   if (L === "es") return [
     { label: "📖 Texto oficial de hoy (USCCB)", url: `https://bible.usccb.org/es/bible/lecturas/${code}.cfm` },
-    { label: "⛪ Misas · Desideria Manyanet", url: "https://desideria.manyanetcolombia.org/misas" },
-    { label: "📅 Ciudad Redonda", url: "https://www.ciudadredonda.org/calendario-lecturas/" },
   ];
-  if (L === "en") return [
-    { label: "📖 Today's official readings (USCCB)", url: `https://bible.usccb.org/bible/readings/${code}.cfm` },
-    { label: "⛪ Daily Mass · Desideria", url: "https://desideria.manyanetcolombia.org/misas" },
-  ];
-  if (L === "fr") return [{ label: "📖 Messes · AELF (officiel)", url: "https://www.aelf.org/messe" }];
-  if (L === "it") return [{ label: "📖 Letture ufficiali (Chiesa Cattolica)", url: "https://www.chiesacattolica.it/liturgia-del-giorno/" }];
-  if (L === "pt") return [{ label: "📖 Liturgia diária (CNBB)", url: "https://liturgiadiaria.cnbb.org.br/" }];
-  if (L === "la") return [{ label: "📖 Nova Vulgata (Vaticanum)", url: "https://www.vatican.va/archive/bible/nova_vulgata/documents/nova-vulgata_index_lt.html" }];
   return [
-    { label: "📖 USCCB Daily Readings", url: `https://bible.usccb.org/bible/readings/${code}.cfm` },
-    { label: "⛪ Misas · Desideria Manyanet", url: "https://desideria.manyanetcolombia.org/misas" },
+    { label: "📖 Today's official readings (USCCB)", url: `https://bible.usccb.org/bible/readings/${code}.cfm` },
   ];
 }
 

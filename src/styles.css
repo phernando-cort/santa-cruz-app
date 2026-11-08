@@ -105,6 +105,18 @@ h2.serif{
 .saintToday{display:flex; gap:12px; align-items:flex-start}
 .saintToday img{width:76px; height:96px; object-fit:cover; border-radius:12px; border:2px solid var(--gold); flex:none}
 .readCite{background:#f6e9cd; border:2px dashed var(--terra); border-radius:12px; padding:10px 12px; font-size:15px; margin:8px 0; line-height:1.6}
+/* Texto oficial de la Misa: un solo texto plano, bonito y fácil de leer */
+.massText{background:#fffdf4; border:2px solid var(--line); border-radius:12px; padding:14px 16px; margin:8px 0; color:#2a2118; line-height:1.8; max-height:70vh; overflow-y:auto}
+.massSec{margin:0 0 14px} .massSec:last-child{margin-bottom:0}
+.massHead{font-size:15px; font-weight:800; color:var(--terra-d); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px}
+.massCite{color:#8a6d1f; font-weight:700; text-transform:none}
+.massText p{margin:0 0 10px; text-align:left}
+.massSec > p:first-of-type::first-letter{font-size:1.6em; font-weight:800; color:var(--terra-d)}
+/* Santos del día */
+.saintCard{display:flex; gap:12px; align-items:flex-start; border-top:2px solid var(--sand2); padding:10px 0}
+.saintCard:first-of-type{border-top:0}
+.saintCard img{width:76px; height:96px; object-fit:cover; border-radius:12px; border:2px solid var(--gold); flex:none}
+.saintCard .avatar{width:56px; height:56px; flex:none}
 
 .eventRow{display:flex; gap:10px; padding:12px 0; border-top:2px solid var(--sand2); align-items:flex-start}
 .eventRow:first-of-type{border-top:0}

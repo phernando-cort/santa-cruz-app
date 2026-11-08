@@ -6,7 +6,8 @@ import { LANGS, setLang, getLang, t, catName, recName, dayName, localeOf, PRAY_I
 import { officialReadingLinks, fetchPassage } from "./lectionary/display.js";
 import { getDayData } from "./lectionary/litcal.js";
 import { dailyFor } from "./daily-citations.js";
-import { saintFor, rankOf } from "./saints.js";
+import { saintFor, rankOf, saintsOfDate, saintPrayerText } from "./saints.js";
+import { fetchUsccbDay, usccbWhich } from "./usccb.js";
 import { ORDINARY } from "./missal.js";
 import { CONFESION_EXAMS } from "./confesion.js";
 import { ADVIENTO_GUIDE, REFLEX_FAMILIA, FAMILIA_ADVIENTO } from "./pastoral.js";
@@ -76,6 +77,7 @@ const state = {
   tab: "home",
   readingDate: toISO(new Date()),
   readingTexts: {},
+  usccbTexts: {},
   readingFont: store.get("readings.font", 17),
   prayMode: "oraciones",
   prayerCat: "Todas", prayerQ: "", prayerOpen: null,
@@ -665,7 +667,7 @@ function renderHome(){
       <div class="small">${esc(genSched)}</div>`;
     // — 4 · Santo del día —
     const saintHtml = tSaint
-      ? `<div class="saintToday">${tSaint.image?`<img src="${esc(tSaint.image)}" alt="" loading="lazy">`:`<div class="avatar">${esc(tSaint.name.slice(0,1))}</div>`}
+      ? `<div class="saintToday">${tSaint.image?`<img class="saintImg" src="${esc(tSaint.image)}" alt="${esc(tSaint.name.slice(0,1))}" loading="lazy">`:`<div class="avatar">${esc(tSaint.name.slice(0,1))}</div>`}
           <div style="flex:1"><b style="font-size:17px">${esc(tSaint.name)}</b>
           ${tSaint.era?`<div class="small">· ${esc(tSaint.era)}</div>`:""}
           <div style="font-size:14.5px;line-height:1.55;margin-top:4px">${esc(String(tSaint.bio||"").slice(0,220))}${String(tSaint.bio||"").length>220?"…":""}</div></div></div>`
@@ -885,6 +887,76 @@ function readingRowsHTML(R){
       </div></div></div>`;
   }).join("");
 }
+// ---------- Texto oficial USCCB dentro de la app + santos del día ----------
+function usccbKey(iso){ return iso+"|"+usccbWhich(getLang()); }
+function saintsDayList(R){
+  const mmdd = String(R.iso||"").slice(5);
+  let list = [];
+  try{ list = saintsOfDate(mmdd, getLang()) || []; }catch{}
+  if(!list.length){
+    try{ const one = saintFor(R.feast, getLang()); if(one) list = [one]; }catch{}
+  }
+  return list;
+}
+function saintsDayHTML(R){
+  const en = getLang()==="en";
+  const list = saintsDayList(R);
+  if(!list.length) return "";
+  const cards = list.map(s=>`
+    <div class="saintCard">
+      ${s.image?`<img class="saintImg" src="${esc(s.image)}" alt="${esc(String(s.name||"?").slice(0,1))}" loading="lazy">`:`<div class="avatar">${esc(String(s.name||"?").slice(0,1))}</div>`}
+      <div style="flex:1;min-width:0">
+        <b style="font-size:16px">${esc(s.name)}</b>
+        ${s.era?`<span class="small"> · ${esc(s.era)}</span>`:""}
+        ${s.bio?`<div style="font-size:14.5px;line-height:1.55;margin-top:4px">${esc(String(s.bio).slice(0,280))}${String(s.bio).length>280?"…":""}</div>`:""}
+        ${(s.patron&&s.patron.length)?`<div class="small" style="margin-top:4px">🛡️ ${esc(s.patron.slice(0,4).join(" · "))}</div>`:""}
+        <div class="btnRow" style="margin-top:6px">
+          <button class="btn btnGhost" data-action="saint-pray" data-name="${esc(s.name)}">🙏 ${esc(en?"Prayer":"Oración")}</button>
+          ${s.wiki?`<button class="btn btnGhost" data-action="ext" data-url="${esc(s.wiki)}">Wikipedia ↗</button>`:""}
+        </div>
+      </div>
+    </div>`).join("");
+  return `<div class="todayBlock"><h4>✨ ${esc(en?"Saints of the day":"Santos del día")} (${list.length})</h4>${cards}</div>`;
+}
+function usccbPaneHTML(R){
+  const en = getLang()==="en";
+  const key = usccbKey(R.iso);
+  const saved = state.usccbTexts[key];
+  if(saved && saved.loading) return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text (USCCB)":"Texto oficial (USCCB)")}</h4><p class="small">⏳ ${esc(en?"Loading official text…":"Cargando texto oficial…")}</p></div>`;
+  if(saved && saved.error) return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text (USCCB)":"Texto oficial (USCCB)")}</h4>
+    <div class="notice">${esc(en?"No connection. The citations and the public-domain text below still work offline.":"Sin conexión. Las citas y el texto de dominio público de abajo siguen funcionando sin internet.")}</div>
+    <div class="btnRow"><button class="btn btnGhost" data-action="usccb-load">↻ ${esc(en?"Retry":"Reintentar")}</button></div></div>`;
+  if(saved && saved.sections){
+    const secs = saved.sections.map(s=>`
+      <div class="massSec"><div class="massHead">${esc(String(s.title||"").replace(/:\s*$/,""))}${s.citation?` <span class="massCite">· ${esc(s.citation)}</span>`:""}</div>
+      ${String(s.text||"").split(/\n\n+/).map(p=>`<p>${esc(p)}</p>`).join("")}</div>`).join("");
+    return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text of the Mass (USCCB)":"Texto oficial de la Misa (USCCB)")}</h4>
+      <div class="massText" style="font-size:${state.readingFont}px">${secs}</div>
+      <div class="btnRow"><button class="btn btnNavy" data-action="usccb-listen">🔊 ${esc(en?"Listen":"Escuchar")}</button>
+      ${state.speaking?`<button class="btn btnGhost" data-action="stop-voice">${esc(en?"Stop":"Detener")}</button>`:""}
+      ${saved.url?`<button class="btn btnGhost" data-action="ext" data-url="${esc(saved.url)}">USCCB ↗</button>`:""}</div>
+      <p class="small">© United States Conference of Catholic Bishops — ${esc(en?"shown from bible.usccb.org":"mostrado desde bible.usccb.org")}.</p></div>`;
+  }
+  return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text of the Mass (USCCB)":"Texto oficial de la Misa (USCCB)")}</h4>
+    <p class="small">${esc(en?"Read and listen to the official readings here, without leaving the app.":"Lee y escucha aquí mismo las lecturas oficiales, sin salir de la app.")}</p>
+    <div class="btnRow"><button class="btn btnGold" data-action="usccb-load">📖 ${esc(en?"Read official text":"Leer texto oficial")}</button></div></div>`;
+}
+async function loadUsccbDay(){
+  const iso = state.readingDate, key = usccbKey(iso);
+  if(state.usccbTexts[key] && (state.usccbTexts[key].sections || state.usccbTexts[key].loading)) { if(state.tab==="readings") renderReadings(); return; }
+  state.usccbTexts[key] = {loading:true};
+  if(state.tab==="readings") renderReadings();
+  const r = await fetchUsccbDay(iso, getLang());
+  state.usccbTexts[key] = r.data ? {sections:r.data.sections, feast:r.data.title, url:r.data.url} : {error:r.error||"net"};
+  if(state.tab==="readings" && state.readingDate===iso) renderReadings();
+}
+function speakUsccb(){
+  const saved = state.usccbTexts[usccbKey(state.readingDate)];
+  if(!saved || !saved.sections) return;
+  const text = saved.sections.map(s=>`${s.title}. ${s.citation}. ${s.text}`).join("\n\n");
+  speak(text);
+  if(state.tab==="readings") renderReadings();
+}
 function renderReadings(){
   if(state.tab==="readings") ensureLitCal();
   state.readingDate = clampReadingDate(state.readingDate);
@@ -914,6 +986,8 @@ function renderReadings(){
         ${R.color?`<span class="tag"><span class="catDot" style="background:${LIT_DOT[String(R.color).toLowerCase()]||"#888"}"></span>${esc(litColorName(R.color))}</span>`:""}
         ${R.isToday&&R.dd?`<span class="tag">🟢 ${esc(R.dd.source==="cpbjr"?"USCCB":"live")}</span>`:""}
         ${R.daily&&R.daily.lectionary?`<span class="tag">#${R.daily.lectionary}</span>`:""}</div>
+      ${saintsDayHTML(R)}
+      ${usccbPaneHTML(R)}
       ${R.list.length?`
       <div class="btnRow">
         <button class="btn btnNavy" data-action="read-all">${esc(allLoaded?t("hideTexts"):t("readAll"))}</button>
@@ -930,7 +1004,7 @@ function renderReadings(){
       ${(R.isToday&&R.dd&&R.dd.quote)?`<div class="verseBox">“${esc(R.dd.quote)}”<br><span class="small">— ${esc(R.feast)}</span></div>`:""}`
       :`<p class="small">${esc(t("noResults"))}</p>`}`
       :`<p class="small">${esc(t("readingsRange"))}</p>`}
-      <div class="notice" style="margin-top:10px">📖 ${esc(getLang()==="en"?"Official lectionary texts open in their licensed sources (like iBreviary, Laudate, Liturgia+).":"Los textos oficiales del leccionario se abren en sus fuentes con licencia (como iBreviary, Laudate, Liturgia+).")}</div>
+      <div class="notice" style="margin-top:10px">📖 ${esc(getLang()==="en"?"Official USCCB text is read above, inside the app.":"El texto oficial USCCB se lee arriba, dentro de la app.")}</div>
       <div class="btnRow" style="margin-top:8px">
         ${(R.isToday&&R.dd&&R.dd.usccbLink)?`<button class="btn btnGold" data-action="ext" data-url="${esc(R.dd.usccbLink)}">📖 ${esc(getLang()==="en"?"Official text for today":"Texto oficial de hoy")}</button>`:""}
         ${officialReadingLinks(getLang).map(l=>`<button class="btn btnNavy" data-action="ext" data-url="${esc(l.url)}">${esc(l.label)}</button>`).join("")}
@@ -2036,6 +2110,15 @@ function renderLangSheet(){
 }
 
 // ---------- eventos ----------
+document.addEventListener("error", e=>{
+  const t = e.target;
+  if(t && t.tagName === "IMG" && (t.classList.contains("saintImg") || (t.closest && (t.closest(".saintCard") || t.closest(".saintToday"))))){
+    const d = document.createElement("div");
+    d.className = "avatar";
+    d.textContent = (t.alt || "?").slice(0, 1);
+    t.replaceWith(d);
+  }
+}, true);
 document.addEventListener("click", e=>{
   const chk = e.target.closest("[data-action-check]");
   if(chk){
@@ -2069,6 +2152,9 @@ document.addEventListener("click", e=>{
   else if(a==="read-all"){ readAllPassages(); }
   else if(a==="listen-one"){ listenPassage(+el.dataset.i); }
   else if(a==="listen-all"){ listenAllPassages(); }
+  else if(a==="usccb-load"){ loadUsccbDay(); }
+  else if(a==="usccb-listen"){ speakUsccb(); }
+  else if(a==="saint-pray"){ speak(saintPrayerText(el.dataset.name||"", getLang())); if(state.tab==="readings") renderReadings(); }
   else if(a==="font-inc"){ state.readingFont = Math.min(24, (state.readingFont||17)+1); store.set("readings.font", state.readingFont); renderReadings(); }
   else if(a==="font-dec"){ state.readingFont = Math.max(14, (state.readingFont||17)-1); store.set("readings.font", state.readingFont); renderReadings(); }
   else if(a==="read-aloud"){ const wdi = new Date(state.readingDate+"T12:00:00").getDay(); const w0 = getLang()==="en"?WEEK_EN[WEEK[wdi].key]:WEEK[wdi]; speak(w0.reflectionTitle+". "+w0.reflection); renderReadings(); }
