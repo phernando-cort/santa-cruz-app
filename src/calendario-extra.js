@@ -30,8 +30,13 @@ export const BULLETIN_FALLBACK = {
 // Requisitos y contactos de sacramentos — del boletín y la oficina (nov 2026).
 export const SACRAMENT_INFO = {
 es: [
+  { h: "Registro parroquial", p: "Para ser feligrés registrado pasa a la oficina (Lun–Jue 9 AM–4 PM, Vie 9 AM–1 PM) o llama al (505) 753-3345. Se pide para padrinos, bautismos y ciertos trámites." },
   { h: "Bautismo", p: "Ser feligrés registrado. Pasar a la oficina por la hoja de requisitos y documentos (niños menores de 7 años y padrinos). Plática prebautismal: lunes 6:30 PM en la oficina (papás y padrinos)." },
   { h: "Matrimonio", p: "Llamar a la rectoría con al menos seis meses de anticipación. Clases prematrimoniales requeridas para apartar fecha." },
+  { h: "Primera Comunión", p: "Preparación a través de Formación en la fe. Español: Diác. Ernest Salazar (505) 412-7632 · Inglés: Alice Lucero (505) 747-9176." },
+  { h: "Confirmación", p: "Preparación a través de Formación en la fe y OCIA. Pregunta en la oficina o con los contactos de formación." },
+  { h: "Funerales", p: "Llama a la rectoría al (505) 753-3345 para coordinar con el párroco la Misa exequial y el acompañamiento a la familia." },
+  { h: "Cementerio (lote)", p: "Para información sobre lotes en el cementerio parroquial, contacta la oficina: (505) 753-3345 · holycross.admoffice@gmail.com." },
   { h: "OCIA y RICA (español)", p: "Diác. Ernest Salazar (DRE): (505) 412-7632 · deaconernest.salazar16@gmail.com" },
   { h: "Formación en la fe (inglés) y OCIA inglés", p: "Alice Lucero: (505) 747-9176 · Melissa Esquibel (OCIA inglés): (505) 753-3345" },
   { h: "Pastoral de enfermos (homebound)", p: "Angelica Juarez: (505) 692-7249 · angelicajuarez2114@gmail.com" },
@@ -39,8 +44,13 @@ es: [
   { h: "Oficina parroquial", p: "Lun–Jue 9 AM–4 PM (cerrado 1–2 PM) · Vie 9 AM–1 PM · (505) 753-3345 · holycross.admoffice@gmail.com · P.O. Box 1228, Santa Cruz, NM 87567" }
 ],
 en: [
+  { h: "Parish registration", p: "To become a registered parishioner stop by the office (Mon–Thu 9 AM–4 PM, Fri 9 AM–1 PM) or call (505) 753-3345. Required for godparents, baptisms and certain requests." },
   { h: "Baptism", p: "Be a registered parishioner. Stop by the office for the requirements sheet and documents (infants under 7 and godparents). Pre-baptismal class: Mondays 6:30 PM at the office (parents and godparents)." },
   { h: "Marriage", p: "Call the rectory at least six months in advance. Pre-marital classes required to set a date." },
+  { h: "First Communion", p: "Preparation through Faith Formation. Spanish: Deacon Ernest Salazar (505) 412-7632 · English: Alice Lucero (505) 747-9176." },
+  { h: "Confirmation", p: "Preparation through Faith Formation and OCIA. Ask at the office or contact the formation team." },
+  { h: "Funerals", p: "Call the rectory at (505) 753-3345 to arrange the funeral Mass and family support with the pastor." },
+  { h: "Cemetery (plot)", p: "For information about plots in the parish cemetery, contact the office: (505) 753-3345 · holycross.admoffice@gmail.com." },
   { h: "OCIA & RICA (Spanish)", p: "Deacon Ernest Salazar (DRE): (505) 412-7632 · deaconernest.salazar16@gmail.com" },
   { h: "Faith Formation (English) & English OCIA", p: "Alice Lucero: (505) 747-9176 · Melissa Esquibel (English OCIA): (505) 753-3345" },
   { h: "Homebound ministry", p: "Angelica Juarez: (505) 692-7249 · angelicajuarez2114@gmail.com" },

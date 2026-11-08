@@ -41,7 +41,7 @@ export function contentMgrHTML(ctx){
   const ED = ctx && ctx.ED;
   const en = cbEN();
   let h = `<section class="card" id="sec-contenido"><h3>✏️ ${en ? "Site content" : "Contenidos"}</h3>
-    <p class="sub">${en ? "As an editor you can fix ALL parish info here. Changes reach every phone." : "Como editor puedes corregir TODA la información aquí. Los cambios llegan a todos los teléfonos."}</p>`;
+    <p class="sub">${en ? "As an editor you can fix ALL parish info here, and reorder lists with ↑ ↓. Changes reach every phone." : "Como editor puedes corregir TODA la información aquí, y ordenar las listas con ↑ ↓. Los cambios llegan a todos los teléfonos."}</p>`;
   if(!ED) return h + lockNote() + `</section>`;
   const pid = (ctx && ctx.parishId) || "";
   if(!cui.pedit || !PARISHES.some(p => p.id === cui.pedit)) cui.pedit = PARISHES.some(p => p.id === pid) ? pid : (PARISHES[0] && PARISHES[0].id);
@@ -84,7 +84,9 @@ function contentEventsHTML(){
   const ed = cui.evEdit && cui.evEdit !== "new" ? list.find(e => e.id === cui.evEdit) : null;
   const fe = ed || {};
   let h = `<div class="chipRow">${["events.seed", "events.real", "events.dated"].map(k => `<button class="fchip ${key === k ? "active" : ""}" data-action="content-evlist" data-b="${k}">${CB_SHORT[k]}${Content.overridden(k) ? " ●" : ""}</button>`).join("")}</div>${cOvTag(key)}`;
-  h += list.map(e => `<div class="eventRow"><div style="flex:1"><b>${esc(e.title)}</b><div class="small">${esc(e.date || (CB_DAYS.find(d => d[0] === e.day) || ["", e.day || ""])[cbEN() ? 2 : 1])} · ${esc(e.time || "")} · ${esc(e.category || "")}${e.location ? " · " + esc(e.location) : ""}</div></div>
+  h += list.map((e, i) => `<div class="eventRow"><div style="flex:1"><b>${esc(e.title)}</b><div class="small">${esc(e.date || (CB_DAYS.find(d => d[0] === e.day) || ["", e.day || ""])[cbEN() ? 2 : 1])} · ${esc(e.time || "")} · ${esc(e.category || "")}${e.location ? " · " + esc(e.location) : ""}</div></div>
+    <button class="btn btnGhost" data-action="content-move" data-b="${key}" data-id="${esc(e.id)}" data-dir="-1" ${i === 0 ? "disabled" : ""} title="${en ? "Move up" : "Subir"}">↑</button>
+    <button class="btn btnGhost" data-action="content-move" data-b="${key}" data-id="${esc(e.id)}" data-dir="1" ${i === list.length - 1 ? "disabled" : ""} title="${en ? "Move down" : "Bajar"}">↓</button>
     <button class="btn btnGhost" data-action="content-ev-edit" data-id="${esc(e.id)}">${en ? "Edit" : "Editar"}</button>
     <button class="btn btnGhost" data-action="content-ev-del" data-id="${esc(e.id)}">${en ? "Delete" : "Borrar"}</button></div>`).join("") || `<p class="small">${en ? "No events." : "Sin eventos."}</p>`;
   if(cui.evErr) h += `<div class="notice">${esc(cui.evErr)}</div>`;
@@ -96,6 +98,7 @@ function contentEventsHTML(){
     <div class="grid2"><div><label>${en ? "Time" : "Hora"}</label><input id="ce-time" value="${esc(fe.time || "")}" placeholder="6:00 PM"></div>
     <div><label>${en ? "Category" : "Categoría"}</label><select id="ce-cat">${cats.map(c => `<option ${fe.category === c ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></div></div>
     <label>${en ? "Place" : "Lugar"}</label><input id="ce-place" value="${esc(fe.location || "")}">
+    <label>${en ? "Celebrant (optional)" : "Celebrante (opcional)"}</label><input id="ce-cel" value="${esc(fe.cel || "")}" placeholder="Rev Father Hernando Cortes, SF">
     <label>${en ? "Description" : "Descripción"}</label><textarea id="ce-desc" rows="2">${esc(fe.desc || "")}</textarea>
     <div class="grid2"><div><label>${en ? "Mass tag (optional)" : "Etiqueta de Misa (opcional)"}</label><input id="ce-mass" value="${esc(fe.mass || "")}"></div>
     <div><label>⭐ ${en ? "Featured" : "Destacado"}</label><input type="checkbox" id="ce-special" ${fe.special ? "checked" : ""}></div></div>
@@ -154,10 +157,12 @@ function formObj(key, fb){
 // Esquemas: fields {k, es, en, t: text|area|num|check|select|combo, opts, rows, req}
 const SCH = {
   "prayers.trad": { hint: ["Oraciones de la biblioteca (Oración → Biblioteca). No toques el código: solo escribe.", "Library prayers (Prayer → Library). Just type, no code."],
+    groupBy: "category",
     add: ["＋ Añadir oración", "＋ Add prayer"], t: x => x.name || "—", s: x => [x.category, x.id].filter(Boolean).join(" · "),
     fields: [
       { k: "name", es: "Nombre", en: "Name", t: "text", req: 1 },
-      { k: "category", es: "Categoría", en: "Category", t: "select", opts: ["Esenciales", "Credos", "Misericordia", "María", "Santos", "Liturgia", "Coronillas", "Diaria", "Vocaciones", "Sagrada Familia", "Capilla"] },
+      { k: "category", es: "Tema (elige o escribe uno nuevo)", en: "Theme (pick or type a new one)", t: "combo", opts: ["Esenciales", "Credos", "Misericordia", "María", "Santos", "Liturgia", "Coronillas", "Diaria", "Vocaciones", "Sagrada Familia", "Capilla"] },
+      { k: "latin", es: "Nombre en latín (opcional)", en: "Latin name (optional)", t: "text" },
       { k: "text", es: "Texto de la oración", en: "Prayer text", t: "area", rows: 6, req: 1 }] },
   "clergy": { hint: ["Sacerdotes, diáconos y equipo (se ven en Comunidad y en las Misas).", "Priests, deacons and staff (shown in Community and Masses)."],
     add: ["＋ Añadir persona", "＋ Add person"], t: x => x.name || "—", s: x => [x.role, x.phone].filter(Boolean).join(" · "),
@@ -169,14 +174,18 @@ const SCH = {
       { k: "office", es: "Horario/oficina", en: "Office hours", t: "text" },
       { k: "bio", es: "Presentación corta", en: "Short bio", t: "area", rows: 2 }] },
   "groups": { hint: ["Grupos y ministerios (Comunidad → Grupos).", "Groups and ministries (Community → Groups)."],
-    add: ["＋ Añadir grupo", "＋ Add group"], t: x => x.name || "—", s: x => [(x.members != null ? ("👥 " + x.members) : ""), x.meets].filter(Boolean).join(" · "),
+    add: ["＋ Añadir grupo", "＋ Add group"], t: x => x.name || "—", s: x => [(x.members != null ? ("👥 " + x.members) : ""), [x.when, x.where].filter(Boolean).join(" · ")].filter(Boolean).join(" · "),
     fields: [
       { k: "name", es: "Nombre del grupo", en: "Group name", t: "text", req: 1 },
       { k: "members", es: "Miembros (número)", en: "Members (number)", t: "num" },
       { k: "desc", es: "Descripción (español)", en: "Description (Spanish)", t: "area", rows: 2 },
       { k: "descEn", es: "Descripción (inglés)", en: "Description (English)", t: "area", rows: 2 },
       { k: "cat", es: "Tipo", en: "Kind", t: "combo", opts: ["liturgia", "jovenes", "caridad", "devocion", "formacion", "comunidad", "familia"] },
-      { k: "meets", es: "Cuándo y dónde se reúne", en: "When and where it meets", t: "text" },
+      { k: "for", es: "Dirigido a (para quién es)", en: "Who it is for", t: "text" },
+      { k: "forEn", es: "Dirigido a (inglés)", en: "Who it is for (English)", t: "text" },
+      { k: "lead", es: "Quién lo dirige", en: "Who leads it", t: "text" },
+      { k: "when", es: "Cuándo se reúne", en: "When it meets", t: "text" },
+      { k: "where", es: "Dónde se reúne", en: "Where it meets", t: "text" },
       { k: "lang", es: "Idioma", en: "Language", t: "select", opts: ["ambos", "es", "en"] },
       { k: "open", es: "Acepta nuevos miembros", en: "Accepts new members", t: "check" }] },
   "giving": { hint: ["Proyectos de donativos (Más → Donativos). El nombre corto (id) no se puede cambiar.", "Giving projects (More → Giving). The short id cannot change."],
@@ -201,6 +210,7 @@ const SCH = {
       { k: "title", es: "Título", en: "Title", t: "text", req: 1 },
       { k: "date", es: "Fecha (texto libre)", en: "Date (free text)", t: "text" },
       { k: "cover", es: "Tema de portada", en: "Cover theme", t: "text" },
+      { k: "pdf", es: "PDF (enlace, opcional)", en: "PDF (link, optional)", t: "text" },
       { k: "_sections", es: "Secciones (una por línea: Encabezado | párrafo)", en: "Sections (one per line: Heading | paragraph)", t: "area", rows: 4 }] },
   "messages.seed": { hint: ["Avisos iniciales de la app.", "Starter app announcements."],
     add: ["＋ Añadir aviso", "＋ Add announcement"], t: x => x.title || "—", s: x => [x.channel, x.time].filter(Boolean).join(" · "),
@@ -209,6 +219,7 @@ const SCH = {
       { k: "from", es: "De (quién lo envía)", en: "From (sender)", t: "text" },
       { k: "time", es: "Cuándo (texto libre)", en: "When (free text)", t: "text" },
       { k: "channel", es: "Canal", en: "Channel", t: "select", opts: ["Aviso", "Correo", "SMS", "Comunidad", "Oficina"] },
+      { k: "to", es: "Para (all=todos, ministers, o id de grupo ej. g2)", en: "To (all=everyone, ministers, or group id e.g. g2)", t: "combo", opts: ["all", "ministers"] },
       { k: "body", es: "Mensaje", en: "Message", t: "area", rows: 3, req: 1 }] },
   "muro.seed": { hint: ["Mensajes iniciales del muro comunitario.", "Starter community wall posts."],
     add: ["＋ Añadir mensaje", "＋ Add post"], t: x => x.text ? (x.text.slice(0, 60) + "…") : "—", s: x => [x.name, x.kind].filter(Boolean).join(" · "),
@@ -224,16 +235,21 @@ const SCH = {
       { k: "names", es: "Nombres", en: "Names", t: "text", req: 1 },
       { k: "date", es: "Fecha (texto libre)", en: "Date (free text)", t: "text" },
       { k: "mass", es: "Misa (opcional)", en: "Mass (optional)", t: "text" },
+      { k: "massId", es: "Misa enlazada (id: 7:00 AM, 10:30 AM… — vacío = ninguna)", en: "Linked Mass (id — empty = none)", t: "text" },
       { k: "place", es: "Lugar (opcional)", en: "Place (optional)", t: "text" },
       { k: "text", es: "Texto", en: "Text", t: "area", rows: 2 }] },
   "directory.seed": { hint: ["Directorio inicial. Los cumpleaños avisan solos (Nombre, MM-DD).", "Starter directory. Birthdays remind automatically (Name, MM-DD)."],
     add: ["＋ Añadir familia", "＋ Add family"], t: x => x.family || "—", s: x => [x.contact, x.phone].filter(Boolean).join(" · "),
     fields: [
       { k: "family", es: "Familia", en: "Family", t: "text", req: 1 },
+      { k: "last", es: "Apellido (para ordenar)", en: "Last name (for sorting)", t: "text" },
       { k: "contact", es: "Contacto", en: "Contact", t: "text" },
       { k: "phone", es: "Teléfono", en: "Phone", t: "text" },
       { k: "email", es: "Correo", en: "Email", t: "text" },
       { k: "address", es: "Dirección", en: "Address", t: "text" },
+      { k: "clergy", es: "Es del clero (vacío = no)", en: "Is clergy (empty = no)", t: "combo", opts: ["", "diacono", "sacerdote", "religiosa", "vicario", "parroco"] },
+      { k: "_groups", es: "Grupos (ids con comas: g2, g8)", en: "Groups (ids with commas: g2, g8)", t: "text" },
+      { k: "_members", es: "Miembros (uno por línea: Nombre | grupo ej. g2)", en: "Members (one per line: Name | group e.g. g2)", t: "area", rows: 3 },
       { k: "notes", es: "Notas", en: "Notes", t: "area", rows: 2 },
       { k: "_birthdays", es: "Cumpleaños (uno por línea: Nombre, MM-DD)", en: "Birthdays (one per line: Name, MM-DD)", t: "area", rows: 3 },
       { k: "_anniv", es: "Aniversario (Pareja, MM-DD — vacío si no hay)", en: "Anniversary (Couple, MM-DD — empty if none)", t: "text" },
@@ -279,6 +295,13 @@ function specialVal(key, it){
   if(key === "directory.seed") return ([((it.birthdays || []).map(b => (b.name || "") + ", " + (b.md || "")).join("\n")), (it.anniversary ? ((it.anniversary.couple || "") + ", " + (it.anniversary.md || "")) : "")]);
   return "";
 }
+// Orden de temas para organizar por temas (opciones del campo + temas nuevos al final).
+function groupOrder(key, arr){
+  const S = SCH[key], f = (S.fields || []).find(x => x.k === S.groupBy);
+  const base = (f && f.opts) || [], extra = [];
+  for(const it of arr){ const v = String(it[S.groupBy] || "") || "—"; if(!base.includes(v) && !extra.includes(v)) extra.push(v); }
+  return [...base, ...extra];
+}
 function itemListHTML(key){
   const en = cbEN(), S = SCH[key];
   let arr = formArr(key), other = null;
@@ -288,9 +311,23 @@ function itemListHTML(key){
   let h = `<h4 style="margin:8px 0 2px">${esc(CONTENT_TITLES[key] || key)}${cOvTag(key)}</h4><p class="small">${esc(en ? S.hint[1] : S.hint[0])}</p>`;
   if(cui.err) h += `<div class="notice">⚠️ ${esc(cui.err)}</div>`;
   if(S.langs) h += `<div class="chipRow">${["es", "en"].map(l => `<button class="fchip ${cui.formLang === l ? "active" : ""}" data-action="content-lang" data-l="${l}">${l === "es" ? "Español" : "English"}</button>`).join("")}</div>`;
-  h += arr.map((it, i) => `<div class="eventRow"><div style="flex:1"><b>${esc(S.t(it))}</b><div class="small">${esc(S.s(it))}</div></div>
+  // Nombres repetidos dentro de la lista (para organizar sin duplicar).
+  const nmCount = {};
+  if(S.groupBy){ for(const it of arr){ const k = String(it.name || "").toLowerCase().trim(); if(k) nmCount[k] = (nmCount[k] || 0) + 1; } }
+  const dupTag = (it) => { const k = String(it.name || "").toLowerCase().trim(); return (k && nmCount[k] > 1) ? ` <span class="tag red">⚠️ ×${nmCount[k]}</span>` : ""; };
+  const rowHTML = (it, i, upDis, downDis) => `<div class="eventRow"><div style="flex:1"><b>${esc(S.t(it))}</b>${dupTag(it)}<div class="small">${esc(S.s(it))}</div></div>
+    <button class="btn btnGhost" data-action="content-move" data-b="${key}" data-ix="${i}" data-dir="-1" ${upDis ? "disabled" : ""} title="${en ? "Move up" : "Subir"}">↑</button>
+    <button class="btn btnGhost" data-action="content-move" data-b="${key}" data-ix="${i}" data-dir="1" ${downDis ? "disabled" : ""} title="${en ? "Move down" : "Bajar"}">↓</button>
     <button class="btn btnGhost" data-action="content-edit" data-b="${key}" data-ix="${i}">${en ? "Edit" : "Editar"}</button>
-    <button class="btn btnGhost" data-action="content-del" data-b="${key}" data-ix="${i}">${en ? "Delete" : "Borrar"}</button></div>`).join("") || `<p class="small">${en ? "Empty list." : "Lista vacía."}</p>`;
+    <button class="btn btnGhost" data-action="content-del" data-b="${key}" data-ix="${i}">${en ? "Delete" : "Borrar"}</button></div>`;
+  // Organizar por temas: renglones agrupados con su contador (↑↓ mueve dentro del tema).
+  if(S.groupBy){
+    const order = groupOrder(key, arr);
+    const groups = order.map(g => ({ name: g, rows: arr.map((it, i) => ({ it, i })).filter(r => (String(r.it[S.groupBy] || "") || "—") === g) })).filter(g => g.rows.length);
+    h += groups.map(g => `<h4 style="margin:10px 0 2px">${esc(g.name)} (${g.rows.length})</h4>` + g.rows.map(({ it, i }) => rowHTML(it, i, i === g.rows[0].i, i === g.rows[g.rows.length - 1].i)).join("")).join("");
+  } else {
+    h += arr.map((it, i) => rowHTML(it, i, i === 0, i === arr.length - 1)).join("") || `<p class="small">${en ? "Empty list." : "Lista vacía."}</p>`;
+  }
   if(ed){
     h += `<h4 style="margin:10px 0 2px">${fe.ix === "new" ? esc(en ? S.add[1] : S.add[0]) : (en ? "Edit" : "Editar")}</h4>`;
     for(const f of S.fields){
@@ -298,6 +335,8 @@ function itemListHTML(key){
       if(f.k === "_updates" || f.k === "_sections") v = specialVal(key, ed);
       if(f.k === "_birthdays") v = specialVal(key, ed)[0];
       if(f.k === "_anniv") v = specialVal(key, ed)[1];
+      if(f.k === "_groups") v = (ed.groups || []).join(", ");
+      if(f.k === "_members") v = (ed.members || []).map(m => (m.name || "") + (m.group ? " | " + m.group : "")).join("\n");
       h += fieldHTML(f, v);
     }
     h += `<div class="btnRow"><button class="btn btnNavy" data-action="content-save" data-b="${key}">${en ? "Save" : "Guardar"}</button>
@@ -406,6 +445,8 @@ function inspHTML(){
   for(let i = 0; i < n; i++){
     const a = esA[i] || {}, b = enA[i] || {};
     h += `<div class="eventRow"><div style="flex:1"><b>${esc(a.title || b.title || ("#" + (i + 1)))}</b><div class="small">${esc((a.body || b.body || "").slice(0, 80))}</div></div>
+      <button class="btn btnGhost" data-action="content-move" data-b="inspirations" data-ix="${i}" data-dir="-1" ${i === 0 ? "disabled" : ""} title="${en ? "Move up" : "Subir"}">↑</button>
+      <button class="btn btnGhost" data-action="content-move" data-b="inspirations" data-ix="${i}" data-dir="1" ${i === n - 1 ? "disabled" : ""} title="${en ? "Move down" : "Bajar"}">↓</button>
       <button class="btn btnGhost" data-action="content-edit" data-b="inspirations" data-ix="${i}">${en ? "Edit" : "Editar"}</button>
       <button class="btn btnGhost" data-action="content-del" data-b="inspirations" data-ix="${i}">${en ? "Delete" : "Borrar"}</button></div>`;
   }
@@ -443,7 +484,7 @@ function ministryHTML(){
     roles.forEach((r, ci) => {
       h += `<td style="padding:4px"><input id="cmx-${ri}-${ci}" value="${esc((seed[m] || {})[r] || "")}" placeholder="—" style="width:100%;min-width:110px"></td>`;
     });
-    h += `<td style="padding:4px"><button class="btn btnGhost" data-action="content-mindelmass" data-m="${esc(m)}">✕</button></td></tr>`;
+    h += `<td style="padding:4px;white-space:nowrap"><button class="btn btnGhost" data-action="content-move" data-b="ministry.seed" data-m="${esc(m)}" data-dir="-1" ${ri === 0 ? "disabled" : ""} title="${en ? "Move up" : "Subir"}">↑</button><button class="btn btnGhost" data-action="content-move" data-b="ministry.seed" data-m="${esc(m)}" data-dir="1" ${ri === masses.length - 1 ? "disabled" : ""} title="${en ? "Move down" : "Bajar"}">↓</button> <button class="btn btnGhost" data-action="content-mindelmass" data-m="${esc(m)}">✕</button></td></tr>`;
   });
   h += `</table></div>
     <div class="grid2"><div><label>${en ? "New Mass (e.g. 6:00 PM)" : "Nueva Misa (ej. 6:00 PM)"}</label><input id="cm-newmass" placeholder="…"></div><div><label>&nbsp;</label><div class="btnRow"><button class="btn btnNavy" data-action="content-minaddmass">＋</button></div></div></div>
@@ -507,6 +548,7 @@ export function handleContentAction(a, el, ctx){
     if(!/^\d{4}-\d{2}-\d{2}$/.test(dt)) dt = "";
     const rec = { id: (cui.evEdit && cui.evEdit !== "new") ? cui.evEdit : "c" + Date.now(), title: t2, day: $("#ce-day")?.value || "sun", ...(dt ? { date: dt } : {}), time: val("#ce-time") || "—", category: $("#ce-cat")?.value || "Comunidad", location: val("#ce-place"), desc: val("#ce-desc"), recurring: dated ? "Única" : "Semanal", ...($("#ce-special")?.checked ? { special: true } : {}) };
     const mtag = val("#ce-mass"); if(mtag) rec.mass = mtag;
+    const ctag = val("#ce-cel"); if(ctag) rec.cel = ctag;
     const arr = cEvList(key).slice();
     const ix = arr.findIndex(e => e.id === rec.id);
     if(ix >= 0) arr[ix] = { ...arr[ix], ...rec }; else arr.unshift(rec);
@@ -567,6 +609,63 @@ export function handleContentAction(a, el, ctx){
       arr = rebuildLang(key, cur);
     } else { arr = formArr(key).slice(); arr.splice(ix, 1); }
     cSave(Content.save(key, arr), () => { cui.formEdit = null; refresh(); }, ctx); return true; }
+  // ---- Reordenar renglones (subir/bajar) ----
+  if(a === "content-move"){ if(needEd()) return true;
+    const key = el.dataset.b, dir = +el.dataset.dir || 0;
+    if(!dir) return true;
+    const swap = (arr, ix) => { const j = ix + dir; if(ix < 0 || j < 0 || ix >= arr.length || j >= arr.length) return null;
+      const a = arr.slice(); const tmp = a[ix]; a[ix] = a[j]; a[j] = tmp; return a; };
+    const trackEdit = (ix) => {
+      if(cui.formEdit && cui.formEdit.key === key && typeof cui.formEdit.ix === "number"){
+        if(cui.formEdit.ix === ix) cui.formEdit.ix = ix + dir;
+        else if(cui.formEdit.ix === ix + dir) cui.formEdit.ix = ix; } };
+    if(key === "inspirations"){
+      const o = formObj(key, { es: [], en: [] });
+      const esA = (o.es || []).slice(), enA = (o.en || []).slice();
+      const n = Math.max(esA.length, enA.length), ix = +el.dataset.ix;
+      while(esA.length < n) esA.push({}); while(enA.length < n) enA.push({});
+      const a2 = swap(esA, ix), b2 = swap(enA, ix);
+      if(!a2 || !b2) return true;
+      trackEdit(ix);
+      cSave(Content.save(key, { es: a2, en: b2 }), () => refresh(), ctx); return true; }
+    if(key === "ministry.seed"){
+      const seed = formObj(key, {});
+      const keys = Object.keys(seed), ix = keys.indexOf(el.dataset.m);
+      const ko = swap(keys, ix);
+      if(!ko) return true;
+      const out = {}; ko.forEach(k => { out[k] = seed[k]; });
+      cSave(Content.save(key, out), () => refresh(), ctx); return true; }
+    if(key && key.indexOf("events.") === 0){
+      const arr = cEvList(key).slice();
+      const ix = arr.findIndex(e => e.id === el.dataset.id);
+      const moved = swap(arr, ix);
+      if(!moved) return true;
+      cSave(Content.save(key, moved), () => refresh(), ctx); return true; }
+    const S = SCH[key];
+    if(!S) return true;
+    // Organizar por temas: subir/bajar mueve el renglón dentro de su mismo tema.
+    if(S.groupBy && el.dataset.ix !== undefined && el.dataset.ix !== ""){
+      const arr0 = formArr(key).slice(), ix0 = +el.dataset.ix;
+      const gv = String((arr0[ix0] || {})[S.groupBy] || "");
+      let j = ix0 + dir;
+      while(j >= 0 && j < arr0.length && String((arr0[j] || {})[S.groupBy] || "") !== gv) j += dir;
+      if(j < 0 || j >= arr0.length) return true;
+      const a2 = arr0.slice(); const tmp = a2[ix0]; a2[ix0] = a2[j]; a2[j] = tmp;
+      if(cui.formEdit && cui.formEdit.key === key && typeof cui.formEdit.ix === "number"){
+        if(cui.formEdit.ix === ix0) cui.formEdit.ix = j;
+        else if(cui.formEdit.ix === j) cui.formEdit.ix = ix0; }
+      cSave(Content.save(key, a2), () => refresh(), ctx); return true; }
+    const ix = +el.dataset.ix;
+    if(S.langs){
+      const lo = formObj(key, { es: [], en: [] });
+      const moved = swap((lo[cui.formLang] || []).slice(), ix);
+      if(!moved) return true;
+      trackEdit(ix);
+      cSave(Content.save(key, rebuildLang(key, moved)), () => refresh(), ctx); return true; }
+    const moved = swap(formArr(key).slice(), ix);
+    if(!moved) return true;
+    trackEdit(ix);
+    cSave(Content.save(key, moved), () => refresh(), ctx); return true; }
   if(a === "content-save"){ if(needEd()) return true;
     const key = el.dataset.b, S = SCH[key], en = cbEN();
     if(key === "inspirations"){
@@ -615,6 +714,13 @@ export function handleContentAction(a, el, ctx){
         built.anniversary = /^\d{2}-\d{2}$/.test(md) ? { couple: (p[0] || "").trim(), md } : null;
       } else built.anniversary = null;
       delete built._anniv;
+      built.groups = SV("#cf-_groups").split(",").map(s => s.trim()).filter(Boolean);
+      delete built._groups;
+      built.members = SV("#cf-_members").split("\n").map(s => s.trim()).filter(Boolean).map(line => {
+        const p = line.split("|"); return { name: (p[0] || "").trim(), group: (p[1] || "").trim() };
+      }).filter(m => m.name);
+      delete built._members;
+      if(!built.clergy) built.clergy = null;
     }
     let arr = S.langs ? null : formArr(key).slice();
     if(S.langs){

@@ -15,8 +15,15 @@ Open the live preview. No build step — `index.html` loads `src/styles.css` + `
   Cuentas por invitación (coll `users` del servidor): puerta con 3 modos (invitación/contraseña/
   administrador), gestor de invitaciones en Administración (crear, enviar por correo/SMS, cambiar
   permiso, nuevo código, quitar acceso), cambio de contraseña en Comunidad → Perfil.
-  Pestañas: Inicio, Lecturas, **Comunidad** (perfil, directorio, grupos, ministerios, mensajes, muro,
-  medios), Oración, Calendario, Más. Letra ajustable (🔠, zoom 1/1.15/1.3 guardado).
+  Pestañas: Inicio, Lecturas, **Comunidad** (perfil, requisitos, directorio, grupos,
+  mensajes, medios, **agenda parroquial**: celebraciones próximas, Misas especiales,
+  actividades de los grupos, colectas y todas las actividades del mes entrante), Oración,
+  **Vocación** (Hijos de la Sagrada Familia: llamado, formación,
+  contacto web y formulario vocacional por correo), Más. Letra ajustable (🔠, zoom 1/1.15/1.3 guardado).
+  Como editor, en Más → Contenidos se edita TODO (cada campo de cada lista: grupos, directorio
+  con apellido/grupos/miembros/clero, eventos con celebrante, avisos con destinatario, intenciones
+  con misa enlazada, boletines con PDF, oraciones con tema libre/en latín, cantos, donativos, muro) y se reordena con ↑ ↓ (listas,
+  eventos, inspiración, tabla de ministerios y oraciones agrupadas por tema).
 - `main.pjs` — `$meta` + tiny tagline (data lives in `src/` for structure).
 - `src/confesion.js` — 8 exámenes de conciencia USCCB (texto completo, ES+EN) para la guía de confesión.
 - `src/pastoral.js` — guía de bendición de la corona de Adviento + reflexión familiar (ES+EN) + guía «Preparando el corazón en familia» del P. Hernando (ES+EN).
