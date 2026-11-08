@@ -132,7 +132,13 @@ const state = {
   goalOpen: null,
   bulletinOpen: null,
   litcalEvent: null, litcalDate: "", dayData: null,
-  modules: store.get("home.modules", null) || {hero:true, actions:true, inspire:true, events:true, bulletin:true, giving:true},
+  modules: (()=>{ // Migración 1 vez (2026-11-08): la foto-encabezado (hero) vuelve a encenderse
+    const defs = {hero:true, actions:true, inspire:true, events:true, bulletin:true, giving:true}; // aunque se hubiera apagado sin querer en "Personalizar inicio".
+    const saved = store.get("home.modules", null) || {};
+    const m = Object.assign({}, defs, saved);
+    if(!store.get("home.modules.v2migrated", false)){ m.hero = true; store.set("home.modules", m); store.set("home.modules.v2migrated", true); }
+    return m;
+  })(),
   order: store.get("home.order", null) || ["hero","actions","inspire","events","bulletin","giving"],
   speaking: false,
   _chapelMsg: "",
@@ -2088,7 +2094,7 @@ function renderParishSheet(){
     </div>`).join("");
 }
 function renderBuilderSheet(){
-  const names = { hero:"✠", actions:"☰", inspire:"✦", events:"📅", bulletin:"📄", giving:"💛" };
+  const names = { hero:"🖼️ Portada (foto)", actions:"☰", inspire:"✦", events:"📅", bulletin:"📄", giving:"💛" };
   $("#builderList").innerHTML = state.order.map((id,idx)=>`
     <div class="optRow"><div><b>${names[id]} ${id}</b><div class="small">${state.modules[id]!==false?"✓":"—"}</div></div>
       <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
