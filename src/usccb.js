@@ -40,14 +40,40 @@ function superFetchFn() {
   const g = globalThis;
   return (g.root && g.root.superFetch) || g.superFetch || null;
 }
-async function fetchText(url) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function withTimeout(p, ms, label) {
+  let t = null;
+  const to = new Promise((_, rej) => { t = setTimeout(() => rej(new Error(label || "timeout")), ms); });
+  return Promise.race([p, to]).finally(() => { if (t) clearTimeout(t); });
+}
+async function fetchTextOnce(url, useSf) {
   const sf = superFetchFn();
-  if (sf) {
+  if (useSf && sf) {
     const r = await sf(url);
     return { ok: r.ok, status: r.status, text: await r.text() };
   }
-  const r = await fetch(url);
-  return { ok: r.ok, status: r.status, text: await r.text() };
+  const ctl = ("AbortController" in globalThis) ? new AbortController() : null;
+  const to = ctl ? setTimeout(() => { try { ctl.abort(); } catch {} }, 20000) : null;
+  try {
+    const r = await fetch(url, ctl ? { signal: ctl.signal } : undefined);
+    return { ok: r.ok, status: r.status, text: await r.text() };
+  } finally { if (to) clearTimeout(to); }
+}
+// 3 intentos (superFetch → fetch directo → superFetch) con pausas y tope de
+// 22 s por intento: un micro-corte ya no deja la pantalla en "Sin conexión".
+async function fetchTextResilient(url) {
+  const sf = superFetchFn();
+  const order = sf ? [true, false, true] : [false, false, false];
+  let last = null;
+  for (let i = 0; i < order.length; i++) {
+    if (i) await sleep(i === 1 ? 800 : 2000);
+    try {
+      const res = await withTimeout(fetchTextOnce(url, order[i]), 22000, "timeout");
+      if (res.ok) return res;
+      last = new Error("HTTP " + res.status);
+    } catch (e) { last = e; }
+  }
+  throw last || new Error("net");
 }
 
 // Patrón de LectionaryApp (CWilsonTSP, backend Heroku muerto):
@@ -112,6 +138,35 @@ export function parseUsccb(html) {
       return { title: heading, citation, text: text.slice(0, 6000), kind: usccbKind(heading) };
     }).filter(s => (s.title || s.citation) && s.text);
   }
+  if (!sections.length) {
+    // Rediseños del sitio USCCB: agrupa los párrafos bajo cada encabezado
+    // dentro de main/article como último recurso (mejor algo que nada).
+    try {
+      const scope = doc.querySelector("main") || doc.querySelector("article") || doc.body;
+      if (scope) {
+        const heads = [...scope.querySelectorAll("h1,h2,h3")].filter((h) => {
+          const x = (h.textContent || "").trim();
+          return x.length > 3 && x.length < 160 && !/^(menu|navigation|search|daily readings)/i.test(x);
+        }).slice(0, 24);
+        const generic = [];
+        for (const h of heads) {
+          const heading = (h.textContent || "").trim().replace(/\s+/g, " ");
+          let node = h.nextElementSibling;
+          const paras = [];
+          let guard = 0;
+          while (node && !/^H[1-6]$/.test(node.tagName) && guard++ < 60) {
+            const tx = ((node.innerText ?? node.textContent) || "").trim().replace(/\s+/g, " ");
+            if (tx.length > 1 && !/^(menu|navigation|search)/i.test(tx)) paras.push(tx);
+            node = node.nextElementSibling;
+            if (paras.join(" ").length > 6000) break;
+          }
+          const text = paras.join("\n\n").slice(0, 6000);
+          if (text) generic.push({ title: heading, citation: "", text, kind: usccbKind(heading) });
+        }
+        sections = generic.filter((s) => s.text && (s.title || s.citation));
+      }
+    } catch {}
+  }
   return { title, sections };
 }
 export async function fetchUsccbDay(iso, lang) {
@@ -124,16 +179,20 @@ export async function fetchUsccbDay(iso, lang) {
   const url = usccbUrl(iso, lang);
   if (!url) return { status: "error", error: "bad-date" };
   try {
-    const res = await fetchText(url);
-    if (!res.ok) return { status: "error", error: `HTTP ${res.status}` };
+    const res = await fetchTextResilient(url);
     const parsed = parseUsccb(res.text);
-    if (!parsed.sections.length) return { status: "error", error: "parse" };
-    const payload = { iso, which, url, ...parsed };
+    if (!parsed.sections.length) {
+      // La página cambió de formato: usa la copia guardada aunque esté vieja.
+      if (cached?.payload) return { status: "stale", data: cached.payload };
+      return { status: "error", error: "parse" };
+    }
+    const payload = { iso, which, url, savedAt: Date.now(), ...parsed };
     storageWrite(key, { savedAt: Date.now(), payload });
     return { status: "live", data: payload };
   } catch (e) {
-    const fresh = cached?.payload;
-    if (fresh) return { status: "cache", data: fresh };
-    return { status: "error", error: String((e && e.message) || e) };
+    // Sin red o USCCB caído: la copia guardada (de cualquier fecha) vale.
+    if (cached?.payload) return { status: "stale", data: cached.payload };
+    const msg = String((e && e.message) || e);
+    return { status: "error", error: /timeout|abort|network|fetch|failed|load failed/i.test(msg) ? "net" : msg };
   }
 }

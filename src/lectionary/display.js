@@ -210,18 +210,48 @@ function cacheSet(k, j) {
   try { localStorage.setItem("getbible.v1." + k, JSON.stringify(j)); } catch {}
 }
 const cleanText = (t) => String(t || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
+function superFetchFn() {
+  const g = globalThis;
+  return (g.root && g.root.superFetch) || g.superFetch || null;
+}
+async function fetchChapterOnce(trans, nr, ch) {
+  const url = `${API}/${trans}/${nr}/${ch}.json`;
+  try {
+    const ctl = ("AbortController" in globalThis) ? new AbortController() : null;
+    const to = ctl ? setTimeout(() => { try { ctl.abort(); } catch {} }, 15000) : null;
+    try {
+      const r = await fetch(url, ctl ? { signal: ctl.signal } : undefined);
+      if (!r.ok) throw new Error("http " + r.status);
+      return await r.json();
+    } finally { if (to) clearTimeout(to); }
+  } catch (e) {
+    // El fetch directo falló (corte breve, bloqueo): reintenta por superFetch.
+    const sf = superFetchFn();
+    if (!sf) throw e;
+    const r = await sf(url);
+    const tx = await r.text();
+    if (!r.ok) throw new Error("http " + r.status);
+    return JSON.parse(tx);
+  }
+}
 
 async function fetchChapter(trans, nr, ch) {
   const k = `${trans}.${nr}.${ch}`;
   const hit = cacheGet(k);
   if (hit) return hit;
-  const r = await fetch(`${API}/${trans}/${nr}/${ch}.json`);
-  if (!r.ok) throw new Error("http " + r.status);
-  const j = await r.json();
-  const verses = (j.verses || []).map((v) => ({ v: v.verse, t: cleanText(v.text) }));
-  const out = { book: j.book_name, verses };
-  cacheSet(k, out);
-  return out;
+  let last = null;
+  for (let i = 0; i < 3; i++) {
+    if (i) await sleepMs(i === 1 ? 700 : 1800);
+    try {
+      const j = await fetchChapterOnce(trans, nr, ch);
+      const verses = (j.verses || []).map((v) => ({ v: v.verse, t: cleanText(v.text) }));
+      const out = { book: j.book_name, verses };
+      cacheSet(k, out);
+      return out;
+    } catch (e) { last = e; }
+  }
+  throw last || new Error("fetch");
 }
 
 // Full passage text for one citation in the requested language.

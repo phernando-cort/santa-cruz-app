@@ -932,13 +932,14 @@ function usccbPaneHTML(R){
   const saved = state.usccbTexts[key];
   if(saved && saved.loading) return `<div class="todayBlock"><h4>📖 ${esc(t("officialText"))}</h4><p class="small">⏳ ${esc(t("loadingOfficial"))}</p></div>`;
   if(saved && saved.error) return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text (USCCB)":"Texto oficial (USCCB)")}</h4>
-    <div class="notice">${esc(en?"No connection. Try again when you have internet.":"Sin conexión. Reintenta cuando tengas internet.")}</div>
+    <div class="notice">📖 ${esc(t("usccbFbNote"))}</div>
     <div class="btnRow"><button class="btn btnGhost" data-action="usccb-load">↻ ${esc(en?"Retry":"Reintentar")}</button></div></div>`;
   if(saved && saved.sections){
     const secs = saved.sections.map(s=>`
       <div class="massSec"><div class="massHead">${esc(String(s.title||"").replace(/:\s*$/,""))}${s.citation?` <span class="massCite">· ${esc(s.citation)}</span>`:""}</div>
       ${String(s.text||"").split(/\n\n+/).map(p=>`<p>${esc(p)}</p>`).join("")}</div>`).join("");
     return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text of the Mass (USCCB)":"Texto oficial de la Misa (USCCB)")}</h4>
+      ${saved.stale?`<p class="small">💾 ${esc(t("usccbStale"))}</p>`:""}
       <div class="massText" style="font-size:${state.readingFont}px">${secs}</div>
       <div class="btnRow"><button class="btn btnNavy" data-action="usccb-listen">🔊 ${esc(en?"Listen":"Escuchar")}</button>
       ${state.speaking?`<button class="btn btnGhost" data-action="stop-voice">${esc(en?"Stop":"Detener")}</button>`:""}
@@ -956,8 +957,53 @@ async function loadUsccbDay(){
   state.usccbTexts[key] = {loading:true};
   if(state.tab==="readings") renderReadings();
   const r = await fetchUsccbDay(iso, getLang());
-  state.usccbTexts[key] = r.data ? {sections:r.data.sections, feast:r.data.title, url:r.data.url} : {error:r.error||"net"};
+  if(r.data){
+    state.usccbTexts[key] = {sections:r.data.sections, feast:r.data.title, url:r.data.url, stale:r.status==="stale"};
+  } else {
+    state.usccbTexts[key] = {error:r.error||"net"};
+    // Respaldo final: si el texto oficial falla, carga sola los textos
+    // completos de cada lectura para que la pantalla nunca quede vacía.
+    if(state.readingDate===iso && state.tab==="readings"){
+      state._usccbFb = state._usccbFb || {};
+      if(!state._usccbFb[key]){ state._usccbFb[key] = true; readAllPassages(); }
+      // Y reintenta el oficial una vez cuando vuelva la red (45 s).
+      state._usccbRt = state._usccbRt || {};
+      if(!state._usccbRt[key]){ state._usccbRt[key] = true;
+        setTimeout(()=>{ if(state.readingDate===iso && state.tab==="readings" && state.usccbTexts[key] && state.usccbTexts[key].error){
+          delete state.usccbTexts[key]; loadUsccbDay();
+        } }, 45000);
+      }
+    }
+  }
   if(state.tab==="readings" && state.readingDate===iso) renderReadings();
+}
+// Calentamiento en segundo plano: deja el texto de hoy (oficial + lecturas)
+// ya guardado en el aparato, para que abra al instante aunque falle la red.
+async function warmReadings(){
+  try{
+    const iso = toISO(new Date());
+    const r = await fetchUsccbDay(iso, getLang());
+    if(r.data){
+      const k = usccbKey(iso);
+      if(!state.usccbTexts[k]){ state.usccbTexts[k] = {sections:r.data.sections, feast:r.data.title, url:r.data.url, stale:r.status==="stale"}; if(state.tab==="readings" && state.readingDate===iso) renderReadings(); }
+    }
+  }catch{}
+  try{
+    const iso = toISO(new Date());
+    if(state.readingDate !== iso) return;
+    const R = readingDayData();
+    let changed = false;
+    for(let i=0;i<R.list.length;i++){
+      const k = rkey(R.iso, i);
+      if(state.readingTexts[k]) continue;
+      try{
+        const p = await fetchPassage(R.list[i].citation, getLang());
+        state.readingTexts[k] = p.missing ? {missing:p.missing} : {passages:p.passages, book:p.book, trans:p.transName};
+        changed = true;
+      }catch{}
+    }
+    if(changed && state.tab==="readings" && state.readingDate===iso) renderReadings();
+  }catch{}
 }
 function speakUsccb(){
   const saved = state.usccbTexts[usccbKey(state.readingDate)];
@@ -1003,7 +1049,8 @@ function renderReadings(){
         ${R.daily&&R.daily.lectionary?`<span class="tag">#${R.daily.lectionary}</span>`:""}</div>
       ${usccbPaneHTML(R)}
       ${R.list.length?`
-      ${(R.isToday&&R.dd&&R.dd.quote)?`<div class="verseBox">“${esc(R.dd.quote)}”<br><span class="small">— ${esc(R.feast)}</span></div>`:""}`
+      ${(R.isToday&&R.dd&&R.dd.quote)?`<div class="verseBox">“${esc(R.dd.quote)}”<br><span class="small">— ${esc(R.feast)}</span></div>`:""}
+      ${readingRowsHTML(R)}`
       :`<p class="small">${esc(t("noResults"))}</p>`}`
       :`<p class="small">${esc(t("readingsRange"))}</p>`}
     </section>
@@ -2785,3 +2832,4 @@ render();
 refreshGCal();
 Sync.connect();
 setTimeout(fireAutoAlert, 2000);
+setTimeout(warmReadings, 5000);
