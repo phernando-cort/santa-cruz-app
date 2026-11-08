@@ -12,6 +12,7 @@ import { fetchUsccbDay, usccbWhich } from "./usccb.js";
 import { ORDINARY } from "./missal.js";
 import { CONFESION_EXAMS } from "./confesion.js";
 import { ADVIENTO_GUIDE, REFLEX_FAMILIA, FAMILIA_ADVIENTO } from "./pastoral.js";
+import { MANYANET } from "./manyanet.js";
 
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => [...r.querySelectorAll(s)];
@@ -1338,6 +1339,14 @@ const VOC_MAIL = "info@manyanet-us.org";
 function renderVocacion(){
   const vv = $("#view-vocacion"); if(!vv) return; // shell antiguo sin esta vista: no romper el resto
   const isEn = getLang()==="en";
+  const M = isEn ? MANYANET.en : MANYANET.es;
+  // Oración diaria por la congregación: intención del día (navegable con botones).
+  const vd = new Date(); vd.setDate(vd.getDate() + (state.vocDayOff || 0));
+  const vday = vd.getDate();
+  const vint = M.intentions[(vday - 1) % M.intentions.length];
+  // Oración por las vocaciones (las mismas de Oración → Vocaciones).
+  const vocPrayer = (state.usccbList || []).find(x => /short prayer for vocations/i.test(x.name || ""));
+  const cong = PRAYERS.find(x => x.id === "oracion-vocaciones");
   const stages = isEn ? [
     ["Aspirancy", "“Come and see.” (Jn 1:39)", "First contact and discernment: get to know the community and listen to God's call."],
     ["Postulancy", "“Speak, Lord, for your servant is listening.” (1 Sam 3:9)", "More intentional preparation: prayer, community life and basic formation."],
@@ -1359,6 +1368,25 @@ function renderVocacion(){
       <p style="line-height:1.6">${isEn?"Your life is a gift. Discover the joy of following Christ in the spirit of Nazareth alongside the Sons of the Holy Family — founded by Saint Joseph Manyanet to make every family a reflection of Nazareth.":"Tu vida es un regalo. Descubre la alegría de seguir a Cristo en el espíritu de Nazaret junto a los Hijos de la Sagrada Familia — fundados por san José Manyanet para hacer de cada familia un reflejo de Nazaret."}</p>
       <div class="btnRow"><button class="btn btnGold bigBtn" data-action="jump" data-to="sec-voc-contacto">${isEn?"I think I may have a vocation":"Creo que tengo inquietud vocacional"}</button></div>
     </section>
+    <section class="card"><h3>🙏 ${esc(M.prayerTitle)}</h3>
+      <p class="sub">${esc(M.prayerKicker)}</p>
+      <p class="prayerText">${esc(M.prayer).replace(/\n/g, "<br>")}</p>
+      <div class="btnRow"><button class="btn btnNavy" data-action="voc-pray-aloud">${t("voiceBtn")}</button></div>
+    </section>
+    <section class="card"><h3>📅 ${isEn ? "Daily prayer for the congregation" : "Oración diaria por la congregación"}</h3>
+      <p class="sub">${esc(M.calTitle)} · ${esc((M.todayIs || "").replace("{d}", vday))}</p>
+      <div class="verseBox">“${esc(vint)}”</div>
+      <div class="btnRow"><button class="btn btnGhost" data-action="voc-prev">← ${isEn ? "Yesterday" : "Ayer"}</button><button class="btn btnGhost" data-action="voc-today">${isEn ? "Today" : "Hoy"}</button><button class="btn btnGhost" data-action="voc-next">${isEn ? "Tomorrow" : "Mañana"} →</button></div>
+      <div class="btnRow"><button class="btn btnNavy" data-action="voc-int-aloud">${t("voiceBtn")}</button></div>
+    </section>
+    <section class="card"><h3>🌱 ${isEn ? "Prayer for vocations" : "Oración por las vocaciones"}</h3>
+      ${vocPrayer ? `<p class="prayerText">${esc(vocPrayer.text)}</p>
+      <div class="btnRow"><button class="btn btnNavy" data-action="pray-aloud" data-id="${vocPrayer.id}">${t("voiceBtn")}</button></div>` : ""}
+      ${cong ? `<div class="verseBox">“${esc(String(prayerText(cong.id) || cong.text).slice(0, 220))}…”</div>
+      <div class="btnRow"><button class="btn btnGhost" data-action="prayer-open" data-id="${cong.id}">${t("open")}</button>
+      <button class="btn btnNavy" data-action="pray-aloud" data-id="${cong.id}">${t("voiceBtn")}</button></div>` : ""}
+      <div class="notice">“${esc(M.jp2)}” ${esc(M.jp2By)}</div>
+    </section>
     <section class="card"><h3>🚶 ${isEn?"The formation journey, step by step":"El camino de formación, paso a paso"}</h3>
       <p class="sub">${isEn?"Catholic men (18–35) with a sincere desire to serve God and the family. “Come and See” visits welcome.":"Jóvenes católicos (18–35 años) con deseo sincero de servir a Dios y a la familia. Visitas «Ven y verás»."}</p>
       ${stages.map(s=>`<div class="eventRow"><div style="flex:1"><b>${esc(s[0])}</b><div class="small" style="font-style:italic">${esc(s[1])}</div><div class="small">${esc(s[2])}</div></div></div>`).join("")}
@@ -1372,6 +1400,10 @@ function renderVocacion(){
       <a class="btn btnGhost" href="mailto:${VOC_MAIL}">${isEn?"Write":"Escríbeles"}</a></div>
       <div class="btnRow"><button class="btn btnGhost" data-action="ext" data-url="https://www.manyanet-us.org/called-for-family-salvation">${isEn?"Vocation page":"Página de vocaciones"} ↗</button>
       <button class="btn btnGhost" data-action="ext" data-url="https://www.manyanet-us.org/us-houses">${isEn?"Our houses":"Nuestras casas"} ↗</button></div>
+    </section>
+    <section class="card"><h3>💛 ${isEn ? "I want to donate to the works and seminaries of the Sons of the Holy Family" : "Quiero donar a las obras y a los seminarios de los Hijos de la Sagrada Familia"}</h3>
+      <p class="sub">${esc(M.giveBody)}</p>
+      <div class="btnRow"><button class="btn btnGold bigBtn" data-action="ext" data-url="${SF_DONATE_URL}">💛 ${esc(M.giveBtn)} ↗</button></div>
     </section>
     <section class="card" id="sec-voc-contacto"><h3>🙏 ${isEn?"I want to be a priest and belong to the Sons of the Holy Family":"Quiero ser sacerdote y pertenecer a los Hijos de la Sagrada Familia"}</h3>
       <p class="sub">${isEn?"Fill in your information and send it: your email app will open with everything ready to send to the congregation.":"Llena tus datos y envíalos: se abrirá tu correo con todo listo para enviar a la congregación."}</p>
@@ -2408,6 +2440,11 @@ document.addEventListener("click", e=>{
     const done=()=>{ state._groupSent=t("joinSentOk"); state.groupJoin=null; renderMore(); };
     if(pubBoth(2, rec, done)) { sendMail(); return; }
     state.pastoralExtra.unshift({...rec, mine:true}); store.set("pastoral.extra", state.pastoralExtra); done(); sendMail(); }
+  else if(a==="voc-prev"){ state.vocDayOff = (state.vocDayOff || 0) - 1; renderVocacion(); }
+  else if(a==="voc-next"){ state.vocDayOff = (state.vocDayOff || 0) + 1; renderVocacion(); }
+  else if(a==="voc-today"){ state.vocDayOff = 0; renderVocacion(); }
+  else if(a==="voc-pray-aloud"){ const Mx = getLang()==="en" ? MANYANET.en : MANYANET.es; speak(Mx.prayerTitle + ". " + Mx.prayer); renderVocacion(); }
+  else if(a==="voc-int-aloud"){ const Mx = getLang()==="en" ? MANYANET.en : MANYANET.es; const dx = new Date(); dx.setDate(dx.getDate() + (state.vocDayOff || 0)); speak(Mx.intentions[(dx.getDate() - 1) % Mx.intentions.length]); renderVocacion(); }
   else if(a==="voc-send"){ const isEn = getLang()==="en";
     const nm=val("#vcName"); if(!nm) return;
     const ml=val("#vcMail"); if(!ml) return;
