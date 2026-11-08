@@ -33,6 +33,11 @@ Open the live preview. No build step — `index.html` loads `src/styles.css` + `
 - `src/manyanet.js` — textos de vocaciones a los Hijos de la Sagrada Familia (ES+EN) + URLs de las 4 fotos (uploads, de manyanet-us.org). La tarjeta de donativo a los Hijos vive en la sección Vocaciones (`vocacionesHTML`), con enlace a la página de apoyo.
 - `src/usccb-prayers.js` — 222 oraciones de usccb.org/prayers/list (generado; lazy via `import()` solo al abrir Oraciones).
 
+## Idiomas (11)
+- Interfaz completa en es/en/pt/it/la/fr/zh/tl/vi/ar/ko (`src/i18n.js`).
+- Contenido parroquial largo (reflexiones, mensajes del párroco, textos de
+  la congregación) solo ES+EN: en los demás idiomas se muestra en inglés.
+
 ## Enlace de administrador (página separada, sin código)
 - `src/admin.html` + `src/admin.js` — página privada de edición, SOLO botones y
   formularios (usa `src/content-ui.js`, la misma UI que Más → Contenidos).

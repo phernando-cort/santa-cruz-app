@@ -70,8 +70,8 @@ function prayerText(id){
   if(id==="salve") return (PRAY_I18N.salve[getLang()] || PRAY_I18N.salve.es);
   return (PRAY_I18N[id]?.[getLang()]) || base;
 }
-function insp(i){ return getLang()==="en" ? INSP_EN[i] : INSPIRATIONS[i]; }
-function weekDay(i){ return getLang()==="en" ? WEEK_EN[WEEK[i].key] : WEEK[i]; }
+function insp(i){ return getLang()!=="es" ? INSP_EN[i] : INSPIRATIONS[i]; }
+function weekDay(i){ return getLang()!=="es" ? WEEK_EN[WEEK[i].key] : WEEK[i]; }
 
 const state = {
   lang: store.get("app.lang", "es"),
@@ -336,7 +336,7 @@ function gReceived(pid){ const srv = Sync.coll("givingUpdates").filter(u=>u.pid=
 function gRaised(p){ return (+p.raised0 || 0) + gReceived(p.id); }
 function gUpdates(p){ const seen = new Set(), out = [...(p.updates || [])]; for(const u of [...Sync.coll("givingUpdates").filter(u=>u.pid===p.id && u.t), ...state.giving.updates[p.id] || []]){ const k = (u.d || "") + "|" + (u.t || ""); if(seen.has(k)) continue; seen.add(k); out.push(u); } return out; }
 function gprojName(pid){ const p = GIVING_PROJECTS.find(x=>x.id===pid); return p ? p.name : pid; }
-function gprojDesc(p){ return getLang()==="en" ? (p.descEn || p.desc) : p.desc; }
+function gprojDesc(p){ return getLang()!=="es" ? (p.descEn || p.desc) : p.desc; }
 function giftDate(g){ try{ return new Date(g.date).toLocaleString(localeOf(), { day:"numeric", month:"short", year:"numeric" }); }catch{ return g.date || ""; } }
 function thankText(g){
   return t("thankTpl")
@@ -566,9 +566,9 @@ function renderTop(){
   $("#parishCityEl").textContent = p.city;
   const wdi = new Date(state.readingDate+"T12:00:00").getDay();
   const w = weekDay(wdi);
-  const season = getLang()==="en" ? WEEK_EN[WEEK[wdi].key].season : WEEK[wdi].season;
-  const feast = getLang()==="en" ? WEEK_EN[WEEK[wdi].key].feast : WEEK[wdi].feast;
-  const rank = getLang()==="en" ? WEEK_EN[WEEK[wdi].key].rank : WEEK[wdi].rank;
+  const season = getLang()!=="es" ? WEEK_EN[WEEK[wdi].key].season : WEEK[wdi].season;
+  const feast = getLang()!=="es" ? WEEK_EN[WEEK[wdi].key].feast : WEEK[wdi].feast;
+  const rank = getLang()!=="es" ? WEEK_EN[WEEK[wdi].key].rank : WEEK[wdi].rank;
   $("#seasonEl").innerHTML = `<span class="pill">${esc(season)}</span><span>${esc(feast)} · ${esc(rank)}</span>`;
   $("#unreadDot").hidden = !store.get("msgs.unread", true);
   // tab labels
@@ -618,7 +618,7 @@ function renderHome(){
     const tIso = toISO(new Date());
     const tD = new Date(tIso+"T12:00:00");
     const tStr = tD.toLocaleDateString(localeOf(), {weekday:"long", day:"numeric", month:"long", year:"numeric"});
-    const isEn = getLang()==="en";
+    const isEn = getLang()!=="es";
     // Solo Santa Cruz y capillas (como en el boletín y el calendario de intenciones): fuera Sagrada Familia y Santuario.
     const allSched = schedMasses(tIso);
     const schedList = allSched.filter(mm=>!/sagrada familia|santuario/i.test(String(mm.pl||"")));
@@ -639,7 +639,7 @@ function renderHome(){
     const readHtml = tCites.length
       ? `<div class="readCite">📖 ${tCites.map(c=>esc(c)).join(" · ")}</div>
          ${tFeast?`<div class="small"><b>${esc(tFeast)}</b>${tColor?` · ${esc(litColorName(tColor))}`:""}</div>`:""}`
-      : `<p class="small">${isEn?"See the Readings tab.":"Ver la pestaña Lecturas."}</p>`;
+      : `<p class="small">${t("seeReadings")}</p>`;
     // — 2 · Intenciones de cada Misa del día (celebrante + ministros) —
     const genSched = isEn
       ? "General schedule (Santa Cruz): Mon–Wed 7am & 6pm (Tue evening in Spanish) · Thu–Fri 7am · Sat 5:30pm Vigil · Sun 7am, 8:30am Spanish, 10:30am, 12:30pm, 6pm. Confessions Sat 4pm."
@@ -707,7 +707,7 @@ function renderHome(){
     const wkList = gEv.filter(e=>!isRoutineMass(e.t));
     const wkIcon = (e)=> isSpecialMass(e.t) ? "🕯️" : (isGroupMeeting(e.t) ? "👥" : "📌");
     const wkHtml = !state.gcal.ready
-      ? `<p class="small">⏳ ${isEn?"Loading parish calendar…":"Cargando el calendario parroquial…"}</p>`
+      ? `<p class="small">⏳ ${t("loadingCal")}</p>`
       : (wkList.length ? wkList.slice(0,5).map(e=>`<div class="small">${wkIcon(e)} <b>${esc(e.t)}</b> · ${esc(fmtDay(e.date, isEn))}${e.s.length>10?` · ${esc(fmtTime(e.s))}`:""}${e.l?` · ${esc(e.l)}`:""}</div>`).join("")
         + (wkList.length>5?`<div class="small">+${wkList.length-5} ${isEn?"more in Community →":"más en Comunidad →"}</div>`:"")
       : `<p class="small">${isEn?"Nothing else coming up this week.":"Nada más próximo esta semana."}</p>`);
@@ -720,7 +720,7 @@ function renderHome(){
         <div class="btnRow"><button class="btn btnGhost" data-action="agenda">${isEn?"Parish agenda":"Agenda parroquial"}</button></div></div>
       <div class="todayBlock"><h4>⭐ ${isEn?"Special celebrations":"Celebraciones especiales"}</h4>${specHtml}</div>
       <div class="todayBlock"><h4>✨ ${esc(t("saintDay"))}</h4>${saintHtml}
-        <div class="btnRow"><button class="btn btnGhost" data-action="home-saint">${isEn?"Saint of the day":"Ver santoral"}</button></div></div>
+        <div class="btnRow"><button class="btn btnGhost" data-action="home-saint">${t("viewSaints")}</button></div></div>
       <div class="todayBlock"><h4>🙏 ${isEn?"We join in prayer for the following intentions":"Nos unimos en oración por las siguientes intenciones"}</h4>${rezHtml}
         <div class="btnRow"><button class="btn btnGhost" data-action="more-focus" data-focus="sec-intenciones">${isEn?"Intentions":"Intenciones"}</button></div></div>
       <div class="todayBlock"><h4>📅 ${isEn?"This week at the parish":"Esta semana en la parroquia"}</h4>${wkHtml}
@@ -733,7 +733,7 @@ function renderHome(){
       <div class="heroTop">
         <img class="heroImg" src="${esc(ART.hero)}" alt="Iglesia histórica de Santa Cruz de la Cañada">
         <img class="heroSeal" src="${APP_ICON}" alt="Sello de Santa Cruz de la Cañada">
-        <span class="heroKicker">✠ ${esc(getLang()==="en"?WEEK_EN[wEs.key].weekday:wEs.weekday)} · ${esc(getLang()==="en"?WEEK_EN[wEs.key].feast:wEs.feast)}</span>
+        <span class="heroKicker">✠ ${esc(getLang()!=="es"?WEEK_EN[wEs.key].weekday:wEs.weekday)} · ${esc(getLang()!=="es"?WEEK_EN[wEs.key].feast:wEs.feast)}</span>
         <div class="heroTitle"><h2>${esc(p.name)}</h2></div>
       </div>
       <div class="heroBody"><p>${esc(p.greeting)}</p>
@@ -748,7 +748,7 @@ function renderHome(){
       </div></div>
     </section>`});
   // 💌 Mensaje de bienvenida del P. Hernando (fijo en el Inicio, después del encabezado).
-  const pIsEn = getLang()==="en";
+  const pIsEn = getLang()!=="es";
   const padreBody = pIsEn
     ? `Welcome home, Holy Cross family!\nI am Father Hernando, and it fills me with joy that you are here. I have created this digital space so that we may be closer to one another and, above all, closer to Jesus, Mary, and Joseph.\nIn this app you will find Mass times, the readings of the day, prayers, and news from our parish in La Cañada. Know that this is your space.\nEach day, in my prayers, I especially remember our sick, our elderly, families going through difficult times, and our faithful departed. I also invite you to join me in praying each week for vocations to the priesthood and to religious life, especially for our beloved Congregation of the Sons of the Holy Family.\nMay this app be a small help to carry the peace of Christ in your pocket and in your heart. God bless you!`
     : `¡Bienvenidos a casa, familia de Holy Cross!\nSoy el Padre Hernando, y me llena de alegría que estés aquí. He creado este espacio digital para que estemos más cerca unos de otros y, sobre todo, más cerca de Jesús, María y San José.\nEn esta aplicación encontrarás los horarios de Misa, las lecturas del día, oraciones y las noticias de nuestra parroquia en La Cañada. Quiero que sepas que este es tu espacio.\nCada día, en mis oraciones, recuerdo especialmente a nuestros enfermos, a nuestros ancianos, a las familias que pasan por momentos difíciles y a nuestros fieles difuntos. También te invito a unirte a mí para orar cada semana por las vocaciones al sacerdocio y a la vida religiosa, especialmente por nuestra querida Congregación de los Hijos de la Sagrada Familia.\nQue esta aplicación sea una pequeña ayuda para llevar la paz de Cristo a tu bolsillo y a tu corazón. ¡Dios te bendiga!`;
@@ -800,7 +800,7 @@ function renderHome(){
     </section>`}); }
   cards.push({id:"tail", html:`<div class="notice">${t("demoNotice")} <button class="backLink" data-action="builder-open">${t("customizeHome")} →</button></div>`});
   // — Pastoral en casa: confesión, oración y comunión (siempre visibles, en este orden) —
-  const hEn = getLang()==="en";
+  const hEn = getLang()!=="es";
   const confessCard = `<section class="card" id="sec-home-confess" style="border-color:var(--gold)"><h3>🕊️ ${hEn?"Prepare your next confession":"Prepara tu próxima confesión"}</h3>
     <p class="sub">⛪ ${hEn?"Confessions":"Confesiones"}: ${esc(p.confession)}</p>
     <h4 style="margin:8px 0 2px">💜 ${hEn?"Act of Contrition":"Acto de contrición"}</h4>
@@ -907,7 +907,7 @@ function saintsDayList(R){
   try{ return saintsForDay(R.feast, mmdd, getLang()) || []; }catch{ return []; }
 }
 function saintsDayHTML(R){
-  const en = getLang()==="en";
+  const en = getLang()!=="es";
   const list = saintsDayList(R);
   if(!list.length) return "";
   const cards = list.map(s=>`
@@ -927,10 +927,10 @@ function saintsDayHTML(R){
   return `<div class="todayBlock"><h4>✨ ${esc(en?"Saints of the day":"Santos del día")} (${list.length})</h4>${cards}</div>`;
 }
 function usccbPaneHTML(R){
-  const en = getLang()==="en";
+  const en = getLang()!=="es";
   const key = usccbKey(R.iso);
   const saved = state.usccbTexts[key];
-  if(saved && saved.loading) return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text (USCCB)":"Texto oficial (USCCB)")}</h4><p class="small">⏳ ${esc(en?"Loading official text…":"Cargando texto oficial…")}</p></div>`;
+  if(saved && saved.loading) return `<div class="todayBlock"><h4>📖 ${esc(t("officialText"))}</h4><p class="small">⏳ ${esc(t("loadingOfficial"))}</p></div>`;
   if(saved && saved.error) return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text (USCCB)":"Texto oficial (USCCB)")}</h4>
     <div class="notice">${esc(en?"No connection. Try again when you have internet.":"Sin conexión. Reintenta cuando tengas internet.")}</div>
     <div class="btnRow"><button class="btn btnGhost" data-action="usccb-load">↻ ${esc(en?"Retry":"Reintentar")}</button></div></div>`;
@@ -977,7 +977,7 @@ function renderReadings(){
   const R = readingDayData();
   const d = new Date(R.iso+"T12:00:00");
   const wdIdx = d.getDay();
-  const wM = getLang()==="en" ? WEEK_EN[WEEK[wdIdx].key] : WEEK[wdIdx];
+  const wM = getLang()!=="es" ? WEEK_EN[WEEK[wdIdx].key] : WEEK[wdIdx];
   const dateStr = d.toLocaleDateString(localeOf(), { weekday:"long", day:"numeric", month:"long", year:"numeric" });
   const prevD = new Date(d); prevD.setDate(prevD.getDate()-1);
   const nextD = new Date(d); nextD.setDate(nextD.getDate()+1);
@@ -1011,7 +1011,7 @@ function renderReadings(){
     <section class="card"><div class="small"><b>${esc(t("meditation"))}</b> · ${esc(wM.weekday)}</div>
       <h3 class="serif" style="font-size:19px">${esc(wM.reflectionTitle)}</h3>
       <div class="verseBox">“${esc(WEEK[wdIdx].verse.text)}”<br><span class="small">— ${esc(WEEK[wdIdx].verse.ref)}</span></div>
-      <p style="line-height:1.6">${esc(getLang()==="en"?wM.reflection:wM.reflection)}</p>
+      <p style="line-height:1.6">${esc(getLang()!=="es"?wM.reflection:wM.reflection)}</p>
       <div class="btnRow"><button class="btn btnGhost" data-action="read-aloud">${t("listen")}</button>
       ${state.speaking?`<button class="btn btnGhost" data-action="stop-voice">${esc(t("stop"))}</button>`:""}</div>
     </section>
@@ -1059,7 +1059,7 @@ function passagePlainText(R, idxs){
     const rd = R.list[i];
     const s = state.readingTexts[rkey(R.iso,i)];
     if(!rd || !s || !s.passages) return "";
-    const head = (getLang()==="en"?"Reading":"Lectura") + ": " + t(L[rd.type]||"gospel") + ". " + rd.citation + ". ";
+    const head = (getLang()!=="es"?"Reading":"Lectura") + ": " + t(L[rd.type]||"gospel") + ". " + rd.citation + ". ";
     return head + s.passages.map(p=>p.verses.map(v=>v.t).join(" ")).join(" ");
   }).filter(Boolean).join("\n\n");
 }
@@ -1191,7 +1191,7 @@ function prayListHTML(){
   const countOf = (c) => c==="Todas" ? all.length : c==="Favoritas" ? state.prayerFavs.length : c==="USCCB" ? all.filter(p=>p.usccb).length : all.filter(p=>(p.category||"")===c).length;
   let h = `<p class="small">${list.length} ${t("prayersCount")}</p>
     <div class="searchRow"><input id="prayerQ" placeholder="${esc(t("searchPrayers"))}" value="${esc(state.prayerQ)}"></div>`;
-  if(!state.usccbList) h += `<div class="notice">⏳ ${getLang()==="en"?"Loading the USCCB prayers…":"Cargando las oraciones de USCCB…"}</div>`;
+  if(!state.usccbList) h += `<div class="notice">⏳ ${t("loadingUsccb")}</div>`;
   else h += `<div class="chipRow">${prayCats().map(c=>{
       const label = c==="Favoritas" ? `★ (${countOf(c)})` : c==="Todas" ? `${t("backAll")} (${countOf(c)})` : `${c} (${countOf(c)})`;
       return `<button class="fchip ${state.prayerCat===c?"active":""}" data-action="prayer-cat" data-cat="${esc(c)}">${label}</button>`;}).join("")}</div>`;
@@ -1211,7 +1211,7 @@ function prayListHTML(){
   return h + (canEdit()?parishPublishHTML():"");
 }
 function familiaHTML(){
-  const isEn = getLang()==="en";
+  const isEn = getLang()!=="es";
   const cong = PRAYERS.find(p=>p.id==="oracion-congregacion");
   const voc = PRAYERS.find(p=>p.id==="oracion-vocaciones");
   const today = toISO(new Date());
@@ -1279,7 +1279,7 @@ const MANYANET_IMG = {
   community: "https://user.uploads.dev/file/1683593db883eac2a3cf9b6691af73bb.jpg"
 };
 function confessionHTML(){
-  const isEn = getLang()==="en";
+  const isEn = getLang()!=="es";
   const p = parish();
   const actUS = (state.usccbList||[]).find(x=>/act of contrition/i.test(x.name||""));
   const steps = isEn ? [
@@ -1311,7 +1311,7 @@ function confessionHTML(){
   </section>`;
 }
 function vocacionesHTML(){
-  const isEn = getLang()==="en";
+  const isEn = getLang()!=="es";
   const vocPrayer = (state.usccbList||[]).find(x=>/short prayer for vocations/i.test(x.name||""));
   const cong = PRAYERS.find(x=>x.id==="oracion-vocaciones");
   return `
@@ -1338,7 +1338,7 @@ function vocacionesHTML(){
 const VOC_MAIL = "info@manyanet-us.org";
 function renderVocacion(){
   const vv = $("#view-vocacion"); if(!vv) return; // shell antiguo sin esta vista: no romper el resto
-  const isEn = getLang()==="en";
+  const isEn = getLang()!=="es";
   const M = isEn ? MANYANET.en : MANYANET.es;
   // Oración diaria por la congregación: intención del día (navegable con botones).
   const vd = new Date(); vd.setDate(vd.getDate() + (state.vocDayOff || 0));
@@ -1373,13 +1373,13 @@ function renderVocacion(){
       <p class="prayerText">${esc(M.prayer).replace(/\n/g, "<br>")}</p>
       <div class="btnRow"><button class="btn btnNavy" data-action="voc-pray-aloud">${t("voiceBtn")}</button></div>
     </section>
-    <section class="card"><h3>📅 ${isEn ? "Daily prayer for the congregation" : "Oración diaria por la congregación"}</h3>
+    <section class="card"><h3>📅 ${t("vocDailyT")}</h3>
       <p class="sub">${esc(M.calTitle)} · ${esc((M.todayIs || "").replace("{d}", vday))}</p>
       <div class="verseBox">“${esc(vint)}”</div>
-      <div class="btnRow"><button class="btn btnGhost" data-action="voc-prev">← ${isEn ? "Yesterday" : "Ayer"}</button><button class="btn btnGhost" data-action="voc-today">${isEn ? "Today" : "Hoy"}</button><button class="btn btnGhost" data-action="voc-next">${isEn ? "Tomorrow" : "Mañana"} →</button></div>
+      <div class="btnRow"><button class="btn btnGhost" data-action="voc-prev">${t("vocPrev")}</button><button class="btn btnGhost" data-action="voc-today">${t("vocToday")}</button><button class="btn btnGhost" data-action="voc-next">${t("vocNext")}</button></div>
       <div class="btnRow"><button class="btn btnNavy" data-action="voc-int-aloud">${t("voiceBtn")}</button></div>
     </section>
-    <section class="card"><h3>🌱 ${isEn ? "Prayer for vocations" : "Oración por las vocaciones"}</h3>
+    <section class="card"><h3>🌱 ${t("vocVocT")}</h3>
       ${vocPrayer ? `<p class="prayerText">${esc(vocPrayer.text)}</p>
       <div class="btnRow"><button class="btn btnNavy" data-action="pray-aloud" data-id="${vocPrayer.id}">${t("voiceBtn")}</button></div>` : ""}
       ${cong ? `<div class="verseBox">“${esc(String(prayerText(cong.id) || cong.text).slice(0, 220))}…”</div>
@@ -1401,7 +1401,7 @@ function renderVocacion(){
       <div class="btnRow"><button class="btn btnGhost" data-action="ext" data-url="https://www.manyanet-us.org/called-for-family-salvation">${isEn?"Vocation page":"Página de vocaciones"} ↗</button>
       <button class="btn btnGhost" data-action="ext" data-url="https://www.manyanet-us.org/us-houses">${isEn?"Our houses":"Nuestras casas"} ↗</button></div>
     </section>
-    <section class="card"><h3>💛 ${isEn ? "I want to donate to the works and seminaries of the Sons of the Holy Family" : "Quiero donar a las obras y a los seminarios de los Hijos de la Sagrada Familia"}</h3>
+    <section class="card"><h3>💛 ${t("vocDonateT")}</h3>
       <p class="sub">${esc(M.giveBody)}</p>
       <div class="btnRow"><button class="btn btnGold bigBtn" data-action="ext" data-url="${SF_DONATE_URL}">💛 ${esc(M.giveBtn)} ↗</button></div>
     </section>
@@ -1490,7 +1490,7 @@ function saintDayHTML(){
   const feast = (dd && dd.feast) ? dd.feast : (daily ? daily.feast : "");
   const color = (dd && dd.color) ? dd.color : (daily ? daily.color : "");
   const rank = feast ? rankOf(feast) : "";
-  const saint = saintsForDay(feast, iso.slice(5), getLang()==="en"?"en":"es")[0] || null;
+  const saint = saintsForDay(feast, iso.slice(5), getLang()!=="es"?"en":"es")[0] || null;
   let cites = [];
   if(dd && dd.citations && (dd.citations.first || dd.citations.gospel)){
     const c = dd.citations;
@@ -1552,7 +1552,7 @@ function saintsHTML(){
 // ---------- CALENDARIO ----------
 const MON_ES=["","enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 const MON_EN=["","January","February","March","April","May","June","July","August","September","October","November","December"];
-function bulletinLabel(b){ const isEn=getLang()==="en"; if(!b||!b.y) return "";
+function bulletinLabel(b){ const isEn=getLang()!=="es"; if(!b||!b.y) return "";
   return isEn?`Week of ${MON_EN[b.mo]} ${b.d1}–${b.d2}, ${b.y}`:`Semana del ${b.d1} al ${b.d2} de ${MON_ES[b.mo]} de ${b.y}`; }
 async function loadBulletinLive(){
   try{
@@ -1576,7 +1576,7 @@ async function loadBulletinLive(){
 }
 // ---------- Agenda parroquial (última parte de Comunidad; sustituye al apartado Calendario) ----------
 function communityAgendaHTML(){
-  const isEn = getLang()==="en";
+  const isEn = getLang()!=="es";
   const specials = allEvents().filter(e=>e.special);
   const groupEvs = allEvents().filter(e=>e.group);
   const allSorted = [...allEvents()].sort((a,b)=>daysUntil(a)-daysUntil(b));
@@ -1584,7 +1584,7 @@ function communityAgendaHTML(){
   const wkList = gEv.filter(e=>!isRoutineMass(e.t));
   const wkIcon = (e)=> isSpecialMass(e.t) ? "🕯️" : (isGroupMeeting(e.t) ? "👥" : "📌");
   const wkHtml = !state.gcal.ready
-    ? `<p class="small">⏳ ${isEn?"Loading parish agenda…":"Cargando la agenda parroquial…"}</p>`
+    ? `<p class="small">⏳ ${t("loadingAgenda")}</p>`
     : (wkList.length ? wkList.map(e=>`<div class="small">${wkIcon(e)} <b>${esc(e.t)}</b> · ${esc(fmtDay(e.date, isEn))}${e.s.length>10?` · ${esc(fmtTime(e.s))}`:""}${e.l?` · ${esc(e.l)}`:""}</div>`).join("")
       : `<p class="small">${isEn?"Nothing else coming up this week.":"Nada más próximo esta semana."}</p>`);
   return `<section class="card" id="sec-agenda"><h3>${t("agendaT")}</h3><p class="sub">${esc(parish().name)} · ${t("agendaSub")}</p>
@@ -1655,7 +1655,7 @@ function eventListHTML(list, showDel){
 function dirFormOpen(){ return state.dirForm || state.editingId; }
 function dirAll(){ return mix(Sync.coll("directory"), state.directoryExtra, DIRECTORY_SEED).filter(m=>!state.directoryHidden.includes(m.id)); }
 function gname(id){ const g = GROUPS.find(x=>x.id===id); return g ? g.name : id; }
-function gdesc(g){ return (getLang()==="en" && g.descEn) ? g.descEn : (g.desc||""); }
+function gdesc(g){ return (getLang()!=="es" && g.descEn) ? g.descEn : (g.desc||""); }
 function gcatLabel(c){ const k = t("gcat_"+c); return k === ("gcat_"+c) ? c : k; }
 function clergyRoleName(r){ return t("role_"+r); }
 function dirListHTML(){
@@ -1811,7 +1811,7 @@ function givingHTML(){
 }
 const TURNOS = [["f1","Vie 1–2 PM","Fri 1–2 PM"],["f2","Vie 2–3 PM","Fri 2–3 PM"],["f3","Vie 3–4 PM","Fri 3–4 PM"],["f4","Vie 4–5 PM","Fri 4–5 PM"],["f5","Vie 5–6 PM","Fri 5–6 PM"],["pv","Primer viernes 7:30 AM–4 PM","First Friday 7:30 AM–4 PM"],["otro","Otro horario","Another time"]];
 function pastoralHTML(){
-  const isEn = getLang()==="en";
+  const isEn = getLang()!=="es";
   const ED = canEdit();
   const F = state._pastoralForm;
   const team = pastoralAll();
@@ -1892,7 +1892,7 @@ function renderCommunity(){
     </section>
 
     <section class="card" id="sec-requisitos"><h3>${t("sacrT")}</h3><p class="sub">${t("reqSub")}</p>
-      ${(getLang()==="en"?SACRAMENT_INFO.en:SACRAMENT_INFO.es).map(s=>`<div class="eventRow"><div style="flex:1"><b>${esc(s.h)}</b><div class="small">${esc(s.p)}</div></div></div>`).join("")}
+      ${(getLang()!=="es"?SACRAMENT_INFO.en:SACRAMENT_INFO.es).map(s=>`<div class="eventRow"><div style="flex:1"><b>${esc(s.h)}</b><div class="small">${esc(s.p)}</div></div></div>`).join("")}
       <div class="btnRow"><button class="btn btnGold" data-action="req-info">${t("reqInfoBtn")}</button>
       <button class="btn btnGhost" data-action="ext" data-url="tel:+15057533345">☎ (505) 753-3345</button></div>
     </section>
@@ -1913,7 +1913,7 @@ function renderCommunity(){
         const regs = dirAll().filter(m=>(m.groups||[]).includes(g.id));
         const open = state.groupOpen===g.id;
         const joining = state.groupJoin===g.id;
-        const aud = (getLang()==="en"&&g.forEn)?g.forEn:(g.for||"");
+        const aud = (getLang()!=="es"&&g.forEn)?g.forEn:(g.for||"");
         const sched = [g.when?`${t("joinWhenL")}: <b>${esc(g.when)}</b>`:"", g.where?`${t("joinWhereL")}: <b>${esc(g.where)}</b>`:"", (!g.when&&!g.where&&g.meets)?esc(g.meets):""].filter(Boolean).join(" · ");
         return `<div class="eventRow"><div style="flex:1"><b>${esc(g.name)}</b> <span class="small">· ${g.members+(j?1:0)} ${t("members")}</span>
         <div><span class="tag">${esc(gcatLabel(g.cat||"comunidad"))}</span> <span class="small">${esc(g.lang==="ambos"?"ES/EN":g.lang.toUpperCase())}</span></div>
@@ -2235,7 +2235,7 @@ document.addEventListener("click", e=>{
   else if(a==="saint-pray"){ speak(saintPrayerText(el.dataset.name||"", getLang())); if(state.tab==="readings") renderReadings(); }
   else if(a==="font-inc"){ state.readingFont = Math.min(24, (state.readingFont||17)+1); store.set("readings.font", state.readingFont); renderReadings(); }
   else if(a==="font-dec"){ state.readingFont = Math.max(14, (state.readingFont||17)-1); store.set("readings.font", state.readingFont); renderReadings(); }
-  else if(a==="read-aloud"){ const wdi = new Date(state.readingDate+"T12:00:00").getDay(); const w0 = getLang()==="en"?WEEK_EN[WEEK[wdi].key]:WEEK[wdi]; speak(w0.reflectionTitle+". "+w0.reflection); renderReadings(); }
+  else if(a==="read-aloud"){ const wdi = new Date(state.readingDate+"T12:00:00").getDay(); const w0 = getLang()!=="es"?WEEK_EN[WEEK[wdi].key]:WEEK[wdi]; speak(w0.reflectionTitle+". "+w0.reflection); renderReadings(); }
   else if(a==="mass-readings"){ stopSpeak(); state.readingDate = nextDateForDayKey(el.dataset.day); state.tab="readings"; render(); window.scrollTo({top:0}); }
   else if(a==="pray-aloud"){ const pr=ALL_PRAYERS().find(p=>p.id===el.dataset.id); if(pr) speak(pr.name+". "+(prayerText(pr.id)||pr.text)); }
   else if(a==="stop-voice"){ state.rosaryAuto=false; state.chapletAuto=false; stopSpeak(); renderPray(); renderReadings(); }
@@ -2278,10 +2278,10 @@ document.addEventListener("click", e=>{
     if(Sync.online){ srvOp(Sync.push(13, {id:"stream", yt:"", label:""}), renderMore); state.stream={yt:"", label:""}; return; }
     state.stream={yt:"", label:""}; store.set("media.stream", state.stream); renderMore(); }
   else if(a==="pp-add"){ if(!canEdit()) return; const t2=val("#ppTitle"), x=val("#ppText"); if(!t2||!x) return;
-    const isEn = getLang()==="en";
+    const isEn = getLang()!=="es";
     // Aviso de repetido sin diálogos: primera vez avisa, segunda confirma publicando.
     if(prayerNameCount(t2)>0 && state._ppDup!==t2){ state._ppDup=t2;
-      state._ppMsg=isEn?`⚠️ "${t2}" is already in the library. Press Publish again to add it anyway.`:`⚠️ «${t2}» ya está en la biblioteca. Pulsa Publicar otra vez para añadirla de todos modos.`;
+      state._ppMsg=t("ppDupeWarn").replace("{name}", t2);
       renderPray(); return; }
     state._ppDup=null; state._ppMsg="";
     const rec={id:"p"+Date.now(), name:t2, category:$("#ppCat")?.value||"Diaria", latin:null, text:x};
@@ -2289,7 +2289,7 @@ document.addEventListener("click", e=>{
     state.parishPrayers.unshift({...rec});
     store.set("prayers.parish", state.parishPrayers); renderPray(); }
   else if(a==="pp-bulk"){ if(!canEdit()) return; const cat=$("#ppCat")?.value||"Diaria";
-    const isEn2 = getLang()==="en";
+    const isEn2 = getLang()!=="es";
     const lines=val("#ppBulk").split("\n").map(l=>l.trim()).filter(Boolean);
     const seen=new Set(ALL_PRAYERS().map(p=>String(p.name||"").toLowerCase().trim()));
     const recs=[]; let skip=0;
@@ -2443,16 +2443,16 @@ document.addEventListener("click", e=>{
   else if(a==="voc-prev"){ state.vocDayOff = (state.vocDayOff || 0) - 1; renderVocacion(); }
   else if(a==="voc-next"){ state.vocDayOff = (state.vocDayOff || 0) + 1; renderVocacion(); }
   else if(a==="voc-today"){ state.vocDayOff = 0; renderVocacion(); }
-  else if(a==="voc-pray-aloud"){ const Mx = getLang()==="en" ? MANYANET.en : MANYANET.es; speak(Mx.prayerTitle + ". " + Mx.prayer); renderVocacion(); }
-  else if(a==="voc-int-aloud"){ const Mx = getLang()==="en" ? MANYANET.en : MANYANET.es; const dx = new Date(); dx.setDate(dx.getDate() + (state.vocDayOff || 0)); speak(Mx.intentions[(dx.getDate() - 1) % Mx.intentions.length]); renderVocacion(); }
-  else if(a==="voc-send"){ const isEn = getLang()==="en";
+  else if(a==="voc-pray-aloud"){ const Mx = getLang()!=="es" ? MANYANET.en : MANYANET.es; speak(Mx.prayerTitle + ". " + Mx.prayer); renderVocacion(); }
+  else if(a==="voc-int-aloud"){ const Mx = getLang()!=="es" ? MANYANET.en : MANYANET.es; const dx = new Date(); dx.setDate(dx.getDate() + (state.vocDayOff || 0)); speak(Mx.intentions[(dx.getDate() - 1) % Mx.intentions.length]); renderVocacion(); }
+  else if(a==="voc-send"){ const isEn = getLang()!=="es";
     const nm=val("#vcName"); if(!nm) return;
     const ml=val("#vcMail"); if(!ml) return;
     const ms=val("#vcMsg"); if(!ms) return;
     const full=[nm, val("#vcLast")].filter(Boolean).join(" ");
     const body=(isEn?"Name: ":"Nombre: ")+full+"\n"+(isEn?"Email: ":"Correo: ")+ml+"\n"+(isEn?"Phone: ":"Teléfono: ")+(val("#vcPhone")||"—")+"\n"+(isEn?"Birthdate: ":"Nacimiento: ")+(val("#vcBirth")||"—")+"\n"+(isEn?"Address: ":"Dirección: ")+(val("#vcAddr")||"—")+"\n\n"+ms;
     const mail="mailto:"+VOC_MAIL+"?subject="+encodeURIComponent((isEn?"Vocational inquiry — ":"Inquietud vocacional — ")+full)+"&body="+encodeURIComponent(body);
-    state._vocSent=isEn?"Your email app opened with everything ready. Thank you for your yes!":"Se abrió tu correo con todo listo. ¡Gracias por tu sí!";
+    state._vocSent=t("vocSentOk");
     renderVocacion(); try{ window.open(mail,"_self"); }catch(e){} }
   else if(a==="group-event-add"){ if(!canEdit()) return; const gsel=$("#geGroup")?.value; const t2=val("#geTitle"); if(!gsel||!t2) return;    const g=GROUPS.find(x=>x.id===gsel);
     state.customEvents.unshift({id:"g"+Date.now(), title:t2, day:$("#geDay")?.value||"sun", time:val("#geTime")||"—", category:"Comunidad", location:val("#gePlace")||"", desc:"", recurring:"Del grupo", group:g?g.name:""});
@@ -2476,8 +2476,8 @@ document.addEventListener("click", e=>{
   else if(a==="admin-logout"){ Sync.logout(); state.admin=false; store.set("admin.auth", false); state._admMsg=""; renderMore(); }
   else if(a==="admin-open"){ try { window.open(adminPageUrl(), "_blank", "noopener"); } catch(e){} }
   else if(a==="admin-copy"){ const u=adminPageUrl();
-    if(navigator.clipboard) navigator.clipboard.writeText(u).then(()=>{ state._admLinkMsg="Enlace copiado ✓ Guárdalo en favoritos."; renderMore(); }).catch(()=>{ state._admLinkMsg="No se pudo copiar solo: selecciona el campo Enlace y cópialo."; renderMore(); });
-    else { state._admLinkMsg="Selecciona el campo Enlace y cópialo."; renderMore(); } }
+    if(navigator.clipboard) navigator.clipboard.writeText(u).then(()=>{ state._admLinkMsg=t("admLinkCopied"); renderMore(); }).catch(()=>{ state._admLinkMsg=t("admLinkManual"); renderMore(); });
+    else { state._admLinkMsg=t("admLinkManual"); renderMore(); } }
   else if(a==="gate-mode"){ state.gateMode = el.dataset.m || "invite"; state._gateMsg = ""; renderGate(); }
   else if(a==="gate-redeem"){
     const n = val("#gateName"), c = normCode($("#gateCode")?.value);
