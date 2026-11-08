@@ -205,6 +205,15 @@ export function saintsOfDate(mmdd, lang) {
   }
   return out;
 }
+// Santo(s) del día con UNA sola regla en toda la app: primero el santo de la
+// fiesta que celebra la Misa; si la fiesta no tiene santo (domingos, ferias),
+// se usan los santos de la fecha. Así Inicio, Lecturas y Santoral coinciden.
+export function saintsForDay(feast, mmdd, lang) {
+  let list = [];
+  try { const one = feast ? saintFor(feast, lang) : null; if (one) list = [one]; } catch {}
+  if (!list.length) { try { list = saintsOfDate(mmdd, lang) || []; } catch {} }
+  return list;
+}
 // Oración breve de intercesión (redacción propia, ES+EN) para el santo del día.
 export function saintPrayerText(name, lang) {
   const n = String(name || "").replace(/^Saints?\s+/i, "").trim() || name;

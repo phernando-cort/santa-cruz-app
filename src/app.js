@@ -6,7 +6,7 @@ import { LANGS, setLang, getLang, t, catName, recName, dayName, localeOf, PRAY_I
 import { officialReadingLinks, fetchPassage } from "./lectionary/display.js";
 import { getDayData } from "./lectionary/litcal.js";
 import { dailyFor } from "./daily-citations.js";
-import { saintFor, rankOf, saintsOfDate, saintPrayerText } from "./saints.js";
+import { rankOf, saintsForDay, saintPrayerText } from "./saints.js";
 import { fetchUsccbDay, usccbWhich } from "./usccb.js";
 import { ORDINARY } from "./missal.js";
 import { CONFESION_EXAMS } from "./confesion.js";
@@ -625,7 +625,7 @@ function renderHome(){
       if(cc.second) tCites.push(cc.second);
       if(cc.gospel) tCites.push(cc.gospel);
     } else if(tDaily){ tCites = tDaily.readings.map(r=>r.citation); }
-    const tSaint = tFeast ? saintFor(tFeast, isEn?"en":"es") : null;
+    const tSaint = saintsForDay(tFeast, tIso.slice(5), isEn?"en":"es")[0] || null;
     // — 1 · La Misa: lecturas + común de la Misa —
     const ord = ORDINARY[isEn?"en":"es"];
     const readHtml = tCites.length
@@ -826,11 +826,12 @@ function renderHome(){
       </div></section>`});
   cards.push({id:"tail", html:`<div class="notice">${t("demoNotice")} <button class="backLink" data-action="builder-open">${t("customizeHome")} →</button></div>`});
   const rank = Object.fromEntries(state.order.map((id,i)=>[id,i]));
+  const heroCard = cards.find(c=>c.id==="hero");
   const todayCard = cards.find(c=>c.id==="today");
   const padreCard = cards.find(c=>c.id==="padre");
-  const rest = cards.filter(c=>c.id!=="today"&&c.id!=="padre");
+  const rest = cards.filter(c=>c.id!=="hero"&&c.id!=="today"&&c.id!=="padre");
   rest.sort((a,b2)=>(rank[a.id]??99)-(rank[b2.id]??99));
-  $("#view-home").innerHTML = (todayCard?todayCard.html:"") + (padreCard?padreCard.html:"") + rest.map(c=>c.html).join("");
+  $("#view-home").innerHTML = (heroCard?heroCard.html:"") + (todayCard?todayCard.html:"") + (padreCard?padreCard.html:"") + rest.map(c=>c.html).join("");
 }
 
 // ---------- LECTURAS ----------
@@ -899,12 +900,7 @@ function readingRowsHTML(R){
 function usccbKey(iso){ return iso+"|"+usccbWhich(getLang()); }
 function saintsDayList(R){
   const mmdd = String(R.iso||"").slice(5);
-  let list = [];
-  try{ list = saintsOfDate(mmdd, getLang()) || []; }catch{}
-  if(!list.length){
-    try{ const one = saintFor(R.feast, getLang()); if(one) list = [one]; }catch{}
-  }
-  return list;
+  try{ return saintsForDay(R.feast, mmdd, getLang()) || []; }catch{ return []; }
 }
 function saintsDayHTML(R){
   const en = getLang()==="en";
@@ -1392,7 +1388,7 @@ function saintDayHTML(){
   const feast = (dd && dd.feast) ? dd.feast : (daily ? daily.feast : "");
   const color = (dd && dd.color) ? dd.color : (daily ? daily.color : "");
   const rank = feast ? rankOf(feast) : "";
-  const saint = feast ? saintFor(feast, getLang()==="en"?"en":"es") : null;
+  const saint = saintsForDay(feast, iso.slice(5), getLang()==="en"?"en":"es")[0] || null;
   let cites = [];
   if(dd && dd.citations && (dd.citations.first || dd.citations.gospel)){
     const c = dd.citations;
