@@ -107,7 +107,18 @@ export function usccbKind(title) {
   for (const [rx, k] of KIND_RX) if (rx.test(t)) return k;
   return "reading";
 }
+// USCCB a veces devuelve una página de reto anti-bots ("Obolus") en vez de
+// las lecturas. Detectarla evita confundirla con un cambio de formato.
+export function usccbBlocked(html) {
+  return typeof html === "string"
+    && html.includes("X_Obolus_Proof")
+    && html.includes("challengeToken")
+    && html.includes("Checking connection");
+}
 export function parseUsccb(html) {
+  if (usccbBlocked(html) || /access denied/i.test(String(html || "").slice(0, 5000))) {
+    return { title: null, sections: [], blocked: true };
+  }
   const doc = new DOMParser().parseFromString(html, "text/html");
   const title = (doc.querySelector('meta[property="og:title"]')?.content || "").trim()
     || [...doc.querySelectorAll("h2")].map(e => e.textContent.trim()).find(x => x && !/^Menu|navigation/i.test(x) && x.length > 3 && x.length < 140) || null;
@@ -137,6 +148,26 @@ export function parseUsccb(html) {
       if (citation && text.startsWith(citation)) text = text.slice(citation.length).trim();
       return { title: heading, citation, text: text.slice(0, 6000), kind: usccbKind(heading) };
     }).filter(s => (s.title || s.citation) && s.text);
+  }
+  if (!sections.length) {
+    // Formato alternativo (.container > .name + .address + .content-body).
+    try {
+      const built = [];
+      for (const c of doc.querySelectorAll(".container")) {
+        const nm = c.querySelector(".name"), ad = c.querySelector(".address");
+        if (!nm || !ad) continue;
+        const heading = (nm.textContent || "").trim().replace(/\s+/g, " ");
+        const citation = (ad.textContent || "").trim().replace(/\s+/g, " ");
+        const body = c.querySelector(".content-body");
+        let text = "";
+        if (body) {
+          const ps = [...body.querySelectorAll("p")].map((p) => p.textContent.trim().replace(/\s+/g, " ")).filter(Boolean);
+          text = ps.length ? ps.join("\n\n") : body.textContent.trim().replace(/\s+/g, " ");
+        }
+        if (text && (heading || citation)) built.push({ title: heading, citation, text: text.slice(0, 12000), kind: usccbKind(heading) });
+      }
+      if (built.length) sections = built;
+    } catch {}
   }
   if (!sections.length) {
     // Rediseños del sitio USCCB: agrupa los párrafos bajo cada encabezado
@@ -181,6 +212,13 @@ export async function fetchUsccbDay(iso, lang) {
   try {
     const res = await fetchTextResilient(url);
     const parsed = parseUsccb(res.text);
+    if (parsed.blocked) {
+      // USCCB nos puso la página anti-bots: reintentar no sirve de inmediato;
+      // vale la copia guardada y se informa como bloqueo, no como "formato".
+      try { console.warn("[lecturas] USCCB devolvió reto anti-bots"); } catch {}
+      if (cached?.payload) return { status: "stale", data: cached.payload };
+      return { status: "error", error: "blocked" };
+    }
     if (!parsed.sections.length) {
       // La página cambió de formato: usa la copia guardada aunque esté vieja.
       if (cached?.payload) return { status: "stale", data: cached.payload };
