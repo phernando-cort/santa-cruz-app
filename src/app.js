@@ -15,6 +15,8 @@ import { ADVIENTO_GUIDE, REFLEX_FAMILIA, FAMILIA_ADVIENTO } from "./pastoral.js"
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => [...r.querySelectorAll(s)];
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+// Búsqueda sin acentos: "maria" encuentra "María" (teclados de celular).
+const norm = (s) => String(s ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 const store = {
   get(k, f){ try{ const v = localStorage.getItem(k); return v==null? f : JSON.parse(v);}catch{ return f; } },
   set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
@@ -1063,7 +1065,7 @@ function prayCats(){
   return base;
 }
 function prayListHTML(){
-  const q = state.prayerQ.toLowerCase();
+  const q = norm(state.prayerQ);
   if(state.prayerOpen){
     const pr = ALL_PRAYERS().find(p=>p.id===state.prayerOpen);
     if(!pr){ state.prayerOpen=null; }
@@ -1085,7 +1087,7 @@ function prayListHTML(){
   }
   const list = ALL_PRAYERS().filter(p =>
     (state.prayerCat==="Todas" || (state.prayerCat==="Favoritas" ? state.prayerFavs.includes(p.id) : state.prayerCat==="USCCB" ? p.usccb : p.category===state.prayerCat)) &&
-    (!q || (p.name+" "+(prayerText(p.id)||p.text)).toLowerCase().includes(q)));
+    (!q || norm(p.name+" "+(prayerText(p.id)||p.text)).includes(q)));
   if(!state.usccbList) return `
     <p class="small">${ALL_PRAYERS().length} ${t("prayersCount")}</p>
     <div class="searchRow"><input id="prayerQ" placeholder="${esc(t("searchPrayers"))}" value="${esc(state.prayerQ)}"></div>
@@ -1094,7 +1096,7 @@ function prayListHTML(){
       ${list.length? list.map(p=>`<div class="prayerItem"><div><div><b>${esc(p.name)}</b></div><div class="small">${esc(p.category)} · ${esc((prayerText(p.id)||p.text).slice(0,60))}…</div></div>
         <button class="starBtn" data-action="prayer-fav" data-id="${p.id}" aria-label="favorita">${state.prayerFavs.includes(p.id)?"★":"☆"}</button>
         <button class="btn btnGhost" data-action="prayer-open" data-id="${p.id}">${t("open")}</button></div>`).join("")
-      : `<p>${t("noResults")}</p>`}
+      : `<p>${t("noResults")}</p><div class="btnRow"><button class="btn btnGhost" data-action="prayer-clear">${getLang()==="en"?"Clear search":"Limpiar búsqueda"}</button></div>`}
     </section>`;
   return `
     <p class="small">${ALL_PRAYERS().length} ${t("prayersCount")}</p>
@@ -1104,7 +1106,7 @@ function prayListHTML(){
       ${list.length? list.map(p=>`<div class="prayerItem"><div><div><b>${esc(p.name)}</b></div><div class="small">${esc(p.category)} · ${esc((prayerText(p.id)||p.text).slice(0,60))}…</div></div>
         <button class="starBtn" data-action="prayer-fav" data-id="${p.id}" aria-label="favorita">${state.prayerFavs.includes(p.id)?"★":"☆"}</button>
         <button class="btn btnGhost" data-action="prayer-open" data-id="${p.id}">${t("open")}</button></div>`).join("")
-      : `<p>${t("noResults")}</p>`}
+      : `<p>${t("noResults")}</p><div class="btnRow"><button class="btn btnGhost" data-action="prayer-clear">${getLang()==="en"?"Clear search":"Limpiar búsqueda"}</button></div>`}
     </section>
     ${canEdit()?parishPublishHTML():""}`;
 }
@@ -1351,8 +1353,8 @@ function saintDayHTML(){
     </section>`;
 }
 function saintsHTML(){
-  const q = state.saintQ.toLowerCase();
-  const list = SAINTS.filter(s=>!q || (s.name+" "+s.patron+" "+s.bio).toLowerCase().includes(q));
+  const q = norm(state.saintQ);
+  const list = SAINTS.filter(s=>!q || norm(s.name+" "+s.patron+" "+s.bio).includes(q));
   return saintDayHTML() + `
     <p class="small" style="margin-top:12px">${SAINTS.length} ${t("saintsCount")} · ${t("saintsSub")}</p>
     <div class="searchRow"><input id="saintQ" placeholder="${esc(t("searchSaints"))}" value="${esc(state.saintQ)}"></div>
@@ -2089,6 +2091,7 @@ document.addEventListener("click", e=>{
   else if(a==="chapel-prayer-open"){ stopSpeak(); state.prayMode="oraciones"; state.prayerOpen="oracion-capilla"; state.tab="pray"; render(); window.scrollTo({top:0}); }
   else if(a==="prayer-back"){ stopSpeak(); state.prayerOpen = null; renderPray(); }
   else if(a==="prayer-cat"){ state.prayerCat = el.dataset.cat; state.prayerOpen=null; renderPray(); }
+  else if(a==="prayer-clear"){ state.prayerQ = ""; state.prayerCat = "Todas"; state.prayerOpen=null; renderPray(); }
   else if(a==="prayer-fav"){ const id=el.dataset.id; const i=state.prayerFavs.indexOf(id);
     if(i>=0) state.prayerFavs.splice(i,1); else state.prayerFavs.push(id);
     store.set("prayer.favs", state.prayerFavs); renderPray(); }
