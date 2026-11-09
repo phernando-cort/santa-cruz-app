@@ -7,7 +7,7 @@ import { getDayData } from "./lectionary/litcal.js";
 import { dailyFor } from "./daily-citations.js";
 import { rankOf, saintsForDay, saintPrayerText } from "./saints.js";
 import { getWeekEvents, isRoutineMass, isSpecialMass, isGroupMeeting, fmtDay, fmtTime } from "./gcal.js";
-import { fetchUsccbDay, usccbWhich } from "./usccb.js";
+import { fetchUsccbDay, usccbWhich, usccbUrl } from "./usccb.js";
 import { ORDINARY } from "./missal.js";
 import { CONFESION_EXAMS } from "./confesion.js";
 import { ADVIENTO_GUIDE, REFLEX_FAMILIA, FAMILIA_ADVIENTO } from "./pastoral.js";
@@ -932,9 +932,25 @@ function usccbPaneHTML(R){
   const key = usccbKey(R.iso);
   const saved = state.usccbTexts[key];
   if(saved && saved.loading) return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text (USCCB)":"Texto oficial (USCCB)")}</h4><p class="small">⏳ ${esc(en?"Loading official text…":"Cargando texto oficial…")}</p></div>`;
-  if(saved && saved.error) return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text (USCCB)":"Texto oficial (USCCB)")}</h4>
-    <div class="notice">${esc(en?"No connection. Try again when you have internet.":"Sin conexión. Reintenta cuando tengas internet.")}</div>
-    <div class="btnRow"><button class="btn btnGhost" data-action="usccb-load">↻ ${esc(en?"Retry":"Reintentar")}</button></div></div>`;
+  if(saved && saved.error){
+    const code = String(saved.error);
+    const msg = code === "blocked"
+      ? (en ? "USCCB showed a bot-check page on every route. Wait a few minutes and retry — your citations above are still valid."
+           : "USCCB mostró una verificación anti-bots en todas las vías. Espera unos minutos y reintenta — tus citas de arriba siguen valiendo.")
+      : code === "parse"
+      ? (en ? "USCCB changed its page layout and the text could not be extracted. Retry later — your citations above are still valid."
+           : "USCCB cambió su página y no se pudo extraer el texto. Reintenta más tarde — tus citas de arriba siguen valiendo.")
+      : code === "http"
+      ? (en ? "USCCB returned a server error. Retry in a few minutes — your citations above are still valid."
+           : "USCCB devolvió un error de servidor. Reintenta en unos minutos — tus citas de arriba siguen valiendo.")
+      : (en ? "No connection, or the network blocked the download (on the website it goes through the parish proxy). Check your internet and retry — your citations above are still valid."
+           : "Sin conexión, o la red bloqueó la descarga (en el sitio web pasa por el proxy de la parroquia). Revisa tu internet y reintenta — tus citas de arriba siguen valiendo.");
+    const link = saved.url || usccbUrl(R.iso, getLang());
+    return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text (USCCB)":"Texto oficial (USCCB)")}</h4>
+    <div class="notice">${esc(msg)}</div>
+    <div class="btnRow"><button class="btn btnGold" data-action="usccb-load">↻ ${esc(en?"Retry":"Reintentar")}</button>${link?`<button class="btn btnGhost" data-action="ext" data-url="${esc(link)}">${esc(en?"Open on bible.usccb.org ↗ (external — only if it won't load here)":"Abrir en bible.usccb.org ↗ (externo — solo si aquí no carga)")}</button>`:""}</div>
+    <p class="small">${esc(en?"The fallback opens the official page outside the app, only as a last resort.":"El recurso abre la página oficial fuera de la app, solo como último recurso.")}</p></div>`;
+  }
   if(saved && saved.sections){
     const secs = saved.sections.map(s=>`
       <div class="massSec"><div class="massHead">${esc(String(s.title||"").replace(/:\s*$/,""))}${s.citation?` <span class="massCite">· ${esc(s.citation)}</span>`:""}</div>
@@ -957,7 +973,7 @@ async function loadUsccbDay(){
   state.usccbTexts[key] = {loading:true};
   if(state.tab==="readings") renderReadings();
   const r = await fetchUsccbDay(iso, getLang());
-  state.usccbTexts[key] = r.data ? {sections:r.data.sections, feast:r.data.title, url:r.data.url} : {error:r.error||"net"};
+  state.usccbTexts[key] = r.data ? {sections:r.data.sections, feast:r.data.title, url:r.data.url} : {error:r.error||"net", url:usccbUrl(iso, getLang())};
   if(state.tab==="readings" && state.readingDate===iso) renderReadings();
 }
 function speakUsccb(){

@@ -2,10 +2,13 @@
 // Condiciones:
 // - Texto oficial (NABRE en inglés, traducción oficial en español) © USCCB: NUNCA se
 //   empaqueta en el repo. Solo citas (Layer 1) viajan con la app; el texto se trae en
-//   vivo desde bible.usccb.org (superFetch → fetch → superFetch, 3 intentos, 22 s) y se
-//   muestra DENTRO de la app (lectura + Escuchar + A−/A+), con caché local de 30 días.
-// - Sin red: se muestra la copia guardada (stale) o las citas; sin botones externos.
-// - Detecta página anti-bots (Obolus) y cambios de formato sin romper la UI.
+//   vivo desde bible.usccb.org (superFetch → proxy Supabase Edge → directo →
+//   proxy público) y se muestra DENTRO de la app (lectura + Escuchar + A−/A+),
+//   con caché local de 30 días.
+// - Sin red: se muestra la copia guardada (stale) o las citas; botón externo
+//   SOLO como último recurso en el estado de error (ver app.js).
+// - Detecta página anti-bots (Obolus) en CADA vía y prueba la siguiente;
+//   y cambios de formato sin romper la UI.
 // - ES: https://bible.usccb.org/es/bible/lecturas/MMDDYY.cfm
 // - EN: https://bible.usccb.org/bible/readings/MMDDYY.cfm (otros idiomas → EN).
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -51,34 +54,101 @@ function withTimeout(p, ms, label) {
   const to = new Promise((_, rej) => { t = setTimeout(() => rej(new Error(label || "timeout")), ms); });
   return Promise.race([p, to]).finally(() => { if (t) clearTimeout(t); });
 }
-async function fetchTextOnce(url, useSf) {
-  const sf = superFetchFn();
-  if (useSf && sf) {
-    const r = await sf(url);
-    return { ok: r.ok, status: r.status, text: await r.text() };
-  }
+function abortable(ms) {
   const ctl = ("AbortController" in globalThis) ? new AbortController() : null;
-  const to = ctl ? setTimeout(() => { try { ctl.abort(); } catch {} }, 20000) : null;
-  try {
-    const r = await fetch(url, ctl ? { signal: ctl.signal } : undefined);
-    return { ok: r.ok, status: r.status, text: await r.text() };
-  } finally { if (to) clearTimeout(to); }
+  const to = ctl ? setTimeout(() => { try { ctl.abort(); } catch {} }, ms) : null;
+  return { signal: ctl ? ctl.signal : undefined, done() { if (to) clearTimeout(to); } };
 }
-// 3 intentos (superFetch → fetch directo → superFetch) con pausas y tope de
-// 22 s por intento: un micro-corte ya no deja la pantalla en "Sin conexión".
-async function fetchTextResilient(url) {
+// Error con código para la UI: net | http | blocked | edge-missing...
+function coded(msg, code) { const e = new Error(msg); e.code = code; return e; }
+function codeOf(e) {
+  if (e && e.code) return e.code;
+  const msg = String((e && e.message) || e);
+  if (/HTTP\s+\d+/.test(msg)) return "http";
+  return /timeout|abort|network|fetch|failed|load failed|cors|not allowed/i.test(msg) ? "net" : "net";
+}
+async function fetchDirect(url, ms) {
+  const a = abortable(ms || 12000);
+  try {
+    const r = await fetch(url, a.signal ? { signal: a.signal } : undefined);
+    const text = await r.text();
+    if (!r.ok) throw coded("HTTP " + r.status, "http");
+    return text;
+  } finally { a.done(); }
+}
+async function fetchSuper(url, ms) {
   const sf = superFetchFn();
-  const order = sf ? [true, false, true] : [false, false, false];
-  let last = null;
-  for (let i = 0; i < order.length; i++) {
-    if (i) await sleep(i === 1 ? 800 : 2000);
+  if (!sf) throw coded("no-superfetch", "net");
+  const r = await withTimeout((async () => {
+    const res = await sf(url);
+    return { ok: res.ok, status: res.status, text: await res.text() };
+  })(), ms || 22000, "timeout");
+  if (!r.ok) throw coded("HTTP " + r.status, "http");
+  return r.text;
+}
+// Proxy propio en Supabase (Edge Function `usccb`, ver src/cloud/usccb-proxy.ts).
+// Es el camino principal en GitHub Pages, donde no hay superFetch y el navegador
+// bloquea la lectura directa (CORS). Devuelve el HTML oficial tal cual.
+let edgeCfg = null; // null = sin averiguar | false = sin proxy | {base, anon}
+async function edgeConfig() {
+  if (edgeCfg !== null) return edgeCfg;
+  try {
+    const m = await import("./cloud-config.js");
+    const C = (m && m.CLOUD) || {};
+    if (C.SUPABASE_URL && String(C.SUPABASE_URL).indexOf("https://") === 0 &&
+        C.SUPABASE_ANON_KEY && String(C.SUPABASE_ANON_KEY).length > 20) {
+      edgeCfg = { base: String(C.SUPABASE_URL).replace(/\/$/, "") + "/functions/v1/usccb", anon: String(C.SUPABASE_ANON_KEY) };
+    } else edgeCfg = false;
+  } catch { edgeCfg = false; }
+  return edgeCfg;
+}
+async function fetchEdge(iso, lang, ms) {
+  const cfg = await edgeConfig();
+  if (!cfg) throw coded("no-edge", "net");
+  const eq = cfg.base + "?iso=" + encodeURIComponent(iso) + "&lang=" + (lang === "es" ? "es" : "en");
+  const a = abortable(ms || 20000);
+  try {
+    const r = await fetch(eq, { headers: { apikey: cfg.anon, Authorization: "Bearer " + cfg.anon }, signal: a.signal });
+    if (!r.ok) throw coded("HTTP " + r.status, "http");
+    let j = null;
+    try { j = await r.json(); } catch { throw coded("edge-bad", "net"); }
+    if (!j || j.ok !== true || typeof j.html !== "string") throw coded((j && j.error) || "edge-bad", "net");
+    return j.html;
+  } finally { a.done(); }
+}
+// Último recurso (best-effort, 12 s): proxy público. En algunas redes funciona;
+// si devuelve el reto anti-bots se detecta y se sigue (ver sawBlocked).
+async function fetchPublicProxy(url, ms) {
+  const a = abortable(ms || 12000);
+  try {
+    const r = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(url), a.signal ? { signal: a.signal } : undefined);
+    const text = await r.text();
+    if (!r.ok) throw coded("HTTP " + r.status, "http");
+    return text;
+  } finally { a.done(); }
+}
+// Cadena de descarga (instalación 2026-11-10):
+// 1) superFetch (preview Perchance) · 2) proxy Supabase Edge (GitHub Pages)
+// 3) fetch directo (si USCCB algún día envía CORS) · 4) proxy público (best-effort).
+// El HTML con reto anti-bots NO vale: se anota (sawBlocked) y se prueba la vía
+// siguiente. Solo se lanza error cuando ninguna vía trae HTML útil.
+async function fetchTextResilient(url, iso, lang) {
+  const jobs = [];
+  if (superFetchFn()) jobs.push(["perchance", () => fetchSuper(url, 22000)]);
+  jobs.push(["edge", () => fetchEdge(iso, lang, 20000)]);
+  jobs.push(["direct", () => fetchDirect(url, 12000)]);
+  jobs.push(["public", () => fetchPublicProxy(url, 12000)]);
+  let sawBlocked = false, last = coded("net", "net");
+  for (let i = 0; i < jobs.length; i++) {
+    if (i) await sleep(600);
     try {
-      const res = await withTimeout(fetchTextOnce(url, order[i]), 22000, "timeout");
-      if (res.ok) return res;
-      last = new Error("HTTP " + res.status);
+      const text = await jobs[i][1]();
+      if (usccbBlocked(text) || /access denied/i.test(String(text).slice(0, 5000))) { sawBlocked = true; last = coded("blocked", "blocked"); continue; }
+      return { text, via: jobs[i][0] };
     } catch (e) { last = e; }
   }
-  throw last || new Error("net");
+  if (sawBlocked && codeOf(last) === "net") throw coded("blocked", "blocked");
+  throw last;
 }
 
 // Patrón de LectionaryApp (CWilsonTSP, backend Heroku muerto):
@@ -217,12 +287,11 @@ export async function fetchUsccbDay(iso, lang) {
   const url = usccbUrl(iso, lang);
   if (!url) return { status: "error", error: "bad-date" };
   try {
-    const res = await fetchTextResilient(url);
-    const parsed = parseUsccb(res.text);
+    const got = await fetchTextResilient(url, iso, lang);
+    const parsed = parseUsccb(got.text);
     if (parsed.blocked) {
-      // USCCB nos puso la página anti-bots: reintentar no sirve de inmediato;
-      // vale la copia guardada y se informa como bloqueo, no como "formato".
-      try { console.warn("[lecturas] USCCB devolvió reto anti-bots"); } catch {}
+      // Reto anti-bots en TODAS las vías: vale la copia guardada.
+      try { console.warn("[lecturas] USCCB devolvió reto anti-bots en todas las vías"); } catch {}
       if (cached?.payload) return { status: "stale", data: cached.payload };
       return { status: "error", error: "blocked" };
     }
@@ -235,9 +304,8 @@ export async function fetchUsccbDay(iso, lang) {
     storageWrite(key, { savedAt: Date.now(), payload });
     return { status: "live", data: payload };
   } catch (e) {
-    // Sin red o USCCB caído: la copia guardada (de cualquier fecha) vale.
+    // Sin red / CORS / proxy caído: la copia guardada (de cualquier fecha) vale.
     if (cached?.payload) return { status: "stale", data: cached.payload };
-    const msg = String((e && e.message) || e);
-    return { status: "error", error: /timeout|abort|network|fetch|failed|load failed/i.test(msg) ? "net" : msg };
+    return { status: "error", error: codeOf(e) };
   }
 }

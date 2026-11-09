@@ -10,7 +10,8 @@ Solo texto oficial USCCB dentro de la app. Sin textos de dominio público ni bot
    - Rellenos: `FEAST_FILL` (Jueves Santo/Navidad/Pentecostés/Asunción, leccionarios 39/16/63/622)
      + `DAILY_FILL` (filas vacías) + `FEAST_FIX` (etiquetas) en `src/daily-citations.js`.
 2. **SOLO USCCB** — `src/usccb.js` es la única fuente de texto. Carga sola al abrir la pestaña
-   Lecturas; lectura + Escuchar + A−/A+ in-app. Sin RVR/KJV/getbible ni enlaces externos.
+   Lecturas; lectura + Escuchar + A−/A+ in-app. Sin RVR/KJV/getbible. Enlace externo a
+   bible.usccb.org SOLO como último recurso en el estado de error (§H).
    Etiqueta: `readingsRange` = “Lecturas 2023–2032 · texto oficial USCCB”.
 3. **Hoy en vivo, resto offline** — `readingDayData()`: si es hoy usa `getDayData()` (cpbjr primario
    + LiturgicalCalendarAPI fallback); si no, `dailyFor(iso)`. Tag 🟢 USCCB/live si hay dato vivo.
@@ -23,9 +24,13 @@ Solo texto oficial USCCB dentro de la app. Sin textos de dominio público ni bot
 7. **Copyright** — Nunca se empaqueta texto USCCB. Solo `citation_id` viaja con la app (Layer 1).
    El texto se descarga en vivo, se muestra en texto plano in-app y se guarda solo en caché
    local (30 días, `usccb.day.[es.]ISO`) para uso personal/parroquial. Atribución © USCCB en UI.
-8. **Resiliencia** — `fetchTextResilient()`: superFetch → fetch → superFetch (3 intentos, 22 s c/u,
-   pausas). Detecta reto anti-bots (Obolus) y cambios de formato: usa copia guardada (stale)
-   antes de mostrar error. Parser con 4 formatos (wr-block + content-header + container + genérico).
+8. **Resiliencia** — `fetchTextResilient(url, iso, lang)` prueba en orden:
+   `superFetch` (preview Perchance) → proxy propio Supabase Edge `usccb` (sitio web,
+   ver `src/cloud/usccb-proxy.ts` y `src/cloud/README.md` §F) → fetch directo →
+   proxy público (best-effort, 12 s). El HTML con reto anti-bots (Obolus) NO vale:
+   se anota y se prueba la vía siguiente. Parser con 4 formatos (wr-block +
+   content-header + container + genérico); ante bloqueo o cambio de formato usa la
+   copia guardada (stale) antes de mostrar error.
 9. **Idiomas** — ES (traducción oficial) / EN (NABRE); resto → EN. UI en 11 idiomas vía `src/i18n.js`.
 10. **No mezclar shells** — `index.html` del workspace es la versión Perchance (con server-plugin);
     el shell de GitHub Pages es otro archivo del repo. Este zip solo trae `src/...` con rutas.
@@ -34,11 +39,14 @@ Solo texto oficial USCCB dentro de la app. Sin textos de dominio público ni bot
 
 ```
 src/app.js                  (Lecturas limpia: sin getbible, con citas + USCCB + santos)
-src/usccb.js                (única fuente USCCB)
+src/usccb.js                (única fuente USCCB: superFetch → Edge → directo → público)
+src/cloud/usccb-proxy.ts    (Edge Function `usccb`: desplegar 1 vez, §F de src/cloud/README.md)
+src/cloud/README.md         (§F: despliegue del proxy sin CLI)
 src/daily-citations.js      (citas 2023-2032 + rellenos)
 src/daily-extra.js          (extensión 2027-2032 generada)
 src/vendor/lectionary-daily.js (fuente westhong)
 src/lectionary/litcal.js   (cpbjr + LitCal, solo metadatos)
+src/lectionary/README.md    (esta guía)
 src/saints.js               (rankOf + saintsForDay)
 src/i18n.js                 (readingsRange, rankFerial, ferialNote, …)
 ```
@@ -80,3 +88,16 @@ Si tu shell aún importa alguno de los deprecated, cambia el import
 - 2026-12-25 / 2027-04-06 / 2027-05-28 / 2027-08-15: rellenos FEAST_FILL.
 - Sin red: citas + copia guardada (stale), sin pantalla rota.
 - Recarga limpia sin errores de consola.
+
+## H. Estados de error del texto oficial (ya no es un único “Sin conexión”)
+
+`fetchUsccbDay()` devuelve `error` con código y la pestaña explica la causa:
+
+- `blocked` — USCCB mostró verificación anti-bots en todas las vías: esperar y reintentar.
+- `parse` — USCCB cambió su página y no se extrajo texto: reintentar más tarde.
+- `http` — USCCB devolvió error de servidor: reintentar en minutos.
+- `net` — sin internet o la red bloqueó la descarga (en GitHub Pages el texto
+  pasa por el proxy §F; sin proxy desplegado el navegador lo bloquea por CORS).
+
+En todos los casos se conservan las citas, el botón ↻ Reintentar y — SOLO aquí,
+como último recurso — un botón externo a `bible.usccb.org` claramente marcado.

@@ -57,10 +57,32 @@ Con esto, lo que se publica en un teléfono aparece en todos.
 - Si publicas datos sensibles (directorios con teléfonos), pide el **modo
   estricto**: políticas RLS por rol + borrado solo-admin en el servidor.
 
+## F. Proxy del texto USCCB para el sitio web (5 min, una vez)
+
+Sin esto, la pestaña **Lecturas** en GitHub Pages muestra *"Sin conexión"*:
+el navegador bloquea la lectura directa de `bible.usccb.org` (sin CORS) y
+allí no existe el `superFetch` de Perchance. La solución es una Edge Function
+propia (gratis) que descarga la página en el servidor y la entrega a la app.
+
+1. Supabase → tu proyecto → menú **Edge Functions** → **Create a new function** → nombre: `usccb` → **Create**.
+2. Borra el código de ejemplo y pega TODO el archivo `src/cloud/usccb-proxy.ts` de este repo → **Deploy function**. Debe decir *Deployed*.
+3. La función queda pública de lectura (el cliente envía tu clave `anon`, la misma de `src/cloud-config.js`; no se necesita ningún secreto nuevo).
+4. Comprueba en el navegador (cualquiera):
+   `https://okaaxtyhivybfcmtjjfs.supabase.co/functions/v1/usccb?iso=2026-11-09&lang=es`
+   con cabeceras `apikey: <tu anon>` y `Authorization: Bearer <tu anon>`.
+   Debe devolver `{"ok":true,"url":"https://bible.usccb.org/...","html":"<!DOCTYPE..."}`.
+   (Sin las cabeceras verás `{"message":"Missing authorization header"}`: es normal.)
+5. Sube la app a GitHub Pages con los archivos del zip de lecturas. La pestaña Lecturas probará,
+   en orden: `superFetch` (preview Perchance) → este proxy (sitio web) → directo →
+   proxy público. Sin proxy desplegado, el sitio muestra las citas + reintento +
+   enlace externo de último recurso.
+
 ## Archivos
 
 - `src/admin.html` + `src/admin.js` — PÁGINA DE ADMINISTRACIÓN separada (no enlazada desde la app): entra con tu contraseña o cuenta de editor y cambia todo; la app lo refleja al instante. En GitHub Pages vive en `/src/admin.html` (guárdala en favoritos, no la compartas).
 
+- `src/cloud/usccb-proxy.ts` — Edge Function `usccb` (proxy del texto oficial para
+  GitHub Pages; desplegar UNA vez según §F de este README, sin CLI).
 - `src/cloud-config.js` — URL + clave anon + hash admin (EDITA TÚ).
 - `src/sync-cloud.js` — adaptador (misma interfaz que el servidor Perchance).
 - `src/sync.js` — usa la nube si está configurada; si no, Perchance; si no, local.
