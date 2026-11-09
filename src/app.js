@@ -1529,12 +1529,12 @@ function dirAll(){ return mix(Sync.coll("directory"), state.directoryExtra, DIRE
 function gname(id){ const g = GROUPS.find(x=>x.id===id); return g ? g.name : id; }
 function gdesc(g){ return (getLang()==="en" && g.descEn) ? g.descEn : (g.desc||""); }
 function gcatLabel(c){ const k = t("gcat_"+c); return k === ("gcat_"+c) ? c : k; }
-function clergyRoleName(r){ return t("role_"+r); }
+function clergyRoleName(r){ const key = "role_"+String(r||"").toLowerCase(); const k = t(key); return k === key ? r : k; }
 function dirListHTML(){
-  const q = state.dirQ.toLowerCase();
+  const q = norm(state.dirQ);
   const list = dirAll().filter(m=>
     (state.dirGroup==="Todas" || (m.groups||[]).includes(state.dirGroup)) &&
-    (!q || (m.family+" "+(m.contact||"")+" "+(m.last||"")+" "+((m.members||[]).map(x=>x.name).join(" "))+((m.birthdays||[]).map(b=>b.name).join(" "))).toLowerCase().includes(q)));
+    (!q || norm(m.family+" "+(m.contact||"")+" "+(m.last||"")+" "+((m.members||[]).map(x=>x.name).join(" "))+((m.birthdays||[]).map(b=>b.name).join(" "))).includes(q)));
   if(!list.length) return `<p class="small">${t("noResults")}</p>`;
   return list.map(m=>`<div class="eventRow"><div class="avatar">${esc((m.family||"?").replace(/^(Familia|D\.|Dña\.)\s*/,"").slice(0,1))}</div>
     <div style="flex:1"><b>${esc(m.family)}</b>${m.mine?` <span class="tag">✍️</span>`:""}
