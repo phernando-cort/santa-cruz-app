@@ -1084,20 +1084,19 @@ async function readPassage(i){
 }
 async function readAllPassages(){
   const R = readingDayData();
-  const idxs = R.list.map((_,i)=>i).filter(i=>!state.readingTexts[rkey(R.iso,i)]);
-  if(!idxs.length){
-    for(const rd of R.list.map((_,i)=>i)) delete state.readingTexts[rkey(R.iso,rd)];
-    stopSpeak();
-    renderReadings();
-    return;
-  }
-  for(const i of idxs){ state.readingTexts[rkey(R.iso,i)] = {loading:true}; }
+  const iso = R.iso;
+  const idxs = R.list.map((_,i)=>i).filter(i=>!state.readingTexts[rkey(iso,i)]);
+  // Sin interruptor: si ya está todo cargado NO se borra nada (antes el
+  // respaldo automático podía vaciar los textos que ya se veían).
+  if(!idxs.length){ if(state.tab==="readings" && state.readingDate===iso) renderReadings(); return; }
+  for(const i of idxs){ state.readingTexts[rkey(iso,i)] = {loading:true}; }
   renderReadings();
   await Promise.all(idxs.map(async (i)=>{
     const r = await fetchPassage(R.list[i].citation, getLang());
-    state.readingTexts[rkey(R.iso,i)] = r.missing ? {missing:r.missing} : {passages:r.passages, book:r.book, trans:r.transName};
+    if(state.readingDate!==iso) return; // el usuario cambió de día: no tocar
+    state.readingTexts[rkey(iso,i)] = r.missing ? {missing:r.missing} : {passages:r.passages, book:r.book, trans:r.transName};
   }));
-  if(state.tab==="readings" && state.readingDate===R.iso) renderReadings();
+  if(state.tab==="readings" && state.readingDate===iso) renderReadings();
 }
 function passagePlainText(R, idxs){
   const L = READING_LABEL;
