@@ -151,9 +151,20 @@ const state = {
   _chpwMsg: "",
   fontScale: store.get("a11y.font", 1),
 };
-if(!state.giving.monthly) state.giving.monthly = null;
 if(![1,1.15,1.3].includes(state.fontScale)) state.fontScale = 1;
 if(!state.userName){ const s = store.get("account.session", ""); if(s) state.userName = s; }
+// Sanea datos guardados de versiones viejas: lo que no sea arreglo/objeto se restablece.
+for(const k of ["joinedGroups","directoryExtra","muroExtra","intencionesExtra","intencionesHidden","directoryHidden","muroHidden","customEvents","datedEvents","datedHidden","reminders","bulletinsExtra","documentsExtra","messagesExtra","pastoralExtra","newsExtra","videosExtra","editors","customPrayers","parishPrayers","cantosExtra","famPrayed","prayerFavs"]) if(!Array.isArray(state[k])) state[k] = [];
+for(const k of ["alertsDone","support"]) if(!state[k] || typeof state[k] !== "object" || Array.isArray(state[k])) state[k] = {};
+if(!state.stream || typeof state.stream !== "object" || Array.isArray(state.stream)) state.stream = { yt: "", label: "" };
+if(!state.bulletinLive || typeof state.bulletinLive !== "object" || Array.isArray(state.bulletinLive)) state.bulletinLive = { ...BULLETIN_FALLBACK, ts: 0 };
+if(!state.ministry || typeof state.ministry !== "object" || Array.isArray(state.ministry)) state.ministry = JSON.parse(JSON.stringify(MINISTRY_SEED));
+if(!state.modules || typeof state.modules !== "object" || Array.isArray(state.modules)) state.modules = {hero:true, actions:true, inspire:true, events:true, bulletin:true, giving:true};
+if(!Array.isArray(state.order)) state.order = ["hero","actions","inspire","events","bulletin","giving"];
+if(!state.giving || typeof state.giving !== "object" || Array.isArray(state.giving)) state.giving = { goals: {}, gifts: [], updates: {}, monthly: null, name: "" };
+if(!Array.isArray(state.giving.gifts)) state.giving.gifts = [];
+if(!state.giving.goals || typeof state.giving.goals !== "object") state.giving.goals = {};
+if(!state.giving.updates || typeof state.giving.updates !== "object") state.giving.updates = {};
 Sync.getParish = () => state.parishId;
 Sync.getUser = () => state.userName || "";
 try { Sync.migrated = !!localStorage.getItem("sync.migrated.v1"); } catch(e) {}
@@ -560,12 +571,16 @@ function closeSheets(){ $$(".sheet").forEach(s=>s.classList.remove("open")); }
 
 // ---------- render ----------
 function render(){
-  stopSpeak();
-  applyFont();
-  renderGate();
-  document.documentElement.lang = getLang();
-  $("#appCol").dir = (LANGS.find(l=>l.id===getLang())||{}).dir || "ltr";
-  renderTop(); renderHome(); renderReadings(); renderCommunity(); renderPray(); renderCalendar(); renderVocacion(); renderMore(); loadBulletinLive();
+  // Cada sección va aislada: si una falla (p. ej. un dato viejo guardado en
+  // este dispositivo), las demás y el cambio de pestaña siguen funcionando.
+  try{ stopSpeak(); }catch(e){}
+  try{ applyFont(); }catch(e){}
+  try{ renderGate(); }catch(e){}
+  try{ document.documentElement.lang = getLang(); }catch(e){}
+  try{ $("#appCol").dir = (LANGS.find(l=>l.id===getLang())||{}).dir || "ltr"; }catch(e){}
+  const sections = [renderTop, renderHome, renderReadings, renderCommunity, renderPray, renderCalendar, renderVocacion, renderMore];
+  for(const f of sections){ try{ f(); }catch(e){ console.warn("[render]", f.name, String((e && e.message) || e).slice(0, 200)); } }
+  try{ loadBulletinLive(); }catch(e){}
   $$(".tabBtn").forEach(b=>b.classList.toggle("active", b.dataset.tab===state.tab));
   $$(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+state.tab));
 }
