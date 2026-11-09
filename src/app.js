@@ -560,7 +560,7 @@ function render(){
   renderGate();
   document.documentElement.lang = getLang();
   $("#appCol").dir = (LANGS.find(l=>l.id===getLang())||{}).dir || "ltr";
-  renderTop(); renderHome(); renderReadings(); renderCommunity(); renderPray(); renderCalendar(); renderMore(); loadBulletinLive();
+  renderTop(); renderHome(); renderReadings(); renderCommunity(); renderPray(); renderCalendar(); renderVocacion(); renderMore(); loadBulletinLive();
   $$(".tabBtn").forEach(b=>b.classList.toggle("active", b.dataset.tab===state.tab));
   $$(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+state.tab));
 }
@@ -576,7 +576,7 @@ function renderTop(){
   $("#seasonEl").innerHTML = `<span class="pill">${esc(season)}</span><span>${esc(feast)} · ${esc(rank)}</span>`;
   $("#unreadDot").hidden = !store.get("msgs.unread", true);
   // tab labels
-  const labels = {home:t("tab_home"),readings:t("tab_readings"),community:t("tab_community"),pray:t("tab_pray"),calendar:t("tab_calendar"),more:t("tab_more")};
+  const labels = {home:t("tab_home"),readings:t("tab_readings"),community:t("tab_community"),pray:t("tab_pray"),calendar:t("tab_calendar"),vocacion:t("tab_vocacion"),more:t("tab_more")};
   $$(".tabBtn").forEach(b=>{ const ic = b.querySelector(".ic")?.outerHTML||""; b.innerHTML = ic + labels[b.dataset.tab]; });
 }
 
@@ -1389,6 +1389,7 @@ async function loadBulletinLive(){
   }catch(e){}
 }
 function renderCalendar(){
+  if (!$("#view-calendar")) return; // el shell publicado puede no traer calendario
   const cur = state.calCursor;
   const isEn = getLang()==="en";
   const ED = canEdit();
@@ -1415,7 +1416,12 @@ function renderCalendar(){
     ${(isEn?SACRAMENT_INFO.en:SACRAMENT_INFO.es).map(s=>`<div class="eventRow"><div style="flex:1"><b>${esc(s.h)}</b><div class="small">${esc(s.p)}</div></div></div>`).join("")}
     <div class="btnRow"><button class="btn btnGhost" data-action="ext" data-url="https://www.hcccsantacruz.org/sacraments">hcccsantacruz.org ↗</button></div></section>`;
   cal += celebrationHTML();
-  $("#view-calendar").innerHTML = cal;
+  const vc = $("#view-calendar");
+  if (vc) vc.innerHTML = cal;
+}
+function renderVocacion(){
+  const v = $("#view-vocacion");
+  if (v) v.innerHTML = `<h2 class="serif" style="margin:4px 0">${t("tab_vocacion")}</h2>` + vocacionesHTML();
 }
 function celebrationHTML(){
   const ED = canEdit();
@@ -2051,7 +2057,7 @@ document.addEventListener("click", e=>{
   if(!el) return;
   const a = el.dataset.action;
   const val = (id) => $(id)?.value.trim() || "";
-  if(a==="tab"){ stopSpeak(); state.tab = el.dataset.tab; render(); window.scrollTo({top:0}); }
+  if(a==="tab"){ const tb = el.dataset.tab; if(!document.getElementById("view-"+tb)) return; stopSpeak(); state.tab = tb; render(); window.scrollTo({top:0}); }
   else if(a==="jump"){ $("#"+el.dataset.to)?.scrollIntoView({behavior:"smooth"}); }
   else if(a==="more-focus"){ stopSpeak(); state.tab="more"; render(); setTimeout(()=>{ $("#"+el.dataset.focus)?.scrollIntoView({behavior:"smooth"}); },80); }
   else if(a==="pray-mode"){ stopSpeak(); state.prayMode = el.dataset.mode; state.tab="pray"; state.prayerOpen=null; render(); window.scrollTo({top:0}); }
