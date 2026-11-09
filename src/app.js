@@ -283,8 +283,8 @@ function massIntentionsHTML(ev){
   const vivos = list.filter(i=>!isDif(i)), difs = list.filter(isDif);
   let h = `<div class="small">🕯️ <b>${esc(t("intentMassL"))}:</b></div>`;
   if(!list.length) return h + `<div class="small">— ${esc(t("noIntentL"))}</div>`;
-  if(vivos.length) h += vivos.map(i=>`<div class="small">🙏 <b>${esc(i.names)}</b> <span>· ${esc(i.date)} — ${esc(i.text).slice(0,80)}</span></div>`).join("");
-  if(difs.length) h += difs.map(i=>`<div class="small">✝ <b>${esc(i.names)}</b> <span>· ${esc(i.date)} — ${esc(i.text).slice(0,80)}</span></div>`).join("");
+  if(vivos.length) h += vivos.map(i=>`<div class="small">🙏 <b>${esc(i.names)}</b> <span>· ${esc(i.date)} — ${esc(i.text)}</span></div>`).join("");
+  if(difs.length) h += difs.map(i=>`<div class="small">✝ <b>${esc(i.names)}</b> <span>· ${esc(i.date)} — ${esc(i.text)}</span></div>`).join("");
   return h;
 }
 function nextDateStr(ev){
@@ -648,8 +648,7 @@ function renderHome(){
       const nInt = (mm.int||[]).length;
       const mins = ministryForTime(mm.t);
       const cel = String(mm.ce||"").split("·").map(s=>celebFull(s)).filter(Boolean).join(" · ");
-      const ints = (mm.int||[]).slice(0,4).map(x=>`<div class="intentLine">• ${esc(x)}</div>`).join("")
-        + (nInt>4?`<div class="small">+${nInt-4} ${isEn?"more":"más"}…</div>`:"");
+      const ints = (mm.int||[]).map(x=>`<div class="intentLine">• ${esc(x)}</div>`).join("");
       const minList = mins ? ["Sacerdote","Diácono","Encargado/a de Misa","Lectores","Coro"]
         .map(r=>mins.roles[r]&&mins.roles[r]!=="Por asignar"?`${esc(r)}: <b>${esc(mins.roles[r])}</b>`:"").filter(Boolean).join(" · ") : "";
       return `<details class="massToday"><summary>⏰ <b>${esc(mm.t||"")}</b> · ⛪ ${esc(mm.pl||parish().name)} · 🕯️ ${nInt||(isEn?"no intentions":"sin intenciones")}</summary>
