@@ -8,7 +8,10 @@
 // 0 bulletins, 1 documents, 2 messages, 3 intenciones, 4 directory, 5 news,
 // 6 ministry, 7 parishPrayers, 8 cantos, 9 videos, 10 givingUpdates,
 // 11 givingGoals, 12 muro, 13 config, 14 editors, 15 users.
-import { CLOUD } from "./cloud-config.js";
+// cloud-config.js puede faltar en instalaciones incompletas (ZIP viejo):
+// en ese caso CLOUD queda null y la app trabaja en modo local, sin romperse.
+var CLOUD = null;
+try { CLOUD = (await import("./cloud-config.js")).CLOUD || null; } catch(e) { CLOUD = null; }
 
 var TABLE = "parish_records";
 var KEYS = ["bulletins","documents","messages","intenciones","directory","news","ministry","parishPrayers","cantos","videos","givingUpdates","givingGoals","muro","config","editors","users"];

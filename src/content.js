@@ -10,7 +10,10 @@
 import * as D from "./data.js";
 import { REAL_EVENTS as _RE, DATED_SEEDS as _DS, BULLETIN_FALLBACK as _BF,
   SACRAMENT_INFO as _SI, PARISH_YT as _PYT, PARISH_BULLETIN_PAGE as _PBP } from "./calendario-extra.js";
-import { CLOUD } from "./cloud-config.js";
+// cloud-config.js puede faltar en instalaciones incompletas (ZIP viejo):
+// en ese caso CLOUD queda null y la app trabaja en modo local, sin romperse.
+var CLOUD = null;
+try { CLOUD = (await import("./cloud-config.js")).CLOUD || null; } catch(e) { CLOUD = null; }
 
 // ---- re-export fijo (lógica, no editable) ----
 export const ROSARY_MYSTERIES = D.ROSARY_MYSTERIES;
