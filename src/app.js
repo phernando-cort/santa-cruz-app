@@ -208,6 +208,7 @@ const APP_ICON = "src/icono-parroquia.png";
 const APP_ICON_URL = "https://user.uploads.dev/file/378ea399d5f8db29ad8198499000be7d.png";
 function setFavicon(){ try{ let l = document.querySelector("link[rel=icon]"); if(!l){ l = document.createElement("link"); l.rel = "icon"; document.head.appendChild(l); } l.type = "image/png"; l.href = APP_ICON_URL; }catch{} }
 function normCode(s){ return String(s || "").trim().toUpperCase(); }
+function clearInviteTrace(){ try{ delete state.pendingInvite; history.replaceState(null, "", window.location.pathname + window.location.search); }catch{} }
 function inviteCodeEff(){
   if(Sync.online && Sync.inviteCode) return Sync.inviteCode;
   if(Sync.online && !Sync._configReady) return null; // aún sincronizando: ningún código vale
@@ -233,14 +234,16 @@ function renderGate(){
         <button class="fchip ${m==="login"?"active":""}" data-action="gate-mode" data-m="login">${t("gateHasAccount")}</button>
       </div>
       ${m==="invite" ? `
-      <label>${t("yourName")}</label>
-      <input id="gateName" value="${esc(state.userName)}" placeholder="${esc(t("namePh"))}" autocomplete="name">
-      <label>${t("gateCodeL")}</label>
-      <input id="gateCode" class="gateCode" autocomplete="off" autocapitalize="characters" placeholder="${esc(t("gateCodePh"))}">
-      <label>${t("gatePwL")}</label>
+      ${state.pendingInvite?`<div class="notice">✅ ${esc(t("invPrefilled"))}</div>`:""}
+      <label><b>1.</b> ${t("yourName")}</label>
+      <input id="gateName" value="${esc((state.pendingInvite&&state.pendingInvite.name)||state.userName)}" placeholder="${esc(t("namePh"))}" autocomplete="name">
+      <label><b>2.</b> ${t("gateCodeL")}</label>
+      <input id="gateCode" class="gateCode" value="${esc((state.pendingInvite&&state.pendingInvite.code)||"")}" autocomplete="off" autocapitalize="characters" placeholder="${esc(t("gateCodePh"))}">
+      <label><b>3.</b> ${t("gatePwL")} <span class="small">(${esc(t("gatePwHint"))})</span></label>
       <input id="gatePw1" type="password" autocomplete="new-password" placeholder="${esc(t("gatePwPh"))}">
-      <label>${t("gatePw2L")}</label>
+      <label><b>3.</b> ${t("gatePw2L")}</label>
       <input id="gatePw2" type="password" autocomplete="new-password" placeholder="${esc(t("gatePwPh"))}">
+      <div class="btnRow"><button class="btn btnGhost" data-action="gate-showpw" style="flex:1">${esc(t("showPw"))}</button></div>
       <div class="btnRow" style="margin-top:12px"><button class="btn btnGold" data-action="gate-redeem" style="flex:1">${t("gateCreateBtn")}</button></div>` : ""}
       ${m==="login" ? `
       <label>${t("yourName")}</label>
@@ -1845,8 +1848,16 @@ function renderCommunity(){
   $("#dirGroupSel")?.addEventListener("change", e=>{ state.dirGroup = e.target.value; renderCommunity(); });
 }
 
+function appPublicUrl(){
+  try{
+    const h = String(window.location.hostname || "");
+    if(/\.github\.io$/.test(h)) return window.location.origin + String(window.location.pathname || "").replace(/[^/]*$/, "");
+    if(/(^|\.)perchance\.org$/.test(h) && window.generatorName) return "https://perchance.org/" + window.generatorName;
+  }catch{}
+  return "https://perchance.org/" + (window.generatorName || "");
+}
 function inviteMsgText(u, code){
-  const link = "https://perchance.org/" + (window.generatorName || "");
+  const link = appPublicUrl() + "#i=" + encodeURIComponent(code) + "&n=" + encodeURIComponent(u.name || "");
   return t("invMsgTpl").replace("{name}", u.name).replace("{parish}", parish().name).replace("{link}", link).replace("{code}", code);
 }
 function accountMgrHTML(){
@@ -2311,9 +2322,11 @@ document.addEventListener("click", e=>{
         state.userName = rec.name; store.set("user.name", rec.name);
         state.inviteOk = true; store.set("invite.ok", true); store.set("account.session", rec.name);
         state._gateMsg = "";
+        clearInviteTrace();
         try{ Sync.push(12, { id: "w" + Date.now(), name: rec.name, kind: "🚪", text: t("gateJoined"), when: "" }).catch(()=>{}); }catch{}
         render();
       }catch(err){ el.disabled = false; state._gateMsg = String((err && err.message) || err).includes("code") ? t("gateBadCode") : String((err && err.message) || err); renderGate(); } })(); }
+  else if(a==="gate-showpw"){ ["#gatePw1","#gatePw2","#gatePwLogin","#gateAdmPw"].forEach(s=>{ const i=$(s); if(i) i.type = i.type==="password"?"text":"password"; }); }
   else if(a==="gate-login"){
     const n = val("#gateName"), pw = $("#gatePwLogin")?.value || "";
     if(!n || !pw){ state._gateMsg = t("gateNeedAll"); renderGate(); return; }
@@ -2326,7 +2339,7 @@ document.addEventListener("click", e=>{
         if(h !== rec.pass) throw new Error("badpw");
         state.userName = rec.name; store.set("user.name", rec.name);
         state.inviteOk = true; store.set("invite.ok", true); store.set("account.session", rec.name);
-        state._gateMsg = ""; render();
+        state._gateMsg = ""; clearInviteTrace(); render();
       }catch(err){ el.disabled = false; const m = String((err && err.message) || err);
         state._gateMsg = m.includes("badpw") ? t("gateBadPw") : t("gateNoUser"); renderGate(); } })(); }
   else if(a==="gate-admin"){
@@ -2587,6 +2600,11 @@ document.addEventListener("click", e=>{
 });
 
 setFavicon();
+try{ // enlace de invitación: #i=CODIGO&n=Nombre → prellena la puerta de entrada
+  const hq = new URLSearchParams(String(window.location.hash || "").replace(/^#/, ""));
+  const ic = (hq.get("i") || "").trim(), inm = (hq.get("n") || "").trim();
+  if(ic){ state.pendingInvite = { code: ic, name: inm }; state.gateMode = "invite"; }
+}catch{}
 render();
 refreshGCal();
 Sync.connect();
