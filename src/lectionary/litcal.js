@@ -1,11 +1,13 @@
-// Layer 1 (live) — citation_id JSON.
-// Primary: cpbjr/catholic-readings-api (USCCB-scraped citations + celebration +
-// saint quote, static JSON on GitHub Pages, no lectionary text inside).
+// Layer 1 (en vivo) — solo citation_id, sin texto con copyright (instalación limpia 2026-11-09).
+// Condiciones:
+// - Primario: cpbjr/catholic-readings-api (citas USCCB + fiesta + cita del santo,
+//   JSON estático en GitHub Pages, sin texto del leccionario).
 //   https://github.com/cpbjr/catholic-readings-api
-// Fallback: LiturgicalCalendarAPI General Roman / US calendar (seasons, colors).
+// - Fallback: LiturgicalCalendarAPI calendario USA/General (temporadas, colores).
 //   https://github.com/Liturgical-Calendar/LiturgicalCalendarAPI
-// Offline fallback: src/lectionary/citations.json template.
-// Only feast/season/color/citation metadata is used — no copyright issue.
+// - Offline: citas locales src/daily-citations.js + src/daily-extra.js (2023-2032).
+// - Hoy: getDayData() en vivo; otros días: dailyFor(iso). Rango con rankOf().
+// Solo metadatos fiesta/rango/temporada/color/citas — sin problema de copyright.
 
 const CPBJR = "https://cpbjr.github.io/catholic-readings-api";
 const LITCAL = "https://litcal.johnromanodorazio.com/api/v5";

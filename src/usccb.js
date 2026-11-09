@@ -1,8 +1,13 @@
-// USCCB (texto completo bajo demanda) + helpers de fecha.
-// El texto oficial (NABRE en inglés, traducción oficial en español) NO se
-// puede copiar dentro de la app (© USCCB): se trae en vivo desde
-// bible.usccb.org con superFetch y se muestra DENTRO de la app, con caché
-// local de 30 días. Sin red: citas + texto de dominio público (getbible).
+// USCCB — ÚNICA fuente de texto oficial (instalación limpia 2026-11-09).
+// Condiciones:
+// - Texto oficial (NABRE en inglés, traducción oficial en español) © USCCB: NUNCA se
+//   empaqueta en el repo. Solo citas (Layer 1) viajan con la app; el texto se trae en
+//   vivo desde bible.usccb.org (superFetch → fetch → superFetch, 3 intentos, 22 s) y se
+//   muestra DENTRO de la app (lectura + Escuchar + A−/A+), con caché local de 30 días.
+// - Sin red: se muestra la copia guardada (stale) o las citas; sin botones externos.
+// - Detecta página anti-bots (Obolus) y cambios de formato sin romper la UI.
+// - ES: https://bible.usccb.org/es/bible/lecturas/MMDDYY.cfm
+// - EN: https://bible.usccb.org/bible/readings/MMDDYY.cfm (otros idiomas → EN).
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const USCCB_PREFIX = "usccb.day.";
 
@@ -92,6 +97,8 @@ export function usccbUrl(iso, lang) {
   if (usccbWhich(lang) === "es") return `https://bible.usccb.org/es/bible/lecturas/${code}.cfm`;
   return `https://bible.usccb.org/bible/readings/${code}.cfm`;
 }
+// Alias histórico (usccb-text.js): misma firma usccbUrlFor(iso, lang).
+export const usccbUrlFor = usccbUrl;
 const KIND_RX = [
   [/primer(a|o)? lectura|reading 1|first reading/i, "first"],
   [/salmo|psalm/i, "psalm"],

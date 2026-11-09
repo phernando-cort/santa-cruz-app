@@ -1,10 +1,13 @@
-// Citas diarias offline 2023-01-01..2027-10-31 (días de semana incluidos,
-// src/vendor/lectionary-daily.js) + extensión generada 2027-11-01..2032-12-31
-// (src/daily-extra.js, window.DailyExtra; generada por src/tools/build-daily-extra.js)
+// Citas diarias offline 2023-01-01..2032-12-31 — instalación limpia 2026-11-09.
+// - Base 2023-01-01..2027-10-31 (días de semana incluidos, src/vendor/lectionary-daily.js)
+// - Extensión generada 2027-11-01..2032-12-31 (src/daily-extra.js, window.DailyExtra;
+//   generada por src/tools/build-daily-extra.js)
 // + overlay de fiesta+color 2026-04..2027-05 (índice mensual USCCB).
 // Fuente vendorizada: src/vendor/lectionary-daily.js (westhong/catholic-daily-readings,
 // Layer 1: solo citas, sin texto con copyright). Formato por fecha:
 // [feast, color, lectionary, first, psalm, second, alleluia, gospel].
+// Condiciones: rango con clamp 2023-01-01..2032-12-31; rankOf() para Feria/Weekday;
+// santo único por saintsForDay(); texto oficial SOLO vía src/usccb.js (nunca aquí).
 
 // La fuente deja vacías unas 15 fiestas mayores (Juves Santo en 2023-2025,
 // Navidad, Pentecostés y Asunción casi todos los años): solo trae la Misa de
