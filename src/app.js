@@ -549,14 +549,32 @@ function openSheet(id){ $("#"+id)?.classList.add("open"); }
 function closeSheets(){ $$(".sheet").forEach(s=>s.classList.remove("open")); }
 
 // ---------- render ----------
+function renderView(id, fn){
+  try{ fn(); }
+  catch(err){
+    try{ console.error("[vista]", id, err); }catch{}
+    try{
+      const v = document.getElementById(id);
+      if(v) v.innerHTML = `<div class="card"><div class="notice">⚠️ ${esc(t("viewErr"))}</div>
+        <div class="btnRow"><button class="btn btnGhost" data-action="view-retry">${esc(t("retryBtn"))}</button></div></div>`;
+    }catch{}
+  }
+}
 function render(){
   stopSpeak();
   applyFont();
   if(state.tab==="calendar") state.tab="community"; // el Calendario vive ahora en Comunidad → Agenda
-  renderGate();
+  try{ renderGate(); }catch(err){ try{console.error("[vista] gate",err);}catch{} }
   document.documentElement.lang = getLang();
   $("#appCol").dir = (LANGS.find(l=>l.id===getLang())||{}).dir || "ltr";
-  renderTop(); renderHome(); renderReadings(); renderCommunity(); renderPray(); renderVocacion(); renderMore(); loadBulletinLive();
+  try{ renderTop(); }catch(err){ try{console.error("[vista] top",err);}catch{} }
+  renderView("view-home", renderHome);
+  renderView("view-readings", renderReadings);
+  renderView("view-community", renderCommunity);
+  renderView("view-pray", renderPray);
+  renderView("view-vocacion", renderVocacion);
+  renderView("view-more", renderMore);
+  try{ loadBulletinLive(); }catch(err){ try{console.error("[vista] bulletin",err);}catch{} }
   $$(".tabBtn").forEach(b=>b.classList.toggle("active", b.dataset.tab===state.tab));
   $$(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+state.tab));
 }
@@ -931,7 +949,7 @@ function usccbPaneHTML(R){
   const saved = state.usccbTexts[key];
   if(saved && saved.loading) return `<div class="todayBlock"><h4>📖 ${esc(t("officialText"))}</h4><p class="small">⏳ ${esc(t("loadingOfficial"))}</p></div>`;
   if(saved && saved.error) return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text (USCCB)":"Texto oficial (USCCB)")}</h4>
-    <div class="notice">📖 ${esc(t("usccbFbNote"))}</div>
+    <div class="notice">${esc(en?"No connection. Try again when you have internet.":"Sin conexión. Reintenta cuando tengas internet.")}</div>
     <div class="btnRow"><button class="btn btnGhost" data-action="usccb-load">↻ ${esc(en?"Retry":"Reintentar")}</button></div></div>`;
   if(saved && saved.sections){
     const secs = saved.sections.map(s=>`
@@ -960,12 +978,9 @@ async function loadUsccbDay(){
     state.usccbTexts[key] = {sections:r.data.sections, feast:r.data.title, url:r.data.url, stale:r.status==="stale"};
   } else {
     state.usccbTexts[key] = {error:r.error||"net"};
-    // Respaldo final: si el texto oficial falla, carga sola los textos
-    // completos de cada lectura para que la pantalla nunca quede vacía.
+    // Solo versión oficial USCCB: sin textos de otras versiones.
+    // Reintenta sola una vez cuando vuelva la red (45 s).
     if(state.readingDate===iso && state.tab==="readings"){
-      state._usccbFb = state._usccbFb || {};
-      if(!state._usccbFb[key]){ state._usccbFb[key] = true; readAllPassages(); }
-      // Y reintenta el oficial una vez cuando vuelva la red (45 s).
       state._usccbRt = state._usccbRt || {};
       if(!state._usccbRt[key]){ state._usccbRt[key] = true;
         setTimeout(()=>{ if(state.readingDate===iso && state.tab==="readings" && state.usccbTexts[key] && state.usccbTexts[key].error){
@@ -976,8 +991,8 @@ async function loadUsccbDay(){
   }
   if(state.tab==="readings" && state.readingDate===iso) renderReadings();
 }
-// Calentamiento en segundo plano: deja el texto de hoy (oficial + lecturas)
-// ya guardado en el aparato, para que abra al instante aunque falle la red.
+// Calentamiento en segundo plano: deja el texto oficial de hoy ya guardado
+// en el aparato, para que abra al instante aunque falle la red.
 async function warmReadings(){
   try{
     const iso = toISO(new Date());
@@ -986,22 +1001,6 @@ async function warmReadings(){
       const k = usccbKey(iso);
       if(!state.usccbTexts[k]){ state.usccbTexts[k] = {sections:r.data.sections, feast:r.data.title, url:r.data.url, stale:r.status==="stale"}; if(state.tab==="readings" && state.readingDate===iso) renderReadings(); }
     }
-  }catch{}
-  try{
-    const iso = toISO(new Date());
-    if(state.readingDate !== iso) return;
-    const R = readingDayData();
-    let changed = false;
-    for(let i=0;i<R.list.length;i++){
-      const k = rkey(R.iso, i);
-      if(state.readingTexts[k]) continue;
-      try{
-        const p = await fetchPassage(R.list[i].citation, getLang());
-        state.readingTexts[k] = p.missing ? {missing:p.missing} : {passages:p.passages, book:p.book, trans:p.transName};
-        changed = true;
-      }catch{}
-    }
-    if(changed && state.tab==="readings" && state.readingDate===iso) renderReadings();
   }catch{}
 }
 function speakUsccb(){
@@ -1048,8 +1047,7 @@ function renderReadings(){
         ${R.daily&&R.daily.lectionary?`<span class="tag">#${R.daily.lectionary}</span>`:""}</div>
       ${usccbPaneHTML(R)}
       ${R.list.length?`
-      ${(R.isToday&&R.dd&&R.dd.quote)?`<div class="verseBox">“${esc(R.dd.quote)}”<br><span class="small">— ${esc(R.feast)}</span></div>`:""}
-      ${readingRowsHTML(R)}`
+      ${(R.isToday&&R.dd&&R.dd.quote)?`<div class="verseBox">“${esc(R.dd.quote)}”<br><span class="small">— ${esc(R.feast)}</span></div>`:""}`
       :`<p class="small">${esc(t("noResults"))}</p>`}`
       :`<p class="small">${esc(t("readingsRange"))}</p>`}
     </section>
@@ -2254,6 +2252,7 @@ document.addEventListener("click", e=>{
   const a = el.dataset.action;
   const val = (id) => $(id)?.value.trim() || "";
   if(a==="tab"){ stopSpeak(); state.tab = el.dataset.tab; render(); window.scrollTo({top:0}); }
+  else if(a==="view-retry"){ render(); }
   else if(a==="agenda"){ stopSpeak(); state.tab="community"; render(); setTimeout(()=>{ $("#sec-agenda")?.scrollIntoView({behavior:"smooth"}); },80); }
   else if(a==="jump"){ $("#"+el.dataset.to)?.scrollIntoView({behavior:"smooth"}); }
   else if(a==="more-focus"){ stopSpeak(); state.tab="more"; render(); setTimeout(()=>{ $("#"+el.dataset.focus)?.scrollIntoView({behavior:"smooth"}); },80); }
