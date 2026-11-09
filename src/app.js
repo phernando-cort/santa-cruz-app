@@ -657,8 +657,7 @@ function renderHome(){
       const nInt = (mm.int||[]).length;
       const mins = ministryForTime(mm.t);
       const cel = String(mm.ce||"").split("·").map(s=>celebFull(s)).filter(Boolean).join(" · ");
-      const ints = (mm.int||[]).slice(0,4).map(x=>`<div class="intentLine">• ${esc(x)}</div>`).join("")
-        + (nInt>4?`<div class="small">+${nInt-4} ${isEn?"more":"más"}…</div>`:"");
+      const ints = (mm.int||[]).map(x=>`<div class="intentLine">• ${esc(x)}</div>`).join("");
       const minList = mins ? ["Sacerdote","Diácono","Encargado/a de Misa","Lectores","Coro"]
         .map(r=>mins.roles[r]&&mins.roles[r]!=="Por asignar"?`${esc(r)}: <b>${esc(mins.roles[r])}</b>`:"").filter(Boolean).join(" · ") : "";
       return `<details class="massToday"><summary>⏰ <b>${esc(mm.t||"")}</b> · ⛪ ${esc(mm.pl||parish().name)} · 🕯️ ${nInt||(isEn?"no intentions":"sin intenciones")}</summary>
@@ -916,7 +915,7 @@ function saintsDayHTML(R){
   const en = getLang()==="en";
   const list = saintsDayList(R);
   if(!list.length) return "";
-  const cards = list.map(s=>`
+  const card = (s)=>`
     <div class="saintCard">
       ${s.image?`<img class="saintImg" src="${esc(s.image)}" alt="${esc(String(s.name||"?").slice(0,1))}" loading="lazy">`:`<div class="avatar">${esc(String(s.name||"?").slice(0,1))}</div>`}
       <div style="flex:1;min-width:0">
@@ -929,8 +928,11 @@ function saintsDayHTML(R){
           ${s.wiki?`<button class="btn btnGhost" data-action="ext" data-url="${esc(s.wiki)}">Wikipedia ↗</button>`:""}
         </div>
       </div>
-    </div>`).join("");
-  return `<div class="todayBlock"><h4>✨ ${esc(en?"Saints of the day":"Santos del día")} (${list.length})</h4>${cards}</div>`;
+    </div>`;
+  const rest = list.slice(1);
+  return `<div class="todayBlock"><h4>✨ ${esc(en?"Saints of the day":"Santos del día")} (${list.length})</h4>${card(list[0])}`
+    + (rest.length?`<details class="ordDet"><summary>▸ ${esc(t("moreSaints").replace("{n}", String(rest.length)))}</summary>${rest.map(card).join("")}</details>`:"")
+    + `</div>`;
 }
 function usccbPaneHTML(R){
   const en = getLang()==="en";
@@ -1022,8 +1024,8 @@ function renderReadings(){
         ${R.isToday&&R.dd?`<span class="tag">🟢 ${esc(R.dd.source==="cpbjr"?"USCCB":"live")}</span>`:""}
         ${R.daily&&R.daily.lectionary?`<span class="tag">#${R.daily.lectionary}</span>`:""}</div>
       ${R.list.length?`<div class="readCite" style="margin-top:8px">📖 ${R.list.map(r=>esc(r.citation)).join(" · ")}</div>`:""}
-      ${saintsDayHTML(R)}
       ${usccbPaneHTML(R)}
+      ${saintsDayHTML(R)}
       ${R.list.length?`
       ${(R.isToday&&R.dd&&R.dd.quote)?`<div class="verseBox">“${esc(R.dd.quote)}”<br><span class="small">— ${esc(R.feast)}</span></div>`:""}`
       :`<p class="small">${esc(t("noResults"))}</p>`}`
