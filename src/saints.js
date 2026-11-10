@@ -4,6 +4,7 @@
 // - Faltantes del calendario USA: src/vendor/saints-extra.js (redacción propia ES+EN).
 // El calendario de la fuente es tradicional (pre-1970): se casa por NOMBRE,
 // nunca por fecha. Sin bio para misterios, ferias y fiestas sin santo.
+import { SAINT1L, ERA_I18N, PATRON_I18N, SAINT_PRAY } from "./i18n-content.js";
 const SAINT_IMG_HOST = "https://acoci86.github.io/daily-saints";
 
 const fold = (s) => String(s || "").toLowerCase()
@@ -126,10 +127,29 @@ function lookup(cand) {
 const ERA_ES = { "1st century": "s. I", "2nd century": "s. II", "3rd century": "s. III", "4th century": "s. IV", "4th-5th century": "ss. IV–V", "5th century": "s. V", "6th century": "s. VI", "8th century": "s. VIII", "9th century": "s. IX", "11th century": "s. XI", "12th century": "s. XII", "13th century": "s. XIII", "14th century": "s. XIV", "16th century": "s. XVI", "17th century": "s. XVII", "18th century": "s. XVIII", "19th century": "s. XIX", "20th century": "s. XX", "Medieval": "Edad Media", "Early Church": "Iglesia primitiva", "Early Christian": "Iglesia primitiva", "Modern": "Época moderna", "Biblical": "Tiempos bíblicos" };
 const PAT_ES = { "youth": "jóvenes", "students": "estudiantes", "theologians": "teólogos", "confessors": "confesores", "mothers": "madres", "fathers": "padres", "families": "familias", "family": "familia", "children": "niños", "the poor": "los pobres", "poor": "pobres", "the sick": "los enfermos", "sick persons": "enfermos", "sick people": "enfermos", "sick children": "niños enfermos", "mothers ": "madres", "wives": "esposas", "wives ": "esposas", "women": "mujeres", "wives": "esposas", "widows": "viudas", "virgins": "vírgenes", "young girls": "niñas", "martyrs": "mártires", "missionaries": "misioneros", "foreign missions": "misiones", "missionaries ": "misioneros", "monks": "monjes", "nuns": "monjas", "priests": "sacerdotes", "popes": "papas", "clergy": "clero", "deacons": "diáconos", "deaconry": "diaconado", "bishops": "obispos", "fishermen": "pescadores", "farmers": "campesinos", "workers": "trabajadores", "travelers": "viajeros", "pilgrims": "peregrinos", "soldiers": "soldados", "sailors": "marineros", "police": "policías", "firefighters": "bomberos", "nurses": "enfermeras", "physicians": "médicos", "musicians": "músicos", "artists": "artistas", "painters": "pintores", "writers": "escritores", "poets": "poetas", "teachers": "maestros", "students": "estudiantes", "youth": "juventud", "lawyers": "abogados", "bankers": "banqueros", "accountants": "contadores", "merchants": "comerciantes", "bakers": "panaderos", "butchers": "carniceros", "tailors": "sastres", "farmers": "agricultores", "gardeners": "jardineros", "florists": "floristas", "cooks": "cocineros", "brewers": "cerveceros", "hatmakers": "sombrereros", "goldsmiths": "orfebres", "tanners": "curtidores", "geographers": "geógrafos", "philosophers": "filósofos", "orators": "oradores", "preachers": "predicadores", "mystics": "místicos", "converts": "conversos", "conversions": "conversiones", "penitents": "penitentes", "prisoners": "prisioneros", "slaves": "esclavos", "immigrants": "inmigrantes", "refugees": "refugiados", "people in exile": "exiliados", "exiled people": "exiliados", "travelers": "viajeros", "children": "niños", "innocence": "inocencia", "innocents": "inocentes", "victims of violence": "víctimas", "persecuted Christians": "cristianos perseguidos", "the unborn": "no nacidos", "pregnant women": "embarazadas", "mothers": "madres", "wives": "esposas", "brides": "novias", "marriage": "matrimonio", "families": "familias", "grandparents": "abuelos", "parents": "padres", "loss of parents": "huérfanos", "widows": "viudas", "sick": "enfermos", "healers": "sanadores", "hospital workers": "sanitarios", "doctors": "médicos", "nurses": "enfermeras", "blindness": "ciegos", "the blind": "ciegos", "eye disease": "vista", "throat diseases": "garganta", "ecology": "ecología", "environment": "medio ambiente", "environmentalists": "ecologistas", "animals": "animales", "horses": "caballos", "storms": "tormentas", "sailors": "marineros", "fishermen": "pescadores", "hunters": "cazadores", "victory in battle": "victorias", "soldiers": "soldados", "police": "policía", "firefighters": "bomberos", "paramedics": "paramédicos", "joy": "alegría", "hope": "esperanza", "charity": "caridad", "love": "amor", "peace": "paz", "prayers": "oración", "prayer": "oración", "students": "estudiantes", "scholars": "estudiosos", "libraries": "bibliotecas", "translators": "traductores", "booksellers": "libreros", "printers": "impresores", "journalists": "periodistas", "writers": "escritores", "education": "educación", "teachers": "maestros", "catechists": "catequistas", "seminarians": "seminaristas", "spiritual leaders": "pastores", "spiritual retreats": "retiros", "missions": "misiones", "missionaries": "misioneros", "converts": "conversos", "apologists": "apologistas", "theologians": "teólogos", "church leaders": "pastores", "unity among Christians": "unidad cristiana", "church unity": "unidad eclesial", "universal Church": "Iglesia universal", "the Catholic Church": "Iglesia católica", "Catholic Church": "Iglesia católica", "the Church": "la Iglesia", "Rome": "Roma", "the city of Milan": "Milán", "scotland": "Escocia", "greece": "Grecia", "Spain": "España", "Latin America": "América Latina", "the United States": "Estados Unidos", "North Africa": "Norte de África", "Canada": "Canadá", "Cyprus": "Chipre", "Colombia": "Colombia", "Japan": "Japón", "India": "India", "Indigenous peoples": "pueblos originarios", "Native Americans": "nativos americanos", "African missions": "misiones africanas", "Germany": "Alemania", "Europe": "Europa", "Italy": "Italia", "heaven": "cielo", "sorrows": "dolores", "loss": "pérdida", "all humanity": "la humanidad", "abbots": "abades", "abbesses": "abadesas", "hermits": "ermitaños", "beggars": "mendigos", "gravediggers": "sepultureros", "gardeners": "jardineros", "tanners": "curtidores", "butchers": "carniceros", "carpenters": "carpinteros", "blacksmiths": "herreros", "locksmiths": "cerrajeros", "stonemasons": "canteros", "builders": "constructores", "architects": "arquitectos", "masons": "albañiles", "secretaries": "secretarios", "notaries": "notarios", "bankers": "banqueros", "lawyers": "abogados", "judges": "jueces", "statesmen": "gobernantes", "rulers": "gobernantes", "kings": "reyes", "queens": "reinas", "princes": "príncipes", "nobility": "nobleza", "knights": "caballeros", "crusaders": "cruzados", "television": "televisión", "radio": "radio", "internet": "internet", "photographers": "fotógrafos", "bakers": "panaderos", "brewers": "cerveceros", "winemakers": "viñadores", "innkeepers": "posaderos", "shepherds": "pastores", "fishermen": "pescadores", "hunters": "cazadores", "miners": "mineros", "sailors": "marineros", "divers": "buzos", "firemen": "bomberos", "policemen": "policías", "soldiers": "soldados", "veterans": "veteranos", "doctors": "médicos", "surgeons": "cirujanos", "dentists": "dentistas", "pharmacists": "farmacéuticos", "midwives": "parteras", "nannies": "niñeras", "orphans": "huérfanos", "orphanages": "orfanatos", "hospitals": "hospitales", "prisons": "cárceles", "captives": "cautivos", "hostages": "rehenes", "kidnapped": "secuestrados", "runaways": "fugitivos", "lost items": "objetos perdidos", "lost causes": "causas perdidas", "impossible causes": "causas imposibles", "desperate cases": "casos difíciles", "doubt": "duda", "doubters": "los que dudan", "against heresies": "contra herejías", "against fire": "contra incendios", "against floods": "contra inundaciones", "against storms": "contra tormentas", "against lightning": "contra rayos", "sick cattle": "ganado", "wolves": "lobos", "rats": "ratas", "insects": "insectos", "beekeepers": "apicultores", "candle makers": "cereros", "candlemakers": "cereros", "wax melters": "cereros", "learning": "estudio", "schools": "escuelas", "universities": "universidades", "examinations": "exámenes", "students": "estudiantes", "professors": "profesores", "lecturers": "conferencistas", "scientists": "científicos", "astronomers": "astrónomos", "mathematicians": "matemáticos", "geologists": "geólogos", "music": "música", "singers": "cantantes", "choirs": "coros", "composers": "compositores", "dancers": "bailarines", "actors": "actores", "poets": "poetas", "authors": "autores", "editors": "editores", "booksellers": "libreros", "librarians": "bibliotecarios", "archivists": "archivistas", "scribes": "escribas", "messengers": "mensajeros", "diplomats": "diplomáticos", "civil servants": "funcionarios", "workers": "trabajadores", "laborers": "obreros", "craftsmen": "artesanos", "apprentices": "aprendices", "journeymen": "oficiales", "masters": "maestros", "servants": "servidores", "maids": "sirvientas", "housewives": "amas de casa", "housekeepers": "amas de llaves", "cooks": "cocineros", "waiters": "meseros", "bartenders": "cantineros", "barbers": "barberos", "hairdressers": "peluqueros", "tailors": "sastres", "shoemakers": "zapateros", "weavers": "tejedores", "dyers": "tintoreros", "fullers": "bataneros", "millers": "molineros", "fishmongers": "pescaderos", "butchers": "carniceros", "grocers": "tenderos", "merchants": "comerciantes", "peddlers": "buhoneros", "bankers": "banqueros", "money changers": "cambistas", "tax collectors": "recaudadores", "customs officers": "aduaneros", "sailors": "marineros", "fishermen": "pescadores", "boatmen": "barqueros", "bridge builders": "pontoneros", "road builders": "camineros", "plumbers": "fontaneros", "electricians": "electricistas", "mechanics": "mecánicos", "drivers": "conductores", "pilots": "pilotos", "aviators": "aviadores", "paratroopers": "paracaidistas", "motorcyclists": "motociclistas", "cyclists": "ciclistas", "athletes": "atletas", "runners": "corredores", "swimmers": "nadadores", "hunters": "cazadores", "jockeys": "jinetes", "fencers": "esgrimistas", "archers": "arqueros", "mountaineers": "montañeros", "skiers": "esquiadores", "yachtsmen": "regatistas", "golfers": "golfistas", "chess players": "ajedrecistas", "magicians": "magos", "jugglers": "malabaristas", "acrobats": "acróbatas", "clowns": "payasos", "comedians": "cómicos", "television": "televisión", "theatre": "teatro", "cinema": "cine", "circus": "circo", "carnivals": "carnavales", "festivals": "fiestas", "weddings": "bodas", "bridges": "puentes", "bridegrooms": "novios", "foster parents": "padres adoptivos", "godparents": "padrinos", "stepparents": "padrastros", "twins": "mellizos", "triplets": "trillizos", "only children": "hijos únicos", "firstborn": "primogénitos", "teenagers": "adolescentes", "adolescents": "adolescentes", "youth": "juventud", "students": "estudiantes", "schoolchildren": "escolares", " altar servers": "monaguillos", "choirboys": "monaguillos", "convert": "converso" };
 function eraEs(e) { return ERA_ES[String(e || "")] ?? String(e || ""); }
+function eraLoc(era, lang) {
+  const e = String(era || "");
+  if (!e) return "";
+  if (lang === "es") return eraEs(e);
+  if (lang === "en") return e;
+  return (ERA_I18N[lang] || {})[e] ?? e;
+}
 function patronEs(list, lang) {
   if (!Array.isArray(list) || !list.length) return [];
   if (lang === "en") return list;
   return list.map((p) => PAT_ES[String(p).toLowerCase()] ?? PAT_ES[String(p)] ?? p);
+}
+function patronLoc(list, lang) {
+  if (!Array.isArray(list) || !list.length) return [];
+  if (lang === "es") return patronEs(list, lang);
+  if (lang === "en") return list;
+  const m = PATRON_I18N[lang] || {};
+  return list.map((p) => m[String(p)] ?? m[String(p).toLowerCase()] ?? p);
+}
+function bioLoc(name, summary, lang) {
+  if (lang === "es") return esBio()[name] || summary;
+  if (lang === "en") return summary;
+  return (SAINT1L[lang] || {})[name] ?? summary;
 }
 // Rango litúrgico desde el nombre de la fiesta (las filas diarias no traen rango).
 export function rankOf(feast) {
@@ -145,7 +165,7 @@ export function rankOf(feast) {
   return "";
 }
 // Santo del día para una fiesta del calendario. Devuelve null si no hay santo
-// (misterios, ferias, domingos de tiempo...). lang: "en" o "es" (otros → "es").
+// (misterios, ferias, domingos de tiempo...). lang: cualquiera de los 11 (otros → en → es).
 export function saintFor(feast, lang) {
   const D = data();
   if (!D || !feast) return null;
@@ -172,22 +192,23 @@ function vendorSaint(name, lang) {
   const s = D[name];
   if (!s) return null;
   const [era, patronage, , summary, image, wiki] = s;
-  const L = lang === "en" ? "en" : "es";
-  const bio = L === "en" ? summary : (esBio()[name] || summary);
-  return { kind: "vendor", name, era: L === "en" ? (era || "") : eraEs(era), patron: patronEs(patronage, L), bio, image: image ? SAINT_IMG_HOST + image : null, wiki: wiki || null };
+  const bio = bioLoc(name, summary, lang);
+  return { kind: "vendor", name, era: eraLoc(era, lang), patron: patronLoc(patronage, lang), bio, image: image ? SAINT_IMG_HOST + image : null, wiki: wiki || null };
 }
 function extraSaint(key, lang) {
   const X = extra()[key];
   if (!X) return null;
-  const L = lang === "en" ? "en" : "es";
-  return { kind: "extra", name: X.name, era: L === "en" ? (X.era_en || "") : (X.era_es || ""), patron: L === "en" ? (X.patron_en || []) : (X.patron_es || []), bio: L === "en" ? X.bio_en : X.bio_es, image: null, wiki: X.wiki || null };
+  if (lang === "es") return { kind: "extra", name: X.name, era: (X.era_es || ""), patron: (X.patron_es || []), bio: X.bio_es, image: null, wiki: X.wiki || null };
+  if (lang === "en") return { kind: "extra", name: X.name, era: (X.era_en || ""), patron: (X.patron_en || []), bio: X.bio_en, image: null, wiki: X.wiki || null };
+  const bio = (SAINT1L[lang] || {})[X.name] ?? X.bio_en;
+  const era = (ERA_I18N[lang] || {})[String(X.era_en || "")] ?? (X.era_en || "");
+  return { kind: "extra", name: X.name, era, patron: patronLoc(X.patron_en || [], lang), bio, image: null, wiki: X.wiki || null };
 }
 // Todos los santos de un día (MM-DD) según las fechas de la fuente.
 // Para "el santo de cada día, con biografía, foto y oración".
 export function saintsOfDate(mmdd, lang) {
   const D = data();
   if (!D || !/^\d{2}-\d{2}$/.test(String(mmdd || ""))) return [];
-  const L = lang === "en" ? "en" : "es";
   const out = [];
   for (const name of Object.keys(D)) {
     const e = D[name];
@@ -196,9 +217,9 @@ export function saintsOfDate(mmdd, lang) {
     const [era, patronage, , summary, image, wiki] = e;
     out.push({
       kind: "vendor", name,
-      era: L === "en" ? (era || "") : (eraEs(era || "") || ""),
-      patron: patronEs(patronage, L),
-      bio: L === "en" ? summary : (esBio()[name] || summary),
+      era: eraLoc(era || "", lang),
+      patron: patronLoc(patronage, lang),
+      bio: bioLoc(name, summary, lang),
       bioEs: !!esBio()[name],
       image: image ? SAINT_IMG_HOST + image : null, wiki: wiki || null,
     });
@@ -214,9 +235,9 @@ export function saintsForDay(feast, mmdd, lang) {
   if (!list.length) { try { list = saintsOfDate(mmdd, lang) || []; } catch {} }
   return list;
 }
-// Oración breve de intercesión (redacción propia, ES+EN) para el santo del día.
+// Oración breve de intercesión (plantillas SAINT_PRAY) para el santo del día.
 export function saintPrayerText(name, lang) {
   const n = String(name || "").replace(/^Saints?\s+/i, "").trim() || name;
-  if (lang === "en") return `${n}, friend of God and faithful witness of Christ, pray for us before the Lord, that we may live in his love today and always. Amen.`;
-  return `${n}, amigo de Dios y testigo fiel de Cristo, ruega por nosotros ante el Señor, para que vivamos en su amor hoy y siempre. Amén.`;
+  const tpl = SAINT_PRAY[lang] || SAINT_PRAY.en || SAINT_PRAY.es;
+  return String(tpl).replace("{n}", n);
 }

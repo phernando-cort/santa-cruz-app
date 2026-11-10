@@ -2,7 +2,7 @@ import { PARISHES, WEEK, WEEK_EN, INSPIRATIONS, INSP_EN, PRAYERS, ROSARY_MYSTERI
 import { contentMgrHTML, handleContentAction } from "./content-ui.js";
 import { Sync } from "./sync.js";
 window.Sync = Sync; // handle de diagnóstico (consola/tests): Sync.online, Sync.data, Sync.auth(...)
-import { LANGS, setLang, getLang, t, catName, recName, dayName, localeOf, PRAY_I18N, INT_ES, INT_TYPES, intTypeName } from "./i18n.js";
+import { LANGS, setLang, getLang, t, catName, recName, dayName, localeOf, MON_, PRAY_I18N, INT_ES, INT_TYPES, intTypeName } from "./i18n.js";
 import { getDayData } from "./lectionary/litcal.js";
 import { dailyFor } from "./daily-citations.js";
 import { rankOf, saintsForDay, saintPrayerText } from "./saints.js";
@@ -35,43 +35,56 @@ const MYST_I18N = {
   ar: { gozosos:"الفرح", dolorosos:"الحزن", gloriosos:"المجد", luminosos:"النور" },
   ko: { gozosos:"환희", dolorosos:"고통", gloriosos:"영광", luminosos:"빛" },
 };
-const mystName = (k) => (MYST_I18N[getLang()]||MYST_I18N.es)[k] || ROSARY_MYSTERIES[k].name;
+import { WEEK_I18N, VERSE_I18N, INSP_I18N, ROSARY_I18N, SHORT_I18N, PRAY_NAME, PRAY_CATN, PRAY_TXT, GPROJ_I18N, SAINTS_PAR, SACRAMENT_I18N, TURNOS_I18N, GUIDE_I18N, NEWS_CAT, ROLE_I18N, DOWS, EXAM_T } from "./i18n-content.js";
+const mystName = (k) => ((ROSARY_I18N[getLang()] || ROSARY_I18N.en || ROSARY_I18N.es || {})[k] || {}).name || (MYST_I18N[getLang()]||MYST_I18N.es)[k] || ROSARY_MYSTERIES[k].name;
 
-const FATIMA = {
-  es: "Oh Jesús mío, perdona nuestros pecados, líbranos del fuego del infierno, lleva al cielo a todas las almas, especialmente a las más necesitadas de tu misericordia. Amén.",
-  en: "O my Jesus, forgive us our sins, save us from the fires of hell, lead all souls to heaven, especially those most in need of thy mercy. Amen.",
-  pt: "Ó meu Jesus, perdoai-nos e livrai-nos do fogo do inferno, levai as almas todas para o céu, principalmente as que mais precisarem. Amém.",
-  it: "Oh Gesù mio, perdona le nostre colpe, preservaci dal fuoco dell'inferno, porta in cielo tutte le anime, specialmente le più bisognose della tua misericordia. Amen.",
-  la: "O Iesu mi, dimitte nobis debita nostra, libera nos ab igne inferni, perduc in caelum omnes animas, praesertim eas quae misericordia tua maxime indigent. Amen.",
-  fr: "Ô mon Jésus, pardonnez-nous nos péchés, préservez-nous du feu de l'enfer, conduisez au ciel toutes les âmes, surtout celles qui ont le plus besoin de votre miséricorde. Amen."
-};
-const fatima = () => FATIMA[getLang()] || FATIMA.es;
-const SIGN = {
-  es: "Por la señal de la Santa Cruz, de nuestros enemigos líbranos, Señor, Dios nuestro. En el nombre del Padre, y del Hijo, y del Espíritu Santo. Amén.",
-  en: "By the sign of the holy Cross, deliver us from our enemies, Lord our God. In the name of the Father, and of the Son, and of the Holy Spirit. Amen.",
-  pt: "Pelo sinal da Santa Cruz, livrai-nos, Deus nosso Senhor, dos nossos inimigos. Em nome do Pai, e do Filho, e do Espírito Santo. Amém.",
-  it: "Nel nome del Padre, del Figlio e dello Spirito Santo. Amen.",
-  la: "In nomine Patris, et Filii, et Spiritus Sancti. Amen.",
-  fr: "Au nom du Père, et du Fils, et du Saint-Esprit. Amen."
-};
-const sign = () => SIGN[getLang()] || SIGN.es;
-const CHAP_END = {
-  es: "Oh Sangre y Agua, que brotaste del Corazón de Jesús como fuente de misericordia para nosotros: en Ti confío. Jesús, en Ti confío.",
-  en: "O Blood and Water, which gushed forth from the Heart of Jesus as a fount of mercy for us: I trust in You. Jesus, I trust in You.",
-  pt: "Ó Sangue e Água, que brotaste do Coração de Jesus como fonte de misericórdia para nós: eu confio em Vós. Jesus, eu confio em Vós.",
-  it: "O Sangue e Acqua, che scaturisti dal Cuore di Gesù come sorgente di misericordia per noi: confido in Te. Gesù, confido in Te.",
-  la: "O Sanguis et Aqua, quae ex Corde Iesu profluxisti sicut fons misericordiae nobis: in Te confido. Iesu, in Te confido.",
-  fr: "Ô Sang et Eau, qui avez jailli du Cœur de Jésus comme source de miséricorde pour nous : j'ai confiance en Vous. Jésus, j'ai confiance en Vous."
-};
-const chapEnd = () => CHAP_END[getLang()] || CHAP_END.es;
+const fatima = () => SHORT_I18N.fatima[getLang()] || SHORT_I18N.fatima.en || SHORT_I18N.fatima.es;
+const sign = () => SHORT_I18N.sign[getLang()] || SHORT_I18N.sign.en || SHORT_I18N.sign.es;
+const chapEnd = () => SHORT_I18N.chap[getLang()] || SHORT_I18N.chap.en || SHORT_I18N.chap.es;
 
 function prayerText(id){
   const base = PRAYERS.find(p=>p.id===id)?.text || "";
-  if(id==="salve") return (PRAY_I18N.salve[getLang()] || PRAY_I18N.salve.es);
-  return (PRAY_I18N[id]?.[getLang()]) || base;
+  return (PRAY_TXT[getLang()]||{})[id] ?? (PRAY_I18N[id]?.[getLang()]) ?? (PRAY_I18N[id]?.es) ?? base;
 }
-function insp(i){ return getLang()==="en" ? INSP_EN[i] : INSPIRATIONS[i]; }
-function weekDay(i){ return getLang()==="en" ? WEEK_EN[WEEK[i].key] : WEEK[i]; }
+function prayerName(id, fb){
+  return (PRAY_NAME[getLang()]||{})[id] ?? (PRAY_NAME.en||{})[id] ?? (PRAY_NAME.es||{})[id] ?? fb ?? id;
+}
+function prayerCat(catEs){
+  return (PRAY_CATN[getLang()]||{})[catEs] ?? (PRAY_CATN.en||{})[catEs] ?? catEs;
+}
+function weekLoc(i){
+  const base = WEEK[i]; const L = getLang();
+  if(L === "es") return base;
+  if(L === "en"){
+    const e = WEEK_EN[base.key] || {};
+    return {...base, weekday:e.weekday||base.weekday, feast:e.feast||base.feast, season:e.season||base.season, rank:e.rank||base.rank, reflectionTitle:e.reflectionTitle||base.reflectionTitle, reflection:e.reflection||base.reflection};
+  }
+  const w = (WEEK_I18N[L] || {})[base.key];
+  const v = (VERSE_I18N[L] || {})[base.key];
+  if(!w && !v) return {...base, ...(WEEK_EN[base.key]||{})};
+  return {...base,
+    weekday:(w&&w.w)||base.weekday, feast:(w&&w.f)||base.feast, season:(w&&w.s)||base.season,
+    rank:(w&&w.r)||base.rank, reflectionTitle:(w&&w.t)||base.reflectionTitle, reflection:(w&&w.x)||base.reflection,
+    verse:(v?{ref:v.ref,text:v.text}:base.verse)};
+}
+function insp(i){
+  const L = getLang();
+  if(L === "es") return INSPIRATIONS[i];
+  if(L === "en") return {...INSPIRATIONS[i], ...(INSP_EN[i]||{})};
+  return (INSP_I18N[L]||[])[i] || {...INSPIRATIONS[i], ...(INSP_EN[i]||{})};
+}
+function weekDay(i){ return weekLoc(i); }
+function parishSaintLoc(s, i){
+  const L = getLang();
+  if(L === "es" || L === "en") return s;
+  const e = (SAINTS_PAR[L] || [])[i];
+  if(!e) return s;
+  return {...s, feast:e.f || s.feast, patron:e.p || s.patron, bio:e.b || s.bio};
+}
+function rosarySetLoc(key){
+  const L = getLang();
+  return (ROSARY_I18N[L]||{})[key] || ROSARY_I18N.en[key] || ROSARY_I18N.es[key] || ROSARY_MYSTERIES[key];
+}
 
 const state = {
   lang: store.get("app.lang", "es"),
@@ -316,7 +329,7 @@ function massMinistersHTML(ev){
   const enc = mm["Encargado/a de Misa"];
   const filled = MINISTRY_ROLES.filter(r=>r!=="Encargado/a de Misa" && mm[r] && mm[r]!=="Por asignar");
   if(!enc || enc==="Por asignar"){ if(!filled.length) return `<div class="small">🙌 <b>${esc(t("ministersL"))}:</b> ${esc(t("incompleteL"))}</div>`; }
-  return `<div class="small">🙌 <b>${esc(t("ministersL"))}:</b>${enc&&enc!=="Por asignar"?` <b>${esc(enc)}</b> (enc.)`:""}${filled.length?`<br>${filled.map(r=>`${esc(r)}: <b>${esc(mm[r])}</b>`).join(" · ")}`:""}</div>`;
+  return `<div class="small">🙌 <b>${esc(t("ministersL"))}:</b>${enc&&enc!=="Por asignar"?` <b>${esc(enc)}</b> (${esc(roleLoc("Encargado/a de Misa"))})`:""}${filled.length?`<br>${filled.map(r=>`${esc(roleLoc(r))}: <b>${esc(mm[r])}</b>`).join(" · ")}`:""}</div>`;
 }
 function massIntentionsHTML(ev){
   if(!ev.mass) return "";
@@ -367,7 +380,12 @@ function gReceived(pid){ const srv = Sync.coll("givingUpdates").filter(u=>u.pid=
 function gRaised(p){ return (+p.raised0 || 0) + gReceived(p.id); }
 function gUpdates(p){ const seen = new Set(), out = [...(p.updates || [])]; for(const u of [...Sync.coll("givingUpdates").filter(u=>u.pid===p.id && u.t), ...state.giving.updates[p.id] || []]){ const k = (u.d || "") + "|" + (u.t || ""); if(seen.has(k)) continue; seen.add(k); out.push(u); } return out; }
 function gprojName(pid){ const p = GIVING_PROJECTS.find(x=>x.id===pid); return p ? p.name : pid; }
-function gprojDesc(p){ return getLang()==="en" ? (p.descEn || p.desc) : p.desc; }
+function gprojDesc(p){ const L = getLang(); if(L==="es") return p.desc; if(L==="en") return (p.descEn || p.desc); return (GPROJ_I18N[L]||{})[p.id] ?? (p.descEn || p.desc); }
+function sacrLoc(){ const L = getLang(); if(L === "es") return SACRAMENT_INFO.es; if(L === "en") return SACRAMENT_INFO.en; return SACRAMENT_I18N[L] || SACRAMENT_INFO.en; }
+function guideLoc(k){ const tab = (GUIDE_I18N[getLang()] || {})[k]; if(tab) return tab; const base = k === "adv" ? ADVIENTO_GUIDE : k === "fam" ? FAMILIA_ADVIENTO : REFLEX_FAMILIA; return getLang() === "en" ? base.en : base.es; }
+function turnoLabel(id){ return (TURNOS_I18N[getLang()] || TURNOS_I18N.es)[id] ?? TURNOS_I18N.en[id] ?? id; }
+function newsCatLoc(c){ return (NEWS_CAT[getLang()] || {})[c] ?? c; }
+function roleLoc(r){ return (ROLE_I18N[getLang()] || {})[r] ?? r; }
 function giftDate(g){ try{ return new Date(g.date).toLocaleString(localeOf(), { day:"numeric", month:"short", year:"numeric" }); }catch{ return g.date || ""; } }
 function thankText(g){
   return t("thankTpl")
@@ -420,7 +438,7 @@ function stopMelody(){ try{ if(audioCtx){ audioCtx.close(); audioCtx=null; } }ca
 
 // ---------- rosario y coronilla ----------
 function rosarySteps(setKey){
-  const set = ROSARY_MYSTERIES[setKey];
+  const set = rosarySetLoc(setKey);
   const s = [{k:"✠", t: sign()},
     {k:"Credo", t: prayerText("credo-apostoles")},
     {k:"Pater", t: prayerText("padrenuestro")},
@@ -445,7 +463,7 @@ function chapletSteps(){
   const eternal = { es:"Padre Eterno, te ofrezco el Cuerpo y la Sangre, el Alma y la Divinidad de tu amadísimo Hijo, nuestro Señor Jesucristo, como propiciación de nuestros pecados y los del mundo entero.", en:"Eternal Father, I offer you the Body and Blood, Soul and Divinity of your dearly beloved Son, our Lord Jesus Christ, in atonement for our sins and those of the whole world.", la:"Pater aeterne, offero tibi Corpus et Sanguinem, Animam et Divinitatem dilectissimi Filii tui, Domini nostri Iesu Christi, in propitiationem pro peccatis nostris et totius mundi." };
   const small = { es:"Por su dolorosa Pasión, ten misericordia de nosotros y del mundo entero.", en:"For the sake of his sorrowful Passion, have mercy on us and on the whole world.", la:"Per acerbam Passionem eius, miserere nobis et totius mundi." };
   const holy = { es:"Santo Dios, Santo Fuerte, Santo Inmortal, ten piedad de nosotros y del mundo entero. (3 veces)", en:"Holy God, Holy Mighty One, Holy Immortal One, have mercy on us and on the whole world. (3 times)", la:"Sanctus Deus, Sanctus Fortis, Sanctus Immortalis, miserere nobis et totius mundi. (ter)" };
-  const E = eternal[getLang()]||eternal.es, S = small[getLang()]||small.es, H = holy[getLang()]||holy.es;
+  const E = eternal[getLang()]||eternal.en||eternal.es, S = small[getLang()]||small.en||small.es, H = holy[getLang()]||holy.en||holy.es;
   for(let d=1; d<=5; d++){
     s.push({k:`${d} · Pater Aeternal`, t:E});
     for(let a=1;a<=10;a++) s.push({k:`${d} · ${a}/10`, t:S});
@@ -620,9 +638,7 @@ function renderTop(){
   $("#parishCityEl").textContent = p.city;
   const wdi = new Date(state.readingDate+"T12:00:00").getDay();
   const w = weekDay(wdi);
-  const season = getLang()==="en" ? WEEK_EN[WEEK[wdi].key].season : WEEK[wdi].season;
-  const feast = getLang()==="en" ? WEEK_EN[WEEK[wdi].key].feast : WEEK[wdi].feast;
-  const rank = getLang()==="en" ? WEEK_EN[WEEK[wdi].key].rank : WEEK[wdi].rank;
+  const season = w.season, feast = w.feast, rank = w.rank;
   $("#seasonEl").innerHTML = `<span class="pill">${esc(season)}</span><span>${esc(feast)} · ${esc(rank)}</span>`;
   $("#unreadDot").hidden = !store.get("msgs.unread", true);
   // tab labels
@@ -655,7 +671,6 @@ function ministryForTime(t){
 function renderHome(){
   const p = parish();
   const w = weekDay(new Date().getDay());
-  const wEs = WEEK[new Date().getDay()];
   const upcoming = [...allEvents()].sort((a,b)=>daysUntil(a)-daysUntil(b)).slice(0,4);
   const ins = insp(0);
   const b = allBulletins()[0];
@@ -671,7 +686,6 @@ function renderHome(){
     const tIso = toISO(new Date());
     const tD = new Date(tIso+"T12:00:00");
     const tStr = tD.toLocaleDateString(localeOf(), {weekday:"long", day:"numeric", month:"long", year:"numeric"});
-    const isEn = getLang()==="en";
     // Solo Santa Cruz y capillas (como en el boletín y el calendario de intenciones): fuera Sagrada Familia y Santuario.
     const allSched = schedMasses(tIso);
     const schedList = allSched.filter(mm=>!/sagrada familia|santuario/i.test(String(mm.pl||"")));
@@ -687,29 +701,27 @@ function renderHome(){
       if(cc.second) tCites.push(cc.second);
       if(cc.gospel) tCites.push(cc.gospel);
     } else if(tDaily){ tCites = tDaily.readings.map(r=>r.citation); }
-    const tSaint = saintsForDay(tFeast, tIso.slice(5), isEn?"en":"es")[0] || null;
+    const tSaint = saintsForDay(tFeast, tIso.slice(5), getLang())[0] || null;
     // — 1 · La Misa: solo citas + fiesta (el texto completo vive en la pestaña Lecturas) —
     const readHtml = tCites.length
       ? `<div class="readCite">📖 ${tCites.map(c=>esc(c)).join(" · ")}</div>
          ${tFeast?`<div class="small"><b>${esc(tFeast)}</b>${tColor?` · ${esc(litColorName(tColor))}`:""}</div>`:""}`
-      : `<p class="small">${isEn?"See the Readings tab.":"Ver la pestaña Lecturas."}</p>`;
+      : `<p class="small">${esc(t("seeReadingsTab"))}</p>`;
     // — 2 · Intenciones de cada Misa del día (celebrante + ministros) —
-    const genSched = isEn
-      ? "General schedule (Santa Cruz): Mon–Wed 7am & 6pm (Tue evening in Spanish) · Thu–Fri 7am · Sat 5:30pm Vigil · Sun 7am, 8:30am Spanish, 10:30am, 12:30pm, 6pm. Confessions Sat 4pm."
-      : "Horario general (Santa Cruz): Lun–Mié 7am y 6pm (mar. en español) · Jue–Vie 7am · Sáb 5:30pm Vigilia · Dom 7am, 8:30am español, 10:30am, 12:30pm, 6pm. Confesiones sáb 4pm.";
+    const genSched = t("genSched");
     const gEvT = (state.gcal && state.gcal.events) || [];
     const massHtml = schedList.length ? schedList.map((mm)=>{
       const nInt = (mm.int||[]).length;
       // Misa especial del calendario a esta misma hora (funeral, boda...): se muestra como aparece.
       const spec = gEvT.find(e=>e && e.date===tIso && isSpecialMass(e.t) && String(e.s||"").slice(11,16)===String(mm.t||"").slice(0,5));
-      const sumTail = spec ? `✝ ${esc(String(spec.t||"").slice(0,90))}` : `🕯️ ${nInt||(isEn?"no intentions":"sin intenciones")}`;
+      const sumTail = spec ? `✝ ${esc(String(spec.t||"").slice(0,90))}` : `🕯️ ${nInt||t("noIntentShort")}`;
       const mins = ministryForTime(mm.t);
       const cel = String(mm.ce||"").split("·").map(s=>celebFull(s)).filter(Boolean).join(" · ");
       const ints = (mm.int||[]).map(x=>`<div class="intentLine">• ${esc(x)}</div>`).join("");
       const minList = mins ? ["Sacerdote","Diácono","Encargado/a de Misa","Lectores","Coro"]
-        .map(r=>mins.roles[r]&&mins.roles[r]!=="Por asignar"?`${esc(r)}: <b>${esc(mins.roles[r])}</b>`:"").filter(Boolean).join(" · ") : "";
+        .map(r=>mins.roles[r]&&mins.roles[r]!=="Por asignar"?`${esc(roleLoc(r))}: <b>${esc(mins.roles[r])}</b>`:"").filter(Boolean).join(" · ") : "";
       return `<details class="massToday"><summary>⏰ <b>${esc(mm.t||"")}</b> · ⛪ ${esc(mm.pl||parish().name)} · ${sumTail}</summary>
-        ${cel?`<div class="small">🙏 <b>${isEn?"Celebrant":"Celebrante"}:</b> ${esc(cel)}${mm.de?` · Diác. ${esc(mm.de)}`:""}</div>`:""}
+        ${cel?`<div class="small">🙏 <b>${esc(t("celebrantIs"))}:</b> ${esc(cel)}${mm.de?` · ${esc(t("deaconShort"))} ${esc(mm.de)}`:""}</div>`:""}
         ${ints?`<div style="margin-top:4px">${ints}</div>`:""}
         ${mins&&minList?`<div class="small" style="margin-top:4px">🙌 <b>${esc(t("ministersL"))}:</b> ${minList}</div>`:""}</details>`;
     }).join("") : `<p class="small">${esc(genSched)}</p>`;
@@ -724,12 +736,12 @@ function renderHome(){
     }
     const fmtD = (d)=>d?d.toLocaleDateString(localeOf(),{weekday:"short",day:"numeric",month:"short"}):"—";
     const specs = [
-      {t:isEn?"Exposition of the Blessed Sacrament":"Exposición del Santísimo", w:isEn?"1st Friday · 7:30am–4:00pm":"Primer viernes · 7:30am–4:00pm", today:isFirstFri, nx:nextMonthly(5,1)},
-      {t:isEn?"Mass · San Pedro Chapel":"Misa · Capilla San Pedro", w:isEn?"1st Friday · 6:00pm":"Primer viernes · 6:00pm", today:isFirstFri, nx:nextMonthly(5,1)},
-      {t:isEn?"Mass · Santo Niño de Atocha Chapel":"Misa · Capilla Santo Niño de Atocha", w:isEn?"1st Saturday · 7:00am":"Primer sábado · 7:00am", today:isFirstSat, nx:nextMonthly(6,1)},
-      {t:isEn?"Mass · San Isidro Chapel, La Mesilla":"Misa · Capilla San Isidro, La Mesilla", w:isEn?"3rd Thursday · 6:00pm":"Tercer jueves · 6:00pm", today:isThirdThu, nx:nextMonthly(4,3)}
+      {t:t("specExpo"), w:t("specFriDay"), today:isFirstFri, nx:nextMonthly(5,1)},
+      {t:t("specSPedro"), w:t("specFriEve"), today:isFirstFri, nx:nextMonthly(5,1)},
+      {t:t("specNino"), w:t("specSat"), today:isFirstSat, nx:nextMonthly(6,1)},
+      {t:t("specIsidro"), w:t("specThu"), today:isThirdThu, nx:nextMonthly(4,3)}
     ];
-    const specHtml = specs.map(s=>`<div class="small">${s.today?`<span class="tag red">${esc(t("todayTag"))}</span> `:""}🕯️ <b>${esc(s.t)}</b> · ${esc(s.w)}${s.today?"":` · ${isEn?"Next":"Próx"}: <b>${esc(fmtD(s.nx))}</b>`}</div>`).join("");
+    const specHtml = specs.map(s=>`<div class="small">${s.today?`<span class="tag red">${esc(t("todayTag"))}</span> `:""}🕯️ <b>${esc(s.t)}</b> · ${esc(s.w)}${s.today?"":` · ${esc(t("next"))}: <b>${esc(fmtD(s.nx))}</b>`}</div>`).join("");
     // — 4 · Santo del día (bio completa, era junto al nombre) —
     const saintBio = String(tSaint && tSaint.bio || "");
     const saintHtml = tSaint
@@ -739,16 +751,12 @@ function renderHome(){
           ${saintBio?`<div style="font-size:14.5px;line-height:1.55;margin-top:4px">${esc(saintBio)}</div>`:""}</div></div>`
       : `<p class="small">${esc(t("ferialNote"))}</p>`;
     // — 4b · Nos unimos en oración: intención de los Hijos (manyanet-us.org) + celebraciones del día + TODAS las intenciones de la gente —
-    const SONS_INTENTION = isEn
-      ? "For vocations to the Sons of the Holy Family and the perseverance of their seminarians, brothers and priests — and for families, that they may grow as true domestic churches."
-      : "Por las vocaciones a los Hijos de la Sagrada Familia y la perseverancia de sus seminaristas, hermanos y sacerdotes — y por las familias, para que crezcan como verdaderas iglesias domésticas.";
-    const SONS_PRAYER = isEn
-      ? "Lord Jesus, who wished to spend thirty years of your mortal life in the family of Nazareth, we ask you to call many young men to follow more closely your way of life in our religious family, that desires to perpetuate and realize in our time your virtues and examples of domestic sanctity. Grant us the grace, in our entire ministry, to help families grow in natural and spiritual virtue, according to your will, so that, becoming true domestic churches, they may welcome and accompany, as a true gift, the grace of religious and priestly vocation for their children. Make of us, for young people, joyful witnesses of the Gospel of Nazareth, so that they also feel personally challenged by the urgent needs of the family institution and the present reality of the youth. Mary Most Holy and Saint Joseph, most loving parents and first teachers of Jesus, look upon each one of us with your benevolence and upon all who come to experience our way of life; grant us all the grace to be called brothers of Jesus in this your family. Jesus, Mary, and Joseph, community of faith, hope, and charity, of praise and service, school of the Gospel, norm of consecrated life and model of family living, make us participants in your life and images of your holiness, so that, like Saint Joseph Manyanet, and through his intercession, we may be, in the Church and for the Church, sons, witnesses, and apostles of the mystery of Nazareth. Amen."
-      : "Señor Jesús, que quisiste pasar treinta años de tu vida mortal en la familia de Nazaret, te pedimos que llames a muchos jóvenes a seguir más de cerca tu modo de vida en nuestra familia religiosa, que desea perpetuar y hacer realidad en nuestro tiempo tus virtudes y ejemplos de santidad doméstica. Concédenos la gracia, en todo nuestro ministerio, de ayudar a las familias a crecer en virtud natural y espiritual, según tu voluntad, para que, convertidas en verdaderas iglesias domésticas, acojan y acompañen, como verdadero don, la gracia de la vocación religiosa y sacerdotal de sus hijos. Haz de nosotros, para los jóvenes, testigos gozosos del Evangelio de Nazaret, para que también ellos se sientan interpelados por las necesidades urgentes de la familia y la realidad actual de la juventud. María Santísima y san José, padres amantísimos y primeros maestros de Jesús, mirad con benevolencia a cada uno de nosotros y a todos los que vienen a conocer nuestro modo de vida; concedednos a todos la gracia de ser llamados hermanos de Jesús en esta tu familia. Jesús, María y José, comunidad de fe, esperanza y caridad, de alabanza y servicio, escuela del Evangelio, norma de la vida consagrada y modelo de la vida familiar, hacednos partícipes de vuestra vida e imágenes de vuestra santidad, para que, como san José Manyanet, y por su intercesión, seamos, en la Iglesia y para la Iglesia, hijos, testigos y apóstoles del misterio de Nazaret. Amén.";
-    const sonsHtml = `<div class="massToday"><div class="massPlace">🕊️ ${isEn?"Intention of the Sons of the Holy Family":"Intención de los Hijos de la Sagrada Familia"}</div>
+    const SONS_INTENTION = t("sonsIntent");
+    const SONS_PRAYER = t("sonsPrayer");
+    const sonsHtml = `<div class="massToday"><div class="massPlace">🕊️ ${esc(t("sonsTitle"))}</div>
       <div class="intentLine">• <b>${esc(SONS_INTENTION)}</b></div>
-      <div class="small">manyanet-us.org · ${isEn?"Spiritual advocacy for vocations":"Apoyo espiritual por las vocaciones"}</div>
-      <details class="ordDet"><summary>📜 ${isEn?"Prayer for our Congregation":"Oración por nuestra Congregación"}</summary>
+      <div class="small">${esc(t("sonsAdvoc"))}</div>
+      <details class="ordDet"><summary>📜 ${esc(t("sonsPrayerT"))}</summary>
         <div class="small" style="white-space:pre-line">${esc(SONS_PRAYER)}</div>
         <div class="btnRow"><button class="btn btnGhost" data-action="ext" data-url="https://www.manyanet-us.org/vocations-support-prayer">manyanet-us.org ↗</button></div>
       </details></div>`;
@@ -759,29 +767,29 @@ function renderHome(){
     const nSpec = gEv.filter(e=>isSpecialMass(e.t)).length;
     const rezHtml = sonsHtml
       + (bdayToday.length?bdayToday.map(a=>`<div class="small">${a.type==="bday"?"🎂":"💒"} <b>${esc(a.name)}</b> · ${esc(a.date.toLocaleDateString(localeOf(),{day:"numeric",month:"long"}))}</div>`).join(""):"")
-      + (intAll.length?`<div class="small" style="margin-top:6px"><b>🙏 ${isEn?`Intentions from our people (${intAll.length})`:`Intenciones de nuestra gente (${intAll.length})`}:</b></div>`+intAll.slice(0,2).map(intRowHTML).join("")+(intAll.length>2?`<div class="small">+${intAll.length-2} ${isEn?"more in Intentions →":"más en Intenciones →"}</div>`:"")+ (nSpec?`<div class="small">🕯️ +${nSpec} ${isEn?"special Masses listed below":"misas especiales listadas abajo"}</div>`:""):`<p class="small">${isEn?"No intentions yet. Add yours in More → Intentions.":"Aún no hay intenciones. Añade la tuya en Más → Intenciones."}</p>`);
+      + (intAll.length?`<div class="small" style="margin-top:6px"><b>🙏 ${esc(t("intentFrom").replace("{n}", String(intAll.length)))}:</b></div>`+intAll.slice(0,2).map(intRowHTML).join("")+(intAll.length>2?`<div class="small">+${intAll.length-2} ${esc(t("moreIntent"))}</div>`:"")+ (nSpec?`<div class="small">🕯️ +${nSpec} ${esc(t("specBelow"))}</div>`:""):`<p class="small">${esc(t("noIntentFull"))}</p>`);
     // — 5 · Esta semana: resumen (5 próximos + resto en Calendario) —
     const wkList = gEv.filter(e=>!isRoutineMass(e.t));
     const wkIcon = (e)=> isSpecialMass(e.t) ? "🕯️" : (isGroupMeeting(e.t) ? "👥" : "📌");
     const wkHtml = !state.gcal.ready
-      ? `<p class="small">⏳ ${isEn?"Loading parish calendar…":"Cargando el calendario parroquial…"}</p>`
-      : (wkList.length ? wkList.slice(0,5).map(e=>`<div class="small">${wkIcon(e)} <b>${esc(e.t)}</b> · ${esc(fmtDay(e.date, isEn))}${e.s.length>10?` · ${esc(fmtTime(e.s))}`:""}${e.l?` · ${esc(e.l)}`:""}</div>`).join("")
-        + (wkList.length>5?`<div class="small">+${wkList.length-5} ${isEn?"more in Calendar →":"más en Calendario →"}</div>`:"")
-      : `<p class="small">${isEn?"Nothing else coming up this week.":"Nada más próximo esta semana."}</p>`);
+      ? `<p class="small">⏳ ${esc(t("loadingCal"))}</p>`
+      : (wkList.length ? wkList.slice(0,5).map(e=>`<div class="small">${wkIcon(e)} <b>${esc(e.t)}</b> · ${esc(fmtDay(e.date, getLang()==="en"))}${e.s.length>10?` · ${esc(fmtTime(e.s))}`:""}${e.l?` · ${esc(e.l)}`:""}</div>`).join("")
+        + (wkList.length>5?`<div class="small">+${wkList.length-5} ${esc(t("moreCal"))}</div>`:"")
+      : `<p class="small">${esc(t("nothingWeek"))}</p>`);
     todayHtml = `
     <section class="card" style="border-color:var(--terra)">
-      <h3>☀️ ${isEn?"TODAY AT THE PARISH":"HOY EN LA PARROQUIA"}<span class="sub2" style="text-transform:capitalize">${esc(tStr)}</span></h3>
-      <div class="todayBlock"><h4>⛪ ${isEn?"Today's Mass: readings":"La Misa de hoy: lecturas"}</h4>${readHtml}
-        <div class="btnRow"><button class="btn btnNavy" data-action="home-readings">${isEn?"Read today's readings":"Leer las lecturas"}</button></div></div>
-      <div class="todayBlock"><h4>🕯️ ${isEn?"Today's Masses":"Misas de hoy"} (${schedList.length||"—"})</h4>${massHtml}
-        <div class="btnRow"><button class="btn btnGhost" data-action="tab" data-tab="calendar">${isEn?"Full calendar":"Calendario completo"}</button></div></div>
+      <h3>☀️ ${esc(t("todayParish"))}<span class="sub2" style="text-transform:capitalize">${esc(tStr)}</span></h3>
+      <div class="todayBlock"><h4>⛪ ${esc(t("massReadToday"))}</h4>${readHtml}
+        <div class="btnRow"><button class="btn btnNavy" data-action="home-readings">${esc(t("readTodayBtn"))}</button></div></div>
+      <div class="todayBlock"><h4>🕯️ ${esc(t("todayMasses"))} (${schedList.length||"—"})</h4>${massHtml}
+        <div class="btnRow"><button class="btn btnGhost" data-action="tab" data-tab="calendar">${esc(t("fullCal"))}</button></div></div>
       <div class="todayBlock"><h4>✨ ${esc(t("saintDay"))}</h4>${saintHtml}
-        <div class="btnRow"><button class="btn btnGhost" data-action="home-saint">${isEn?"See saints":"Ver santoral"}</button></div></div>
-      <div class="todayBlock"><h4>📅 ${isEn?"This week at the parish":"Esta semana en la parroquia"}</h4>${wkHtml}
-        <div class="btnRow"><button class="btn btnGhost" data-action="tab" data-tab="calendar">${isEn?"Full calendar":"Calendario completo"}</button><button class="btn btnGhost" data-action="ext" data-url="https://www.hcccsantacruz.org/events">${isEn?"Parish site ↗":"Sitio parroquial ↗"}</button></div></div>
-      <div class="todayBlock"><h4>⭐ ${isEn?"Special celebrations":"Celebraciones especiales"}</h4>${specHtml}</div>
-      <div class="todayBlock"><h4>🙏 ${isEn?"We join in prayer for the following intentions":"Nos unimos en oración por las siguientes intenciones"}</h4>${rezHtml}
-        <div class="btnRow"><button class="btn btnGhost" data-action="more-focus" data-focus="sec-intenciones">${isEn?"Intentions":"Intenciones"}</button></div></div>
+        <div class="btnRow"><button class="btn btnGhost" data-action="home-saint">${esc(t("seeSaints"))}</button></div></div>
+      <div class="todayBlock"><h4>📅 ${esc(t("weekParish"))}</h4>${wkHtml}
+        <div class="btnRow"><button class="btn btnGhost" data-action="tab" data-tab="calendar">${esc(t("fullCal"))}</button><button class="btn btnGhost" data-action="ext" data-url="https://www.hcccsantacruz.org/events">${esc(t("parishSite"))}</button></div></div>
+      <div class="todayBlock"><h4>⭐ ${esc(t("specCeleb"))}</h4>${specHtml}</div>
+      <div class="todayBlock"><h4>🙏 ${esc(t("prayIntentBlock"))}</h4>${rezHtml}
+        <div class="btnRow"><button class="btn btnGhost" data-action="more-focus" data-focus="sec-intenciones">${esc(t("intentionsLbl"))}</button></div></div>
     </section>`;
     if(todayHtml) cards.push({id:"today", html: todayHtml});
   }catch(e2){}
@@ -790,7 +798,7 @@ function renderHome(){
       <div class="heroTop">
         <img class="heroImg" src="${esc(ART.hero)}" alt="Iglesia histórica de Santa Cruz de la Cañada">
         <img class="heroSeal" src="${APP_ICON}" alt="Sello de Santa Cruz de la Cañada">
-        <span class="heroKicker">✠ ${esc(getLang()==="en"?WEEK_EN[wEs.key].weekday:wEs.weekday)} · ${esc(getLang()==="en"?WEEK_EN[wEs.key].feast:wEs.feast)}</span>
+        <span class="heroKicker">✠ ${esc(w.weekday)} · ${esc(w.feast)}</span>
         <div class="heroTitle"><h2>${esc(p.name)}</h2></div>
       </div>
       <div class="heroBody"><p>${esc(p.greeting)}</p>
@@ -805,15 +813,12 @@ function renderHome(){
       </div></div>
     </section>`});
   // 💌 Mensaje de bienvenida del P. Hernando (fijo al FINAL del Inicio).
-  const pIsEn = getLang()==="en";
-  const padreBody = pIsEn
-    ? `Welcome home, Holy Cross family!\nI am Father Hernando, and it fills me with joy that you are here. I have created this digital space so that we may be closer to one another and, above all, closer to Jesus, Mary, and Joseph.\nIn this app you will find Mass times, the readings of the day, prayers, and news from our parish in La Cañada. Know that this is your space.\nEach day, in my prayers, I especially remember our sick, our elderly, families going through difficult times, and our faithful departed. I also invite you to join me in praying each week for vocations to the priesthood and to religious life, especially for our beloved Congregation of the Sons of the Holy Family.\nMay this app be a small help to carry the peace of Christ in your pocket and in your heart. God bless you!`
-    : `¡Bienvenidos a casa, familia de Holy Cross!\nSoy el Padre Hernando, y me llena de alegría que estés aquí. He creado este espacio digital para que estemos más cerca unos de otros y, sobre todo, más cerca de Jesús, María y San José.\nEn esta aplicación encontrarás los horarios de Misa, las lecturas del día, oraciones y las noticias de nuestra parroquia en La Cañada. Quiero que sepas que este es tu espacio.\nCada día, en mis oraciones, recuerdo especialmente a nuestros enfermos, a nuestros ancianos, a las familias que pasan por momentos difíciles y a nuestros fieles difuntos. También te invito a unirte a mí para orar cada semana por las vocaciones al sacerdocio y a la vida religiosa, especialmente por nuestra querida Congregación de los Hijos de la Sagrada Familia.\nQue esta aplicación sea una pequeña ayuda para llevar la paz de Cristo a tu bolsillo y a tu corazón. ¡Dios te bendiga!`;
+  const padreBody = t("padreBody");
   if(state.modules.hero!==false) cards.push({id:"padre", html:`
     <section class="card" style="border-color:var(--gold)"><img class="artBanner" src="${ART.retablo}" alt="Sagrada Familia" loading="lazy">
       <h3>${t("padreMsgT")}</h3>
       <p style="font-size:14.5px;line-height:1.65;white-space:pre-line">${esc(padreBody)}</p>
-      <p style="font-size:14px;margin:6px 0 0"><b>— ${pIsEn?"Fr. Hernando Cortés, SF":"P. Hernando Cortés, SF"}</b></p>
+      <p style="font-size:14px;margin:6px 0 0"><b>— ${esc(t("padreSig"))}</b></p>
     </section>`});
   if(state.modules.actions!==false) cards.push({id:"actions", html:`
     <section class="card"><h3>${hi}, ${t("famParish")}</h3>
@@ -865,29 +870,28 @@ function renderHome(){
       </div></section>`});
   cards.push({id:"tail", html:`<div class="notice">${t("demoNotice")} <button class="backLink" data-action="builder-open">${t("customizeHome")} →</button></div>`});
   // — Pastoral en casa: confesión, oración y comunión (siempre visibles, en este orden) —
-  const hEn = getLang()==="en";
-  const confessCard = `<section class="card" id="sec-home-confess" style="border-color:var(--gold)"><h3>🕊️ ${hEn?"Prepare your next confession":"Prepara tu próxima confesión"}</h3>
-    <p class="sub">⛪ ${hEn?"Confessions":"Confesiones"}: ${esc(p.confession)}</p>
-    <h4 style="margin:8px 0 2px">💜 ${hEn?"Act of Contrition":"Acto de contrición"}</h4>
+  const confessCard = `<section class="card" id="sec-home-confess" style="border-color:var(--gold)"><h3>🕊️ ${esc(t("confPrep"))}</h3>
+    <p class="sub">⛪ ${esc(t("confessionsLbl"))}: ${esc(p.confession)}</p>
+    <h4 style="margin:8px 0 2px">💜 ${esc(t("actContr"))}</h4>
     <p class="prayerText">${esc(prayerText("acto-contricion"))}</p>
     <div class="btnRow"><button class="btn btnGhost" data-action="pray-aloud" data-id="acto-contricion">${esc(t("listen"))}</button></div>
-    <h4 style="margin:10px 0 2px">🔍 ${hEn?`Examinations of conscience (USCCB, ${CONFESION_EXAMS.length})`:`Exámenes de conciencia (USCCB, ${CONFESION_EXAMS.length})`}</h4>
-    ${CONFESION_EXAMS.map(e=>`<details class="ordDet"><summary>${esc(hEn?e.ten:e.tes)} <span class="tag">${esc(e.lang==="es"?"ES":"EN")}</span></summary>
+    <h4 style="margin:10px 0 2px">🔍 ${esc(t("examCount").replace("{n}", String(CONFESION_EXAMS.length)))}</h4>
+    ${CONFESION_EXAMS.map(e=>`<details class="ordDet"><summary>${esc(examTitle(e))} <span class="tag">${esc(t("srcUsccb"))} · ${esc(e.lang==="es"?"ES":"EN")}</span></summary>
       <div class="ordSec"><p class="prayerText" style="font-size:15px">${esc(e.text)}</p></div></details>`).join("")}
-    <div class="btnRow"><button class="btn btnNavy" data-action="pray-mode" data-mode="confesion">${hEn?"Full confession guide":"Guía completa de confesión"} →</button></div>
+    <div class="btnRow"><button class="btn btnNavy" data-action="pray-mode" data-mode="confesion">${esc(t("fullGuide"))} →</button></div>
   </section>`;
-  const prayCard = `<section class="card" id="sec-home-pray"><h3>🙏 ${hEn?"Need us to pray for you?":"¿Necesitas que oremos por ti?"}</h3>
-    <p class="sub">${hEn?"Write your intention here. The office and the pastoral team receive it (private).":"Escribe tu intención aquí. La oficina y el equipo pastoral la reciben (privado)."}</p>
+  const prayCard = `<section class="card" id="sec-home-pray"><h3>🙏 ${esc(t("needPray"))}</h3>
+    <p class="sub">${esc(t("prayPrivSub"))}</p>
     ${state._homePrayerSent?`<div class="notice">${esc(state._homePrayerSent)}</div>`:""}
     <label>${t("pvNamesL")}</label><textarea id="hpNames" placeholder="…"></textarea>
     <label>${t("pvKindL")}</label><select id="hpKind"><option value="enfermos">${t("pvSick")}</option><option value="difuntos">${t("pvDep")}</option></select>
     <div class="btnRow"><button class="btn btnGold" data-action="home-prayer-add">${t("sendMsg")}</button></div>
   </section>`;
-  const visitCard = `<section class="card" id="sec-home-visit"><h3>🏠 ${hEn?"Need Communion brought to your home?":"¿Necesitas que lleven la comunión a tu casa?"}</h3>
-    <p class="sub">${hEn?"Write to us and our ministers will bring Communion to your home.":"Escríbenos y nuestros ministros llevarán la comunión a tu casa."}</p>
+  const visitCard = `<section class="card" id="sec-home-visit"><h3>🏠 ${esc(t("needCommunion"))}</h3>
+    <p class="sub">${esc(t("communionSub"))}</p>
     ${state._homeVisitSent?`<div class="notice">${esc(state._homeVisitSent)}</div>`:""}
-    <label>${hEn?"Name of the sick person":"Nombre de la persona enferma"}</label><input id="hcSick" placeholder="…">
-    <label>${hEn?"Home address":"Dirección de la casa"}</label><input id="hcAddr" placeholder="…">
+    <label>${t("sickNameL")}</label><input id="hcSick" placeholder="…">
+    <label>${t("addressL2")}</label><input id="hcAddr" placeholder="…">
     <div class="grid2"><div><label>${t("yourName")}</label><input id="hcContact" value="${esc(state.userName||"")}" placeholder="…"></div>
     <div><label>${t("phoneL")}</label><input id="hcPhone" inputmode="tel" placeholder="(505) …"></div></div>
     <label>${t("messageL")}</label><textarea id="hcNotes" placeholder="…"></textarea>
@@ -955,7 +959,6 @@ function saintsDayList(R){
   try{ return saintsForDay(R.feast, mmdd, getLang()) || []; }catch{ return []; }
 }
 function saintsDayHTML(R){
-  const en = getLang()==="en";
   const list = saintsDayList(R);
   if(!list.length) return "";
   const card = (s)=>`
@@ -967,55 +970,44 @@ function saintsDayHTML(R){
         ${s.bio?`<div style="font-size:14.5px;line-height:1.55;margin-top:4px">${esc(String(s.bio).slice(0,280))}${String(s.bio).length>280?"…":""}</div>`:""}
         ${(s.patron&&s.patron.length)?`<div class="small" style="margin-top:4px">🛡️ ${esc(s.patron.slice(0,4).join(" · "))}</div>`:""}
         <div class="btnRow" style="margin-top:6px">
-          <button class="btn btnGhost" data-action="saint-pray" data-name="${esc(s.name)}">🙏 ${esc(en?"Prayer":"Oración")}</button>
+          <button class="btn btnGhost" data-action="saint-pray" data-name="${esc(s.name)}">🙏 ${esc(t("saintsPrayer"))}</button>
           ${s.wiki?`<button class="btn btnGhost" data-action="ext" data-url="${esc(s.wiki)}">Wikipedia ↗</button>`:""}
         </div>
       </div>
     </div>`;
   const rest = list.slice(1);
-  return `<div class="todayBlock"><h4>✨ ${esc(en?"Saints of the day":"Santos del día")} (${list.length})</h4>${card(list[0])}`
+  return `<div class="todayBlock"><h4>✨ ${esc(t("saintsDayT"))} (${list.length})</h4>${card(list[0])}`
     + (rest.length?`<details class="ordDet"><summary>▸ ${esc(t("moreSaints").replace("{n}", String(rest.length)))}</summary>${rest.map(card).join("")}</details>`:"")
     + `</div>`;
 }
 function usccbPaneHTML(R){
-  const en = getLang()==="en";
   const key = usccbKey(R.iso);
   const saved = state.usccbTexts[key];
-  if(saved && saved.loading) return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text (USCCB)":"Texto oficial (USCCB)")}</h4><p class="small">⏳ ${esc(en?"Loading official text…":"Cargando texto oficial…")}</p></div>`;
+  if(saved && saved.loading) return `<div class="todayBlock"><h4>📖 ${esc(t("usccbOfficial"))}</h4><p class="small">⏳ ${esc(t("usccbLoading"))}</p></div>`;
   if(saved && saved.error){
     const code = String(saved.error);
-    const msg = code === "blocked"
-      ? (en ? "USCCB showed a bot-check page on every route. Wait a few minutes and retry — your citations above are still valid."
-           : "USCCB mostró una verificación anti-bots en todas las vías. Espera unos minutos y reintenta — tus citas de arriba siguen valiendo.")
-      : code === "parse"
-      ? (en ? "USCCB changed its page layout and the text could not be extracted. Retry later — your citations above are still valid."
-           : "USCCB cambió su página y no se pudo extraer el texto. Reintenta más tarde — tus citas de arriba siguen valiendo.")
-      : code === "http"
-      ? (en ? "USCCB returned a server error. Retry in a few minutes — your citations above are still valid."
-           : "USCCB devolvió un error de servidor. Reintenta en unos minutos — tus citas de arriba siguen valiendo.")
-      : (en ? "No connection, or the network blocked the download (on the website it goes through the parish proxy). Check your internet and retry — your citations above are still valid."
-           : "Sin conexión, o la red bloqueó la descarga (en el sitio web pasa por el proxy de la parroquia). Revisa tu internet y reintenta — tus citas de arriba siguen valiendo.");
+    const msg = code === "blocked" ? t("usccbErrBlocked") : code === "parse" ? t("usccbErrParse") : code === "http" ? t("usccbErrHttp") : t("usccbErrNet");
     const link = saved.url || usccbUrl(R.iso, getLang());
-    return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text (USCCB)":"Texto oficial (USCCB)")}</h4>
+    return `<div class="todayBlock"><h4>📖 ${esc(t("usccbOfficial"))}</h4>
     <div class="notice">${esc(msg)}</div>
-    <div class="btnRow"><button class="btn btnGold" data-action="usccb-load">↻ ${esc(en?"Retry":"Reintentar")}</button>${link?`<button class="btn btnGhost" data-action="ext" data-url="${esc(link)}">${esc(en?"Open on bible.usccb.org ↗ (external — only if it won't load here)":"Abrir en bible.usccb.org ↗ (externo — solo si aquí no carga)")}</button>`:""}</div>
-    <p class="small">${esc(en?"The fallback opens the official page outside the app, only as a last resort.":"El recurso abre la página oficial fuera de la app, solo como último recurso.")}</p></div>`;
+    <div class="btnRow"><button class="btn btnGold" data-action="usccb-load">↻ ${esc(t("usccbRetry"))}</button>${link?`<button class="btn btnGhost" data-action="ext" data-url="${esc(link)}">${esc(t("usccbOpenExt"))}</button>`:""}</div>
+    <p class="small">${esc(t("usccbFallbackNote"))}</p></div>`;
   }
   if(saved && saved.sections){
     const secs = saved.sections.map(s=>`
       <div class="massSec"><div class="massHead">${esc(String(s.title||"").replace(/:\s*$/,""))}${s.citation?` <span class="massCite">· ${esc(s.citation)}</span>`:""}</div>
       ${String(s.text||"").split(/\n\n+/).map(p=>`<p>${esc(p)}</p>`).join("")}</div>`).join("");
-    return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text of the Mass (USCCB)":"Texto oficial de la Misa (USCCB)")}</h4>
+    return `<div class="todayBlock"><h4>📖 ${esc(t("usccbMassText"))}</h4>
       <div class="massText" style="font-size:${state.readingFont}px">${secs}</div>
-      <div class="btnRow"><button class="btn btnNavy" data-action="usccb-listen">🔊 ${esc(en?"Listen":"Escuchar")}</button>
-      ${state.speaking?`<button class="btn btnGhost" data-action="stop-voice">${esc(en?"Stop":"Detener")}</button>`:""}
+      <div class="btnRow"><button class="btn btnNavy" data-action="usccb-listen">🔊 ${esc(t("listen").replace(/^🔊\s*/,""))}</button>
+      ${state.speaking?`<button class="btn btnGhost" data-action="stop-voice">${esc(t("stop"))}</button>`:""}
       <button class="btn btnGhost" data-action="font-dec" aria-label="A-">A−</button>
       <button class="btn btnGhost" data-action="font-inc" aria-label="A+">A+</button></div>
-      <p class="small">© United States Conference of Catholic Bishops — ${esc(en?"shown from bible.usccb.org":"mostrado desde bible.usccb.org")}.</p></div>`;
+      <p class="small">© United States Conference of Catholic Bishops — ${esc(t("usccbShownFrom"))}.</p></div>`;
   }
-  return `<div class="todayBlock"><h4>📖 ${esc(en?"Official text of the Mass (USCCB)":"Texto oficial de la Misa (USCCB)")}</h4>
-    <p class="small">${esc(en?"Read and listen to the official readings here, without leaving the app.":"Lee y escucha aquí mismo las lecturas oficiales, sin salir de la app.")}</p>
-    <div class="btnRow"><button class="btn btnGold" data-action="usccb-load">📖 ${esc(en?"Read official text":"Leer texto oficial")}</button></div></div>`;
+  return `<div class="todayBlock"><h4>📖 ${esc(t("usccbMassText"))}</h4>
+    <p class="small">${esc(t("usccbReadIntro"))}</p>
+    <div class="btnRow"><button class="btn btnGold" data-action="usccb-load">📖 ${esc(t("usccbReadBtn"))}</button></div></div>`;
 }
 async function loadUsccbDay(){
   const iso = state.readingDate, key = usccbKey(iso);
@@ -1044,7 +1036,7 @@ function renderReadings(){
   const R = readingDayData();
   const d = new Date(R.iso+"T12:00:00");
   const wdIdx = d.getDay();
-  const wM = getLang()==="en" ? WEEK_EN[WEEK[wdIdx].key] : WEEK[wdIdx];
+  const wM = weekLoc(wdIdx);
   const dateStr = d.toLocaleDateString(localeOf(), { weekday:"long", day:"numeric", month:"long", year:"numeric" });
   const prevD = new Date(d); prevD.setDate(prevD.getDate()-1);
   const nextD = new Date(d); nextD.setDate(nextD.getDate()+1);
@@ -1076,8 +1068,8 @@ function renderReadings(){
     </section>
     <section class="card"><div class="small"><b>${esc(t("meditation"))}</b> · ${esc(wM.weekday)}</div>
       <h3 class="serif" style="font-size:19px">${esc(wM.reflectionTitle)}</h3>
-      <div class="verseBox">“${esc(WEEK[wdIdx].verse.text)}”<br><span class="small">— ${esc(WEEK[wdIdx].verse.ref)}</span></div>
-      <p style="line-height:1.6">${esc(getLang()==="en"?wM.reflection:wM.reflection)}</p>
+      <div class="verseBox">“${esc(wM.verse.text)}”<br><span class="small">— ${esc(wM.verse.ref)}</span></div>
+      <p style="line-height:1.6">${esc(wM.reflection)}</p>
       <div class="btnRow"><button class="btn btnGhost" data-action="read-aloud">${t("listen")}</button>
       ${state.speaking?`<button class="btn btnGhost" data-action="stop-voice">${esc(t("stop"))}</button>`:""}</div>
     </section>`;
@@ -1120,10 +1112,10 @@ function prayListHTML(){
     else {
       const fav = state.prayerFavs.includes(pr.id);
       return `<button class="backLink" data-action="prayer-back">${t("back")}</button>
-      <h2 class="serif" style="margin:0">${esc(pr.name)} ${fav?"★":""}</h2>
-      <p class="small">${esc(pr.category)}${pr.latin?` · ${esc(pr.latin)}`:""} · ${t("latinTraditional")}</p>
+      <h2 class="serif" style="margin:0">${esc(prayerName(pr.id, pr.name))} ${fav?"★":""}</h2>
+      <p class="small">${esc(prayerCat(pr.category))}${pr.latin?` · ${esc(pr.latin)}`:""} · ${t("latinTraditional")}</p>
       <section class="card"><p class="prayerText">${esc(prayerText(pr.id)||pr.text)}</p>
-        ${pr.usccb&&pr.src?`<p class="small">Fuente/Source: USCCB</p><div class="btnRow"><button class="btn btnGhost" data-action="ext" data-url="${esc(pr.src)}">USCCB ↗</button></div>`:""}
+        ${pr.usccb&&pr.src?`<p class="small">${esc(t("srcUsccb"))}</p><div class="btnRow"><button class="btn btnGhost" data-action="ext" data-url="${esc(pr.src)}">USCCB ↗</button></div>`:""}
         <div class="btnRow">
           <button class="btn ${fav?"btnGhost":"btnGold"}" data-action="prayer-fav" data-id="${pr.id}">${fav?t("savedFav"):t("saveFav")}</button>
           <button class="btn btnNavy" data-action="pray-aloud" data-id="${pr.id}">${t("voiceOff")}</button>
@@ -1135,31 +1127,30 @@ function prayListHTML(){
   }
   const list = ALL_PRAYERS().filter(p =>
     (state.prayerCat==="Todas" || (state.prayerCat==="Favoritas" ? state.prayerFavs.includes(p.id) : state.prayerCat==="USCCB" ? p.usccb : p.category===state.prayerCat)) &&
-    (!q || norm(p.name+" "+(prayerText(p.id)||p.text)).includes(q)));
+    (!q || norm(prayerName(p.id, p.name)+" "+(prayerText(p.id)||p.text)).includes(q)));
   if(!state.usccbList) return `
     <p class="small">${ALL_PRAYERS().length} ${t("prayersCount")}</p>
     <div class="searchRow"><input id="prayerQ" placeholder="${esc(t("searchPrayers"))}" value="${esc(state.prayerQ)}"></div>
-    <div class="notice">⏳ ${getLang()==="en"?"Loading the USCCB prayers…":"Cargando las oraciones de USCCB…"}</div>
+    <div class="notice">⏳ ${esc(t("usccbPrayLoading"))}</div>
     <section class="card" style="margin-top:10px">
-      ${list.length? list.map(p=>`<div class="prayerItem"><div><div><b>${esc(p.name)}</b></div><div class="small">${esc(p.category)} · ${esc((prayerText(p.id)||p.text).slice(0,60))}…</div></div>
-        <button class="starBtn" data-action="prayer-fav" data-id="${p.id}" aria-label="favorita">${state.prayerFavs.includes(p.id)?"★":"☆"}</button>
+      ${list.length? list.map(p=>`<div class="prayerItem"><div><div><b>${esc(prayerName(p.id, p.name))}</b></div><div class="small">${esc(prayerCat(p.category))} · ${esc((prayerText(p.id)||p.text).slice(0,60))}…</div></div>
+        <button class="starBtn" data-action="prayer-fav" data-id="${p.id}" aria-label="${esc(t("favStar"))}">${state.prayerFavs.includes(p.id)?"★":"☆"}</button>
         <button class="btn btnGhost" data-action="prayer-open" data-id="${p.id}">${t("open")}</button></div>`).join("")
-      : `<p>${t("noResults")}</p><div class="btnRow"><button class="btn btnGhost" data-action="prayer-clear">${getLang()==="en"?"Clear search":"Limpiar búsqueda"}</button></div>`}
+      : `<p>${t("noResults")}</p><div class="btnRow"><button class="btn btnGhost" data-action="prayer-clear">${esc(t("clearSearch"))}</button></div>`}
     </section>`;
   return `
     <p class="small">${ALL_PRAYERS().length} ${t("prayersCount")}</p>
     <div class="searchRow"><input id="prayerQ" placeholder="${esc(t("searchPrayers"))}" value="${esc(state.prayerQ)}"></div>
-    <div class="chipRow">${prayCats().map(c=>`<button class="fchip ${state.prayerCat===c?"active":""}" data-action="prayer-cat" data-cat="${c}">${c==="Favoritas"?`★ (${state.prayerFavs.length})`:c==="Todas"?t("backAll"):c}</button>`).join("")}</div>
+    <div class="chipRow">${prayCats().map(c=>`<button class="fchip ${state.prayerCat===c?"active":""}" data-action="prayer-cat" data-cat="${c}">${c==="Favoritas"?`★ (${state.prayerFavs.length})`:c==="Todas"?t("backAll"):esc(prayerCat(c))}</button>`).join("")}</div>
     <section class="card" style="margin-top:10px">
-      ${list.length? list.map(p=>`<div class="prayerItem"><div><div><b>${esc(p.name)}</b></div><div class="small">${esc(p.category)} · ${esc((prayerText(p.id)||p.text).slice(0,60))}…</div></div>
-        <button class="starBtn" data-action="prayer-fav" data-id="${p.id}" aria-label="favorita">${state.prayerFavs.includes(p.id)?"★":"☆"}</button>
+      ${list.length? list.map(p=>`<div class="prayerItem"><div><div><b>${esc(prayerName(p.id, p.name))}</b></div><div class="small">${esc(prayerCat(p.category))} · ${esc((prayerText(p.id)||p.text).slice(0,60))}…</div></div>
+        <button class="starBtn" data-action="prayer-fav" data-id="${p.id}" aria-label="${esc(t("favStar"))}">${state.prayerFavs.includes(p.id)?"★":"☆"}</button>
         <button class="btn btnGhost" data-action="prayer-open" data-id="${p.id}">${t("open")}</button></div>`).join("")
-      : `<p>${t("noResults")}</p><div class="btnRow"><button class="btn btnGhost" data-action="prayer-clear">${getLang()==="en"?"Clear search":"Limpiar búsqueda"}</button></div>`}
+      : `<p>${t("noResults")}</p><div class="btnRow"><button class="btn btnGhost" data-action="prayer-clear">${esc(t("clearSearch"))}</button></div>`}
     </section>
     ${canEdit()?parishPublishHTML():""}`;
 }
 function familiaHTML(){
-  const isEn = getLang()==="en";
   const cong = PRAYERS.find(p=>p.id==="oracion-congregacion");
   const voc = PRAYERS.find(p=>p.id==="oracion-vocaciones");
   const today = toISO(new Date());
@@ -1185,7 +1176,7 @@ function familiaHTML(){
     <button class="btn btnGhost" data-action="ext" data-url="https://www.usccb.org">${esc(t("usccbL"))} ↗</button></div>
     <div class="btnRow"><button class="btn btnGhost" data-action="ext" data-url="https://www.youtube.com/@Vatican">${esc(t("vaticanYTL"))} ↗</button></div></section>
   <section class="card"><h3>${t("rinconT")}</h3><p class="sub">${t("rinconSub")}</p>
-    <p style="font-size:14.5px;line-height:1.6">${esc((isEn?REFLEX_FAMILIA.en:REFLEX_FAMILIA.es).split("\n").slice(0,3).join(" "))}…</p>
+    <p style="font-size:14.5px;line-height:1.6">${esc(guideLoc("reflex").split("\n").slice(0,3).join(" "))}…</p>
     <div class="btnRow"><button class="btn btnNavy bigBtn" data-action="pray-aloud" data-id="avemaria">${t("aveBtn")}</button>
       <button class="btn btnNavy bigBtn" data-action="pray-aloud" data-id="padrenuestro">${t("patBtn")}</button></div>
     <div class="btnRow"><button class="btn btnGold" data-action="more-focus" data-focus="sec-pastoral">${t("rinconBtn")} →</button></div></section>`;
@@ -1225,62 +1216,64 @@ const MANYANET_IMG = {
   founder: "https://user.uploads.dev/file/be4cfe0b9f4150254e7daa18ae664f29.png",
   community: "https://user.uploads.dev/file/1683593db883eac2a3cf9b6691af73bb.jpg"
 };
+function examTitle(e){
+  const k = "examT_" + String(e.id||"").replace(/-/g, "_");
+  const v = t(k);
+  if(v && v !== k) return v;
+  const L = getLang();
+  if(L === "es") return e.tes;
+  if(L === "en") return e.ten;
+  return (EXAM_T[L] || {})[e.id] ?? e.ten ?? e.tes;
+}
 function confessionHTML(){
-  const isEn = getLang()==="en";
+  const steps = [
+    [t("confS1T"), t("confS1D")],
+    [t("confS2T"), t("confS2D")],
+    [t("confS3T"), t("confS3D")],
+    [t("confS4T"), t("confS4D")]
+  ];
   const p = parish();
   const actUS = (state.usccbList||[]).find(x=>/act of contrition/i.test(x.name||""));
-  const steps = isEn ? [
-    ["1 · Examination", "Pray with one of the examinations below. Be honest, be calm: name your sins."],
-    ["2 · Contrition", "Pray the Act of Contrition with all your heart (below)."],
-    ["3 · Confession", "Make the Sign of the Cross. Say how long since your last confession, then confess your sins simply. Listen to the priest's counsel, receive your penance and absolution."],
-    ["4 · Penance & thanks", "Do your penance soon and thank God for his mercy."]
-  ] : [
-    ["1 · Examen", "Reza con calma uno de los exámenes de abajo. Con verdad: ponle nombre a tus pecados."],
-    ["2 · Contrición", "Reza de corazón el Acto de contrición (abajo)."],
-    ["3 · Confesión", "Persígnate. Di cuánto hace de tu última confesión y confiesa tus pecados con sencillez. Escucha el consejo del sacerdote, recibe la penitencia y la absolución."],
-    ["4 · Penitencia y gracias", "Cumple pronto tu penitencia y da gracias a Dios por su misericordia."]
-  ];
   return `
-  <section class="card"><h3>🕊️ ${isEn?"Confession: schedule & guide":"Confesión: horario y guía"}</h3>
-    <div class="kv"><span>⛪ ${isEn?"Confessions":"Confesiones"}</span><b>${esc(p.confession)}</b></div>
+  <section class="card"><h3>🕊️ ${esc(t("confSchedGuide"))}</h3>
+    <div class="kv"><span>⛪ ${esc(t("confessionsLbl"))}</span><b>${esc(p.confession)}</b></div>
     ${steps.map(([h,d])=>`<div class="ordSec"><b>${esc(h)}</b><div class="ordLine">${esc(d)}</div></div>`).join("")}
-    <p class="small">${isEn?"Examinations from the USCCB (link below each title).":"Exámenes de la USCCB (enlace bajo cada título)."}</p></section>
-  <section class="card"><h3>💜 ${isEn?"Act of Contrition (part of your confession)":"Acto de contrición (parte de tu confesión)"}</h3>
+    <p class="small">${esc(t("examLinkNote"))}</p></section>
+  <section class="card"><h3>💜 ${esc(t("actContrPart"))}</h3>
     <p class="prayerText">${esc(prayerText("acto-contricion"))}</p>
     ${actUS?`<p class="prayerText" style="margin-top:8px">${esc(actUS.text)}</p>
     <div class="btnRow"><button class="btn btnGhost" data-action="prayer-open" data-id="${actUS.id}">${t("open")} · EN</button>
     <button class="btn btnNavy" data-action="pray-aloud" data-id="${actUS.id}">${t("voiceBtn")}</button></div>`:""}
   </section>
-  <section class="card"><h3>🔍 ${isEn?"Examinations of conscience (USCCB)":"Exámenes de conciencia (USCCB)"}</h3>
-    ${CONFESION_EXAMS.map(e=>`<details class="ordDet"><summary>${esc(isEn?e.ten:e.tes)} <span class="tag">${esc(e.lang==="es"?"ES":"EN")}</span></summary>
+  <section class="card"><h3>🔍 ${esc(t("examTitleUSCCB"))}</h3>
+    ${CONFESION_EXAMS.map(e=>`<details class="ordDet"><summary>${esc(examTitle(e))} <span class="tag">${esc(t("srcUsccb"))} · ${esc(e.lang==="es"?"ES":"EN")}</span></summary>
       <div class="ordSec"><p class="prayerText" style="font-size:15px">${esc(e.text)}</p>
       <p class="small">USCCB · https://www.usccb.org/prayer-and-worship/sacraments-and-sacramentals/penance/examinations-of-conscience</p></div></details>`).join("")}
   </section>`;
 }
 function vocacionesHTML(){
-  const isEn = getLang()==="en";
   const vocPrayer = (state.usccbList||[]).find(x=>/short prayer for vocations/i.test(x.name||""));
   const cong = PRAYERS.find(x=>x.id==="oracion-vocaciones");
   return `
   <section class="card"><img class="artBanner" src="${MANYANET_IMG.crest}" alt="Hijos de la Sagrada Familia" loading="lazy" style="object-fit:contain;background:#fff">
-    <h3>🌱 ${isEn?"Pray for vocations to the Sons of the Holy Family":"Oremos por las vocaciones a los Hijos de la Sagrada Familia"}</h3>
-    <p>${isEn?"Nazareth is family life lived in community and in families — a life of fraternity. The Sons of the Holy Family were founded by Saint Joseph Manyanet to make every family a reflection of Nazareth.":"Nazaret es la vida de familia vivida en comunidad y en las familias: una vida de fraternidad. Los Hijos de la Sagrada Familia fueron fundados por san José Manyanet para hacer de cada familia un reflejo de Nazaret."}</p>
+    <h3>🌱 ${esc(t("vocPrayTitle"))}</h3>
+    <p>${esc(t("vocNazareth"))}</p>
     <div class="btnRow"><button class="btn btnGold" data-action="ext" data-url="https://www.manyanet-us.org/">manyanet-us.org ↗</button></div></section>
   <section class="card"><img class="artBanner" src="${MANYANET_IMG.holyFam}" alt="Sagrada Familia" loading="lazy">
-    <h3>🙏 ${isEn?"Vocation prayer":"Oración por las vocaciones"}</h3>
+    <h3>🙏 ${esc(t("vocPrayerLbl"))}</h3>
     ${vocPrayer?`<p class="prayerText">${esc(vocPrayer.text)}</p>
     <div class="btnRow"><button class="btn btnNavy" data-action="pray-aloud" data-id="${vocPrayer.id}">${t("voiceBtn")}</button></div>`:""}
     ${cong?`<div class="verseBox">“${esc(String(prayerText(cong.id)||cong.text).slice(0,220))}…”</div>
     <div class="btnRow"><button class="btn btnGhost" data-action="prayer-open" data-id="${cong.id}">${t("open")}</button>
     <button class="btn btnNavy" data-action="pray-aloud" data-id="${cong.id}">${t("voiceBtn")}</button></div>`:""}
-    <div class="notice">“${isEn?"A true apostle of the family and a prophet of the family for our times.":"Un verdadero apóstol de la familia y un profeta de la familia para nuestros tiempos."}” — ${isEn?"Pope St. John Paul II on Saint Joseph Manyanet":"San Juan Pablo II sobre san José Manyanet"}</div></section>
-  <section class="card"><img class="artBanner" src="${MANYANET_IMG.founder}" alt="San José Manyanet" loading="lazy"><h3>✨ ${isEn?"Founder & call":"Fundador y llamada"}</h3>
-    <p style="font-size:14.5px;line-height:1.6">${isEn?"Founder: Saint Joseph Manyanet. The Sons welcome Catholic men (18–35) with a sincere desire to serve God and the family. “Come and See” visits welcome — come experience community life and prayer.":"Fundador: san José Manyanet. Los Hijos acogen a jóvenes católicos (18–35 años) con deseo sincero de servir a Dios y a la familia. Visitas «Ven y verás»: ven a conocer la vida de comunidad y oración."}</p>
+    <div class="notice">“${esc(t("manyanetQuote"))}” — ${esc(t("manyanetJP2"))}</div></section>
+  <section class="card"><img class="artBanner" src="${MANYANET_IMG.founder}" alt="San José Manyanet" loading="lazy"><h3>✨ ${esc(t("founderCall"))}</h3>
+    <p style="font-size:14.5px;line-height:1.6">${esc(t("founderBody"))}</p>
     <img class="artBanner" src="${MANYANET_IMG.community}" alt="Hijos de la Sagrada Familia" loading="lazy">
-    <div class="btnRow"><button class="btn btnGold" data-action="ext" data-url="https://www.manyanet-us.org/">🌱 ${isEn?"Discern your vocation":"Discierne tu vocación"} ↗</button></div></section>
-  <section class="card"><h3>💛 ${isEn?"Support the Sons of the Holy Family":"Apoya a los Hijos de la Sagrada Familia"}</h3>
-    <p class="sub">${isEn?"Your gifts directly support the formation of our seminarians, the formation houses and the mission works. Together we help new vocations grow and serve the Church.":"Tus aportaciones sostienen directamente la formación de nuestros seminaristas, las casas de formación y las obras misioneras. Juntos ayudamos a que nuevas vocaciones crezcan y sirvan a la Iglesia."}</p>
-    <div class="btnRow"><button class="btn btnGold" data-action="ext" data-url="${SF_DONATE_URL}">💛 ${isEn?"Donate at manyanet-us.org":"Donar en manyanet-us.org"} ↗</button></div></section>`;
+    <div class="btnRow"><button class="btn btnGold" data-action="ext" data-url="https://www.manyanet-us.org/">🌱 ${esc(t("discernVoc"))} ↗</button></div></section>
+  <section class="card"><h3>💛 ${esc(t("supportSons"))}</h3>
+    <p class="sub">${esc(t("supportBody"))}</p>
+    <div class="btnRow"><button class="btn btnGold" data-action="ext" data-url="${SF_DONATE_URL}">💛 ${esc(t("donateManyanet"))} ↗</button></div></section>`;
 }
 function playerHTML(kind, steps, idx, auto){
   const s = steps[idx];
@@ -1303,7 +1296,7 @@ function playerHTML(kind, steps, idx, auto){
 }
 function rosaryHTML(){
   const steps = rosarySteps(state.rosarySet);
-  const set = ROSARY_MYSTERIES[state.rosarySet];
+  const set = rosarySetLoc(state.rosarySet);
   if(state.rosaryStep>steps.length-1) state.rosaryStep=0;
   const todaySet = mysteriesForWeekday(new Date().getDay());
   return `
@@ -1328,15 +1321,20 @@ const RANK_LABEL = { solemnity:"rankSolemnity", feast:"rankFeast", memorial:"ran
 function saintRankLabel(r){ return t(RANK_LABEL[r] || "rankFerial"); }
 const LIT_DOT = { white:"#e8e4d8", green:"#3d7a52", red:"#a33", violet:"#7a4fa3", purple:"#7a4fa3", rose:"#d8a", blue:"#2f6db9", black:"#333", gold:"#c9a227" };
 const LIT_COLOR_W = {
-  white:{es:"blanco",en:"white"}, green:{es:"verde",en:"green"}, red:{es:"rojo",en:"red"},
-  violet:{es:"morado",en:"violet"}, purple:{es:"morado",en:"purple"}, rose:{es:"rosa",en:"rose"},
-  blue:{es:"azul",en:"blue"}, black:{es:"negro",en:"black"}, gold:{es:"dorado",en:"gold"},
+  white:{es:"blanco",en:"white",pt:"branco",it:"bianco",la:"albus",fr:"blanc",zh:"白色",tl:"puti",vi:"trắng",ar:"أبيض",ko:"백색"},
+  green:{es:"verde",en:"green",pt:"verde",it:"verde",la:"viridis",fr:"vert",zh:"绿色",tl:"berde",vi:"xanh lá",ar:"أخضر",ko:"녹색"},
+  red:{es:"rojo",en:"red",pt:"vermelho",it:"rosso",la:"ruber",fr:"rouge",zh:"红色",tl:"pula",vi:"đỏ",ar:"أحمر",ko:"적색"},
+  violet:{es:"morado",en:"violet",pt:"roxo",it:"viola",la:"violaceus",fr:"violet",zh:"紫色",tl:"lila",vi:"tím",ar:"بنفسجي",ko:"자색"},
+  purple:{es:"morado",en:"purple",pt:"roxo",it:"viola",la:"purpureus",fr:"violet",zh:"紫色",tl:"lila",vi:"tím",ar:"بنفسجي",ko:"자색"},
+  rose:{es:"rosa",en:"rose",pt:"rosa",it:"rosa",la:"roseus",fr:"rose",zh:"粉色",tl:"rosas",vi:"hồng",ar:"وردي",ko:"장미색"},
+  blue:{es:"azul",en:"blue",pt:"azul",it:"azzurro",la:"caeruleus",fr:"bleu",zh:"蓝色",tl:"asul",vi:"xanh dương",ar:"أزرق",ko:"청색"},
+  black:{es:"negro",en:"black",pt:"preto",it:"nero",la:"niger",fr:"noir",zh:"黑色",tl:"itim",vi:"đen",ar:"أسود",ko:"흑색"},
+  gold:{es:"dorado",en:"gold",pt:"dourado",it:"oro",la:"aureus",fr:"or",zh:"金色",tl:"ginto",vi:"vàng",ar:"ذهبي",ko:"금색"},
 };
 function litColorName(c){
   const m = LIT_COLOR_W[String(c||"").toLowerCase()];
   if(!m) return c || "—";
-  const L = getLang();
-  return (L==="es"||L==="en") ? m[L] : m.en;
+  return m[getLang()] || m.en || m.es;
 }
 function clampSaintDate(iso){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(iso||"")) return toISO(new Date());
@@ -1354,7 +1352,7 @@ function saintDayHTML(){
   const feast = (dd && dd.feast) ? dd.feast : (daily ? daily.feast : "");
   const color = (dd && dd.color) ? dd.color : (daily ? daily.color : "");
   const rank = feast ? rankOf(feast) : "";
-  const saint = saintsForDay(feast, iso.slice(5), getLang()==="en"?"en":"es")[0] || null;
+  const saint = saintsForDay(feast, iso.slice(5), getLang())[0] || null;
   let cites = [];
   if(dd && dd.citations && (dd.citations.first || dd.citations.gospel)){
     const c = dd.citations;
@@ -1402,7 +1400,8 @@ function saintDayHTML(){
 }
 function saintsHTML(){
   const q = norm(state.saintQ);
-  const list = SAINTS.filter(s=>!q || norm(s.name+" "+s.patron+" "+s.bio).includes(q));
+  const loc = SAINTS.map((s,i)=>parishSaintLoc(s,i));
+  const list = loc.filter(s=>!q || norm(s.name+" "+s.patron+" "+s.bio).includes(q));
   return saintDayHTML() + `
     <p class="small" style="margin-top:12px">${SAINTS.length} ${t("saintsCount")} · ${t("saintsSub")}</p>
     <div class="searchRow"><input id="saintQ" placeholder="${esc(t("searchSaints"))}" value="${esc(state.saintQ)}"></div>
@@ -1414,10 +1413,9 @@ function saintsHTML(){
 }
 
 // ---------- CALENDARIO ----------
-const MON_ES=["","enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-const MON_EN=["","January","February","March","April","May","June","July","August","September","October","November","December"];
-function bulletinLabel(b){ const isEn=getLang()==="en"; if(!b||!b.y) return "";
-  return isEn?`Week of ${MON_EN[b.mo]} ${b.d1}–${b.d2}, ${b.y}`:`Semana del ${b.d1} al ${b.d2} de ${MON_ES[b.mo]} de ${b.y}`; }
+function bulletinLabel(b){ if(!b||!b.y) return "";
+  const L = getLang(), months = MON_[L] || MON_.en;
+  return t("bulletinWeek").replace("{d1}", b.d1).replace("{d2}", b.d2).replace("{m}", months[b.mo]||"").replace("{y}", b.y); }
 async function loadBulletinLive(){
   try{
     const c = state.bulletinLive;
@@ -1441,10 +1439,9 @@ async function loadBulletinLive(){
 function renderCalendar(){
   if (!$("#view-calendar")) return; // el shell publicado puede no traer calendario
   const cur = state.calCursor;
-  const isEn = getLang()==="en";
   const ED = canEdit();
   const monthName = cur.toLocaleString(localeOf(),{month:"long", year:"numeric"});
-  const allF = getLang()==="en" ? "All" : "Todas";
+  const allF = "Todas";
   const views = [["mes",t("v_month")],["semana",t("v_week")],["dia",t("v_day")]];
   let cal = `<h2 class="serif" style="margin:4px 0">${t("calTitle")}</h2>
     <p class="small">${esc(parish().name)} · ${t("calSub")}</p>
@@ -1463,7 +1460,7 @@ function renderCalendar(){
   else cal += dayHTML();
   cal += `<section class="card"><h3>📋 ${state.calFilter==="Todas"?t("allEventsT"):t("eventsCat")+": "+catName(state.calFilter)}</h3>${eventListHTML(visibleEvents(state.calFilter))}</section>`;
   cal += `<section class="card"><h3>${t("sacrT")}</h3><p class="sub">${t("sacrSub")}</p>
-    ${(isEn?SACRAMENT_INFO.en:SACRAMENT_INFO.es).map(s=>`<div class="eventRow"><div style="flex:1"><b>${esc(s.h)}</b><div class="small">${esc(s.p)}</div></div></div>`).join("")}
+    ${sacrLoc().map(s=>`<div class="eventRow"><div style="flex:1"><b>${esc(s.h)}</b><div class="small">${esc(s.p)}</div></div></div>`).join("")}
     <div class="btnRow"><button class="btn btnGhost" data-action="ext" data-url="https://www.hcccsantacruz.org/sacraments">hcccsantacruz.org ↗</button></div></section>`;
   cal += celebrationHTML();
   const vc = $("#view-calendar");
@@ -1480,7 +1477,7 @@ function celebrationHTML(){
     ${list.length?eventListHTML(list, ED):`<p class="small">${t("celebEmpty")}</p>`}
     ${ED?`<h4 style="margin:10px 0 2px">${t("celebT")}</h4>
     <label>${t("celebNameL")}</label><input id="cbTitle" placeholder="…">
-    <div class="grid2"><div><label>${t("sectionL")}</label><select id="cbCat"><option>Sacramentos</option><option>Misa</option><option>Comunidad</option><option>Servicio</option></select></div>
+    <div class="grid2"><div><label>${t("sectionL")}</label><select id="cbCat"><option value="Sacramentos">${catName("Sacramentos")}</option><option value="Misa">${catName("Misa")}</option><option value="Comunidad">${catName("Comunidad")}</option><option value="Servicio">${catName("Servicio")}</option></select></div>
     <div><label>${t("celebDateL")}</label><input id="cbDate" type="date"></div></div>
     <div class="grid2"><div><label>${t("timeL")}</label><input id="cbTime" placeholder="6:00 PM"></div>
     <div><label>${t("placeL")}</label><input id="cbPlace" placeholder="Templo histórico"></div></div>
@@ -1522,7 +1519,7 @@ function monthHTML(cur, monthName){
   const days=new Date(y,m+1,0).getDate();
   const byISO={};
   visibleEvents(state.calFilter).forEach(ev=>{ eventDates(ev,cur).forEach(d=>{ const k=toISO(d); (byISO[k]=byISO[k]||[]).push(ev); }); });
-  const dows = getLang()==="zh" ? ["一","二","三","四","五","六","日"] : ["L","M","X","J","V","S","D"];
+  const dows = DOWS[getLang()] || ["L","M","X","J","V","S","D"];
   let cells=dows.map(d=>`<div class="dow">${d}</div>`).join("");
   for(let i=0;i<firstDow;i++) cells+=`<div></div>`;
   for(let d=1;d<=days;d++){
@@ -1724,22 +1721,21 @@ function givingHTML(){
     <div class="kv"><span>${t("pastorL")}</span><span>${esc(p.priest)}</span></div></section>`;
   return h;
 }
-const TURNOS = [["f1","Vie 1–2 PM","Fri 1–2 PM"],["f2","Vie 2–3 PM","Fri 2–3 PM"],["f3","Vie 3–4 PM","Fri 3–4 PM"],["f4","Vie 4–5 PM","Fri 4–5 PM"],["f5","Vie 5–6 PM","Fri 5–6 PM"],["pv","Primer viernes 7:30 AM–4 PM","First Friday 7:30 AM–4 PM"],["otro","Otro horario","Another time"]];
+const TURNOS = ["f1","f2","f3","f4","f5","pv","otro"];
 function pastoralHTML(){
-  const isEn = getLang()==="en";
   const ED = canEdit();
   const F = state._pastoralForm;
   const team = pastoralAll();
-  const refl = isEn?REFLEX_FAMILIA.en:REFLEX_FAMILIA.es;
-  const adv = isEn?ADVIENTO_GUIDE.en:ADVIENTO_GUIDE.es;
-  const advFam = isEn?FAMILIA_ADVIENTO.en:FAMILIA_ADVIENTO.es;
+  const refl = guideLoc("reflex");
+  const adv = guideLoc("adv");
+  const advFam = guideLoc("fam");
   return `<section class="card" id="sec-pastoral"><h3>${t("pastT")}</h3><p class="sub">${t("pastSub")}</p>
     ${state._pastoralSent?`<div class="notice">${esc(state._pastoralSent)}</div>`:""}
     <h4 style="margin:10px 0 2px">${t("adorT")}</h4><p class="small">${t("adorSub")}</p>
     ${F==="adoracion"
       ? `<label>${t("yourName")}</label><input id="paName" value="${esc(state.userName||"")}" placeholder="${esc(t("namePh"))}">
         <label>${t("phoneL")}</label><input id="paPhone" inputmode="tel" placeholder="(505) …">
-        <label>${t("turnoL")}</label><select id="paTurno">${TURNOS.map(o=>`<option value="${esc(isEn?o[2]:o[1])}">${esc(isEn?o[2]:o[1])}</option>`).join("")}</select>
+        <label>${t("turnoL")}</label><select id="paTurno">${TURNOS.map(o=>`<option value="${esc(turnoLabel(o))}">${esc(turnoLabel(o))}</option>`).join("")}</select>
         <div class="btnRow"><button class="btn btnGold" data-action="pastoral-adorar">${t("sendMsg")}</button>
         <button class="btn btnGhost" data-action="pastoral-form" data-f="adoracion">${t("cancelBtn")}</button></div>`
       : `<div class="btnRow"><button class="btn btnGold" data-action="pastoral-form" data-f="adoracion">🕯️ ${t("adorBtn")}</button></div>`}
@@ -1761,7 +1757,7 @@ function pastoralHTML(){
     <p style="font-size:14.5px;line-height:1.6;white-space:pre-line">${esc(refl)}</p>
     <details class="ordDet"><summary>🕯️ ${esc(t("advT"))}</summary>
       <div class="ordSec"><p class="prayerText" style="font-size:15px;white-space:pre-line">${esc(adv)}</p></div></details>
-    <details class="ordDet"><summary>👨‍👩‍👧 ${esc(isEn?"Preparing the heart as a family: Advent guide":"Preparando el corazón en familia: guía de Adviento")}</summary>
+    <details class="ordDet"><summary>👨‍👩‍👧 ${esc(t("advPrepFam"))}</summary>
       <div class="ordSec"><p class="prayerText" style="font-size:15px;white-space:pre-line">${esc(advFam)}</p></div></details>
     <div class="btnRow"><button class="btn btnNavy bigBtn" data-action="pray-aloud" data-id="avemaria">${t("aveBtn")}</button>
       <button class="btn btnNavy bigBtn" data-action="pray-aloud" data-id="padrenuestro">${t("patBtn")}</button></div>
@@ -1831,7 +1827,7 @@ function renderCommunity(){
 
     <section class="card" id="sec-ministerios"><h3>${t("minTitle")}</h3><p class="sub">${t("minSub")}</p>
       <div class="subnav">${massOpts.map(m=>`<button class="${state.ministryMass===m?"active":""}" data-action="ministry-mass" data-m="${esc(m)}">${esc(m)}</button>`).join("")}</div>
-      <table class="minTable">${MINISTRY_ROLES.map(r=>`<tr><td>${esc(r)}</td><td>${ED?`<input data-minrole="${esc(r)}" value="${esc(mm[r]||"")}" placeholder="${esc(t("unassigned"))}">`:`<span>${esc(mm[r]||"—")}</span>`}</td></tr>`).join("")}</table>
+      <table class="minTable">${MINISTRY_ROLES.map(r=>`<tr><td>${esc(roleLoc(r))}</td><td>${ED?`<input data-minrole="${esc(r)}" value="${esc(mm[r]||"")}" placeholder="${esc(t("unassigned"))}">`:`<span>${esc(mm[r]||"—")}</span>`}</td></tr>`).join("")}</table>
       ${ED?`<div class="btnRow"><button class="btn btnGold" data-action="ministry-save">${t("saveProgram")}</button></div>
       <p class="small">${t("savedLocal")}</p>`:lockNote()}
     </section>
@@ -2042,11 +2038,11 @@ function renderMore(){
     </section>
 
     <section class="card" id="sec-noticias"><h3>${t("newsTitle")}</h3>
-      <div class="chipRow">${newsCats.map(c=>`<button class="fchip ${state.newsFilter===c?"active":""}" data-action="news-filter" data-c="${c}">${c==="Todas"?t("allCats"):c}</button>`).join("")}</div>
-      ${news.map(n=>`<div class="eventRow"><div style="flex:1"><span class="tag ${n.cat==="Iglesia"?"gold":n.cat==="País"?"green":""}">${esc(n.cat)}</span> <span class="small">· ${esc(n.date)}</span>
+      <div class="chipRow">${newsCats.map(c=>`<button class="fchip ${state.newsFilter===c?"active":""}" data-action="news-filter" data-c="${c}">${c==="Todas"?t("allCats"):esc(newsCatLoc(c))}</button>`).join("")}</div>
+      ${news.map(n=>`<div class="eventRow"><div style="flex:1"><span class="tag ${n.cat==="Iglesia"?"gold":n.cat==="País"?"green":""}">${esc(newsCatLoc(n.cat))}</span> <span class="small">· ${esc(n.date)}</span>
         <div><b>${esc(n.title)}</b></div><div class="small">${esc(n.body)}</div></div></div>`).join("") || `<p class="small">${t("noEvents")}</p>`}
       ${ED?`<h4 style="margin:10px 0 2px">${t("pubNews")}</h4>
-      <div class="grid2"><div><label>${t("sectionL")}</label><select id="nwCat"><option>Diócesis</option><option>País</option><option>Iglesia</option></select></div>
+      <div class="grid2"><div><label>${t("sectionL")}</label><select id="nwCat"><option value="Diócesis">${esc(newsCatLoc("Diócesis"))}</option><option value="País">${esc(newsCatLoc("País"))}</option><option value="Iglesia">${esc(newsCatLoc("Iglesia"))}</option></select></div>
       <div><label>${t("npTitle")}</label><input id="nwTitle" placeholder="${esc(t("nwTitlePh"))}"></div></div>
       <label>${t("messageL")}</label><textarea id="nwBody" placeholder="${esc(t("nwBodyPh"))}"></textarea>
       <div class="btnRow"><button class="btn btnGhost" data-action="news-add">${t("pubNews")}</button></div>`:`<p class="small">${t("readOnlyNote")}</p>`}
@@ -2137,9 +2133,9 @@ document.addEventListener("click", e=>{
   else if(a==="saint-pray"){ speak(saintPrayerText(el.dataset.name||"", getLang())); if(state.tab==="readings") renderReadings(); }
   else if(a==="font-inc"){ state.readingFont = Math.min(24, (state.readingFont||17)+1); store.set("readings.font", state.readingFont); renderReadings(); }
   else if(a==="font-dec"){ state.readingFont = Math.max(14, (state.readingFont||17)-1); store.set("readings.font", state.readingFont); renderReadings(); }
-  else if(a==="read-aloud"){ const wdi = new Date(state.readingDate+"T12:00:00").getDay(); const w0 = getLang()==="en"?WEEK_EN[WEEK[wdi].key]:WEEK[wdi]; speak(w0.reflectionTitle+". "+w0.reflection); renderReadings(); }
+  else if(a==="read-aloud"){ const wdi = new Date(state.readingDate+"T12:00:00").getDay(); const w0 = weekLoc(wdi); speak(w0.reflectionTitle+". "+w0.reflection); renderReadings(); }
   else if(a==="mass-readings"){ stopSpeak(); state.readingDate = nextDateForDayKey(el.dataset.day); state.tab="readings"; render(); window.scrollTo({top:0}); }
-  else if(a==="pray-aloud"){ const pr=ALL_PRAYERS().find(p=>p.id===el.dataset.id); if(pr) speak(pr.name+". "+(prayerText(pr.id)||pr.text)); }
+  else if(a==="pray-aloud"){ const pr=ALL_PRAYERS().find(p=>p.id===el.dataset.id); if(pr) speak(prayerName(pr.id, pr.name)+". "+(prayerText(pr.id)||pr.text)); }
   else if(a==="stop-voice"){ state.rosaryAuto=false; state.chapletAuto=false; stopSpeak(); renderPray(); renderReadings(); }
   else if(a==="saint-move"){ stopSpeak(); state.saintDate = clampSaintDate(el.dataset.iso); renderPray(); }
   else if(a==="saint-today"){ stopSpeak(); state.saintDate = toISO(new Date()); renderPray(); }
