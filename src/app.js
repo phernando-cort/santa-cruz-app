@@ -127,7 +127,9 @@ const state = {
   editors: store.get("admin.editors", []),
   _admMsg: "",
   inviteOk: store.get("invite.ok", false),
+  visitor: store.get("visitor.ok", false),
   _gateMsg: "",
+  _forceGate: false,
   givingAmt: 25,
   giving: store.get("giving", null) || { goals: {}, gifts: [], updates: {}, monthly: null, name: "" },
   goalOpen: null,
@@ -228,7 +230,7 @@ function inviteCodeEff(){
 function renderGate(){
   const ov = $("#gateOverlay");
   if(!ov) return;
-  if(sessionOk()){ ov.hidden = true; ov.innerHTML = ""; delete ov.dataset.m; return; }
+  if((sessionOk() || state.visitor) && !state._forceGate){ ov.hidden = true; ov.innerHTML = ""; delete ov.dataset.m; state._forceGate = false; return; }
   if(!["invite","login","admin"].includes(state.gateMode)) state.gateMode = "invite";
   if(!ov.hidden && ov.dataset.m === state._gateMsg && ov.dataset.l === state.lang && ov.dataset.g === state.gateMode) return;
   ov.hidden = false;
@@ -270,11 +272,38 @@ function renderGate(){
       <p class="small">${t("gateAdminHint")}</p>
       <div class="btnRow" style="margin-top:12px"><button class="btn btnNavy" data-action="gate-admin" style="flex:1">${t("adminLogin")}</button></div>` : ""}
       <div class="btnRow"><button class="btn btnGhost" data-action="gate-mode" data-m="${m==="admin"?"invite":"admin"}">${m==="admin"?t("gateHasInvite"):t("gateIAmAdmin")}</button></div>
+      ${(state.visitor && !sessionOk()) ? `<div class="btnRow"><button class="btn btnGhost" data-action="gate-back" style="flex:1">← ${esc(t("close"))}</button></div>` : ""}
       <div class="gateLangs">${LANGS.map(l => `<button class="fchip ${state.lang === l.id ? "active" : ""}" data-action="lang-set" data-l="${l.id}">${esc(l.native)}</button>`).join("")}</div>
     </div>`;
 }
-function srvOp(promise, renders){ (async()=>{ try{ await promise; renders(); }catch(e){ const m = String((e && e.message) || e || ""); alert(t(m.includes("editors") ? "srvNeedName" : m.includes("flood") ? "srvBusy" : "srvFail")); } })(); return true; }
-function pubBoth(idx, rec, renders){ if(Sync.online) return srvOp(Sync.push(idx, rec), renders); return false; }
+function srvOp(promise, renders){ if(state.visitor && !state.inviteOk){ visitorDeny(); return true; } (async()=>{ try{ await promise; renders(); }catch(e){ const m = String((e && e.message) || e || ""); alert(t(m.includes("editors") ? "srvNeedName" : m.includes("flood") ? "srvBusy" : "srvFail")); } })(); return true; }
+function pubBoth(idx, rec, renders){ if(state.visitor && !state.inviteOk && idx !== 2){ visitorDeny(); return true; } if(Sync.online) return srvOp(Sync.push(idx, rec), renders); return false; }
+// ---------- modo visita (entra por el boletín, sin invitación) ----------
+// La visita VE todo y puede pedir a la oficina (mensajes privados, idx 2);
+// publicar a la comunidad requiere código (lo pide gratis en la oficina).
+let toastT = null;
+function toast(msg){ try{
+  let d = document.getElementById("toast");
+  if(!d){ d = document.createElement("div"); d.id = "toast";
+    d.setAttribute("style", "position:fixed;left:50%;bottom:76px;transform:translateX(-50%);max-width:92vw;background:#1e2a4a;color:#fff;border:1px solid #c9a227;border-radius:12px;padding:10px 16px;font-size:15px;z-index:9999;box-shadow:0 4px 18px rgba(0,0,0,.35);text-align:center;");
+    document.body.appendChild(d); }
+  d.textContent = String(msg || ""); d.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(()=>{ try{ d.hidden = true; }catch{} }, 3400);
+}catch{} }
+function visitorDeny(){ toast(t("visitorNeedCode")); }
+function renderVisitorBar(){ try{
+  let b = document.getElementById("visitorBar");
+  const show = !!(state.visitor && !state.inviteOk);
+  if(!b){
+    const h = document.querySelector("#appCol .topbar") || document.querySelector(".topbar");
+    if(!h) return;
+    b = document.createElement("div"); b.id = "visitorBar";
+    b.setAttribute("style", "background:#1e2a4a;color:#f3e6c3;border-bottom:2px solid #c9a227;padding:8px 12px;font-size:14px;text-align:center;");
+    h.insertAdjacentElement("afterend", b);
+  }
+  b.hidden = !show;
+  if(show) b.innerHTML = `👀 ${esc(t("visitorBar"))} <button class="btn btnGhost" data-action="visitor-code" style="margin-left:8px;padding:2px 10px;font-size:13px">${esc(t("visitorHasCode"))}</button>`;
+}catch{} }
 function mix(srv, local, seeds){ const seen = new Set(), out = []; for(const r of [...srv, ...local, ...seeds]){ if(!r || !r.id || seen.has(r.id)) continue; seen.add(r.id); out.push(r); } return out; }
 function streamEff(){ return (Sync.online && Sync.stream && Sync.stream.yt) ? Sync.stream : state.stream; }
 function editorsEff(){ return Sync.online ? Sync.editors : state.editors; }
@@ -578,6 +607,7 @@ function render(){
   try{ renderGate(); }catch(e){}
   try{ document.documentElement.lang = getLang(); }catch(e){}
   try{ $("#appCol").dir = (LANGS.find(l=>l.id===getLang())||{}).dir || "ltr"; }catch(e){}
+  try{ renderVisitorBar(); }catch(e){}
   const sections = [renderTop, renderHome, renderReadings, renderCommunity, renderPray, renderCalendar, renderVocacion, renderMore];
   for(const f of sections){ try{ f(); }catch(e){ console.warn("[render]", f.name, String((e && e.message) || e).slice(0, 200)); } }
   try{ loadBulletinLive(); }catch(e){}
@@ -2323,6 +2353,8 @@ document.addEventListener("click", e=>{
     else state._admMsg=t("wrongPin"); renderMore(); }
   else if(a==="admin-logout"){ Sync.logout(); state.admin=false; store.set("admin.auth", false); state._admMsg=""; renderMore(); }
   else if(a==="gate-mode"){ state.gateMode = el.dataset.m || "invite"; state._gateMsg = ""; renderGate(); }
+  else if(a==="visitor-code"){ state._forceGate = true; state._gateMsg = ""; renderGate(); }
+  else if(a==="gate-back"){ state._forceGate = false; state._gateMsg = ""; render(); }
   else if(a==="gate-redeem"){
     const n = val("#gateName"), c = normCode($("#gateCode")?.value);
     const p1 = $("#gatePw1")?.value || "", p2 = $("#gatePw2")?.value || "";
@@ -2621,6 +2653,10 @@ try{ // enlace de invitación: #i=CODIGO&n=Nombre → prellena la puerta de entr
   const hq = new URLSearchParams(String(window.location.hash || "").replace(/^#/, ""));
   const ic = (hq.get("i") || "").trim(), inm = (hq.get("n") || "").trim();
   if(ic){ state.pendingInvite = { code: ic, name: inm }; state.gateMode = "invite"; }
+  if(hq.get("visita") !== null || hq.get("guest") !== null){ // enlace del boletín: entra sin invitación
+    state.visitor = true; try{ store.set("visitor.ok", true); }catch{}
+    try{ history.replaceState(null, "", window.location.pathname + window.location.search); }catch{}
+  }
 }catch{}
 render();
 refreshGCal();
