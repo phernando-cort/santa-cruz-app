@@ -731,12 +731,13 @@ function renderHome(){
       {t:isEn?"Mass · San Isidro Chapel, La Mesilla":"Misa · Capilla San Isidro, La Mesilla", w:isEn?"3rd Thursday · 6:00pm":"Tercer jueves · 6:00pm", today:isThirdThu, nx:nextMonthly(4,3)}
     ];
     const specHtml = specs.map(s=>`<div class="small">${s.today?`<span class="tag red">${esc(t("todayTag"))}</span> `:""}🕯️ <b>${esc(s.t)}</b> · ${esc(s.w)}${s.today?"":` · ${isEn?"Next":"Próx"}: <b>${esc(fmtD(s.nx))}</b>`}</div>`).join("");
-    // — 4 · Santo del día —
+    // — 4 · Santo del día (bio completa, era junto al nombre) —
+    const saintBio = String(tSaint && tSaint.bio || "");
     const saintHtml = tSaint
-      ? `<div class="saintToday">${tSaint.image?`<img class="saintImg" src="${esc(tSaint.image)}" alt="${esc(tSaint.name.slice(0,1))}" loading="lazy">`:`<div class="avatar">${esc(tSaint.name.slice(0,1))}</div>`}
-          <div style="flex:1"><b style="font-size:17px">${esc(tSaint.name)}</b>
-          ${tSaint.era?`<div class="small">· ${esc(tSaint.era)}</div>`:""}
-          <div style="font-size:14.5px;line-height:1.55;margin-top:4px">${esc(String(tSaint.bio||"").slice(0,140))}${String(tSaint.bio||"").length>140?"…":""}</div></div></div>`
+      ? `<div class="saintToday">${tSaint.image?`<img class="saintImg" src="${esc(tSaint.image)}" alt="${esc(tSaint.name)}" loading="lazy">`:`<div class="avatar" aria-hidden="true">${esc(String(tSaint.name||"?").replace(/^(San|Santa|Santo|Beato|Beata|The|A)\s*/i,"").slice(0,1))}</div>`}
+          <div style="flex:1;min-width:0"><b style="font-size:17px">${esc(tSaint.name)}</b>${tSaint.era?` <span class="small">· ${esc(tSaint.era)}</span>`:""}
+          ${(tSaint.patron&&tSaint.patron.length)?`<div class="small" style="margin-top:2px">🛡️ ${esc(tSaint.patron.slice(0,4).join(" · "))}</div>`:""}
+          ${saintBio?`<div style="font-size:14.5px;line-height:1.55;margin-top:4px">${esc(saintBio)}</div>`:""}</div></div>`
       : `<p class="small">${esc(t("ferialNote"))}</p>`;
     // — 4b · Nos unimos en oración: intención de los Hijos (manyanet-us.org) + celebraciones del día + TODAS las intenciones de la gente —
     const SONS_INTENTION = isEn
@@ -775,9 +776,9 @@ function renderHome(){
         <div class="btnRow"><button class="btn btnNavy" data-action="home-readings">${isEn?"Read today's readings":"Leer las lecturas"}</button></div></div>
       <div class="todayBlock"><h4>🕯️ ${isEn?"Today's Masses":"Misas de hoy"} (${schedList.length||"—"})</h4>${massHtml}
         <div class="btnRow"><button class="btn btnGhost" data-action="tab" data-tab="calendar">${isEn?"Full calendar":"Calendario completo"}</button></div></div>
-      <div class="todayBlock"><h4>⭐ ${isEn?"Special celebrations":"Celebraciones especiales"}</h4>${specHtml}</div>
       <div class="todayBlock"><h4>✨ ${esc(t("saintDay"))}</h4>${saintHtml}
-        <div class="btnRow"><button class="btn btnGhost" data-action="home-saint">${isEn?"Saint of the day":"Ver santoral"}</button></div></div>
+        <div class="btnRow"><button class="btn btnGhost" data-action="home-saint">${isEn?"See saints":"Ver santoral"}</button></div></div>
+      <div class="todayBlock"><h4>⭐ ${isEn?"Special celebrations":"Celebraciones especiales"}</h4>${specHtml}</div>
       <div class="todayBlock"><h4>🙏 ${isEn?"We join in prayer for the following intentions":"Nos unimos en oración por las siguientes intenciones"}</h4>${rezHtml}
         <div class="btnRow"><button class="btn btnGhost" data-action="more-focus" data-focus="sec-intenciones">${isEn?"Intentions":"Intenciones"}</button></div></div>
       <div class="todayBlock"><h4>📅 ${isEn?"This week at the parish":"Esta semana en la parroquia"}</h4>${wkHtml}

@@ -129,7 +129,7 @@ function eraEs(e) { return ERA_ES[String(e || "")] ?? String(e || ""); }
 function patronEs(list, lang) {
   if (!Array.isArray(list) || !list.length) return [];
   if (lang === "en") return list;
-  return list.map((p) => PAT_ES[String(p).toLowerCase()] ?? p);
+  return list.map((p) => PAT_ES[String(p).toLowerCase()] ?? PAT_ES[String(p)] ?? p);
 }
 // Rango litúrgico desde el nombre de la fiesta (las filas diarias no traen rango).
 export function rankOf(feast) {
