@@ -1,7 +1,7 @@
 // Santa Cruz App — Service Worker PWA (funciona sin internet).
 // Este archivo va en la RAÍZ del repo (al lado de index.html), NO dentro de src/.
 // En cada nueva versión publicada, subir V a sc-v2, sc-v3...
-const V = "sc-v3";
+const V = "sc-v4";
 const CACHE = "santacruz-" + V;
 const CORE = [
   "./",
@@ -21,18 +21,11 @@ const CORE = [
   "src/cloud-config.js",
   "src/gcal.js",
   "src/saints.js",
-  "src/saints-data.js",
-  "src/saints-es.js",
-  "src/saints-extra.js",
   "src/lectionary/litcal.js",
-  "src/lectionary/display.js",
-  "src/lectionary/usccb-text.js",
-  "src/litcal.js",
-  "src/lectionary-daily.js",
   "src/daily-citations.js",
   "src/daily-extra.js",
+  "src/i18n-parish.js",
   "src/vendor/lectionary-daily.js",
-  "src/vendor/lectionary-data.js",
   "src/vendor/saints-data.js",
   "src/vendor/saints-es.js",
   "src/vendor/saints-extra.js",
@@ -42,11 +35,8 @@ const CORE = [
   "src/confesion.js",
   "src/pastoral.js",
   "src/parish-schedule.js",
-  "src/manyanet.js",
   "src/data.js",
-  "src/calendario-extra.js",
-  "src/build-daily-extra.js",
-  "src/build-parish-schedule.js"
+  "src/calendario-extra.js"
 ];
 self.addEventListener("install", (e) => {
   self.skipWaiting();
