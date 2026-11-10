@@ -661,7 +661,6 @@ function renderHome(){
   const b = allBulletins()[0];
   const rems = state.reminders.map(id=>allEvents().find(e=>e.id===id)).filter(Boolean)
     .sort((a,b2)=>daysUntil(a)-daysUntil(b2)).slice(0,3);
-  const ints = allIntenciones().slice(0,2);
   const nw = allNews()[0];
   const hi = state.userName ? `${esc(state.userName.split(" ")[0])}` : t("hi");
   const mt = (arr) => arr.map(x=>`<span class="chip">✳ ${esc(x)}</span>`).join("");
@@ -778,11 +777,11 @@ function renderHome(){
         <div class="btnRow"><button class="btn btnGhost" data-action="tab" data-tab="calendar">${isEn?"Full calendar":"Calendario completo"}</button></div></div>
       <div class="todayBlock"><h4>✨ ${esc(t("saintDay"))}</h4>${saintHtml}
         <div class="btnRow"><button class="btn btnGhost" data-action="home-saint">${isEn?"See saints":"Ver santoral"}</button></div></div>
+      <div class="todayBlock"><h4>📅 ${isEn?"This week at the parish":"Esta semana en la parroquia"}</h4>${wkHtml}
+        <div class="btnRow"><button class="btn btnGhost" data-action="tab" data-tab="calendar">${isEn?"Full calendar":"Calendario completo"}</button><button class="btn btnGhost" data-action="ext" data-url="https://www.hcccsantacruz.org/events">${isEn?"Parish site ↗":"Sitio parroquial ↗"}</button></div></div>
       <div class="todayBlock"><h4>⭐ ${isEn?"Special celebrations":"Celebraciones especiales"}</h4>${specHtml}</div>
       <div class="todayBlock"><h4>🙏 ${isEn?"We join in prayer for the following intentions":"Nos unimos en oración por las siguientes intenciones"}</h4>${rezHtml}
         <div class="btnRow"><button class="btn btnGhost" data-action="more-focus" data-focus="sec-intenciones">${isEn?"Intentions":"Intenciones"}</button></div></div>
-      <div class="todayBlock"><h4>📅 ${isEn?"This week at the parish":"Esta semana en la parroquia"}</h4>${wkHtml}
-        <div class="btnRow"><button class="btn btnGhost" data-action="tab" data-tab="calendar">${isEn?"Full calendar":"Calendario completo"}</button><button class="btn btnGhost" data-action="ext" data-url="https://www.hcccsantacruz.org/events">${isEn?"Parish site ↗":"Sitio parroquial ↗"}</button></div></div>
     </section>`;
     if(todayHtml) cards.push({id:"today", html: todayHtml});
   }catch(e2){}
@@ -805,7 +804,7 @@ function renderHome(){
         ${p.phone?`<button class="btn btnGhost" data-action="ext" data-url="tel:${esc(p.phone.replace(/[^+\d]/g,""))}">${t("callOffice")} ${esc(p.phone)}</button>`:""}
       </div></div>
     </section>`});
-  // 💌 Mensaje de bienvenida del P. Hernando (fijo en el Inicio, después del encabezado).
+  // 💌 Mensaje de bienvenida del P. Hernando (fijo al FINAL del Inicio).
   const pIsEn = getLang()==="en";
   const padreBody = pIsEn
     ? `Welcome home, Holy Cross family!\nI am Father Hernando, and it fills me with joy that you are here. I have created this digital space so that we may be closer to one another and, above all, closer to Jesus, Mary, and Joseph.\nIn this app you will find Mass times, the readings of the day, prayers, and news from our parish in La Cañada. Know that this is your space.\nEach day, in my prayers, I especially remember our sick, our elderly, families going through difficult times, and our faithful departed. I also invite you to join me in praying each week for vocations to the priesthood and to religious life, especially for our beloved Congregation of the Sons of the Holy Family.\nMay this app be a small help to carry the peace of Christ in your pocket and in your heart. God bless you!`
@@ -846,12 +845,6 @@ function renderHome(){
         <div style="flex:1"><b>${esc(a.name)}</b> <span class="tag ${a.in===0?"red":""}">${esc(whenLabel(a.in))}</span>
         <div class="small">${a.type==="bday"?t("bdayTag"):t("wedTag")} · ${esc(a.date.toLocaleString(localeOf(),{day:"numeric",month:"long"}))}</div></div></div>`).join("")}
       <div class="btnRow"><button class="btn btnGhost" data-action="more-focus" data-focus="sec-alertas">${t("viewPublish").replace("→","").trim()} →</button></div>
-    </section>`});
-  cards.push({id:"ints", html:`
-    <section class="card"><h3>🎉 ${t("commIntentions")}</h3><p class="sub">${t("commIntentionsSub")}</p>
-      ${ints.map(i=>`<div class="eventRow"><div style="flex:1"><span class="tag ${(i.type==="Defunciones"||i.type==="Exequias")?"red":(i.type==="Cumpleaños"||i.type==="Nacimientos"||i.type==="Quinceañeras")?"gold":"green"}">${esc(intTypeName(i.type))}</span>
-        <div><b>${esc(i.names)}</b> <span class="small">· ${esc(i.date)}</span></div>${i.mass?`<div class="small">⛪ ${esc(i.mass)}${i.place?` · ${esc(i.place)}`:""}</div>`:""}<div class="small">${esc(i.text)}</div></div></div>`).join("")}
-      <div class="btnRow"><button class="btn btnGhost" data-action="more-focus" data-focus="sec-intenciones">${t("viewPublish")}</button></div>
     </section>`});
   if(nw) cards.push({id:"news", html:`
     <section class="card"><h3>📰 ${esc(nw.title)}</h3><p class="sub">${esc(nw.cat)} · ${esc(nw.date)}</p>
@@ -907,7 +900,7 @@ function renderHome(){
   const padreCard = cards.find(c=>c.id==="padre");
   const rest = cards.filter(c=>c.id!=="hero"&&c.id!=="today"&&c.id!=="padre");
   rest.sort((a,b2)=>(rank[a.id]??99)-(rank[b2.id]??99));
-  $("#view-home").innerHTML = (heroCard?heroCard.html:"") + (todayCard?todayCard.html:"") + (padreCard?padreCard.html:"") + confessCard + prayCard + visitCard + rest.map(c=>c.html).join("");
+  $("#view-home").innerHTML = (heroCard?heroCard.html:"") + (todayCard?todayCard.html:"") + confessCard + prayCard + visitCard + rest.map(c=>c.html).join("") + (padreCard?padreCard.html:"");
 }
 
 // ---------- LECTURAS ----------
