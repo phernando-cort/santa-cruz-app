@@ -36,6 +36,7 @@ const MYST_I18N = {
   ko: { gozosos:"환희", dolorosos:"고통", gloriosos:"영광", luminosos:"빛" },
 };
 import { WEEK_I18N, VERSE_I18N, INSP_I18N, ROSARY_I18N, SHORT_I18N, PRAY_NAME, PRAY_CATN, PRAY_TXT, GPROJ_I18N, SAINTS_PAR, SACRAMENT_I18N, TURNOS_I18N, GUIDE_I18N, NEWS_CAT, ROLE_I18N, DOWS, EXAM_T } from "./i18n-content.js";
+import { GROUP_I18N, CLERGY_I18N, PARISHSTR_I18N, GPROJN_I18N } from "./i18n-parish.js";
 const mystName = (k) => ((ROSARY_I18N[getLang()] || ROSARY_I18N.en || ROSARY_I18N.es || {})[k] || {}).name || (MYST_I18N[getLang()]||MYST_I18N.es)[k] || ROSARY_MYSTERIES[k].name;
 
 const fatima = () => SHORT_I18N.fatima[getLang()] || SHORT_I18N.fatima.en || SHORT_I18N.fatima.es;
@@ -76,7 +77,7 @@ function insp(i){
 function weekDay(i){ return weekLoc(i); }
 function parishSaintLoc(s, i){
   const L = getLang();
-  if(L === "es" || L === "en") return s;
+  if(L === "es") return s;
   const e = (SAINTS_PAR[L] || [])[i];
   if(!e) return s;
   return {...s, feast:e.f || s.feast, patron:e.p || s.patron, bio:e.b || s.bio};
@@ -365,7 +366,7 @@ function allBulletins(){ return mix(Sync.coll("bulletins"), state.bulletinsExtra
 function allMessages(){ return mix(Sync.coll("messages"), state.messagesExtra, MESSAGES).filter(m=>!m.priv); }
 function pastoralAll(){ return [...Sync.coll("messages").filter(m=>m&&m.priv), ...state.pastoralExtra]; }
 function allDocuments(){ return mix(Sync.coll("documents"), state.documentsExtra, []); }
-function msgToName(to){ if(to==="ministers") return t("msgMinisters"); const g=GROUPS.find(x=>x.id===to); if(g) return g.name; return t("msgToAll"); }
+function msgToName(to){ if(to==="ministers") return t("msgMinisters"); if(!GROUPS.find(x=>x.id===to)) return t("msgToAll"); return gname(to); }
 function parishPub(){ return mix(Sync.coll("parishPrayers"), state.parishPrayers, []); }
 function allNews(){ return mix(Sync.coll("news"), state.newsExtra, NEWS); }
 function allIntenciones(){ return mix(Sync.coll("intenciones"), state.intencionesExtra, INTENCIONES_SEED).filter(i=>!state.intencionesHidden.includes(i.id)); }
@@ -379,7 +380,7 @@ function gGoal(p){ if(Sync.online){ const sg = Sync.goalFor(p.id); if(sg != null
 function gReceived(pid){ const srv = Sync.coll("givingUpdates").filter(u=>u.pid===pid && u.amt != null).reduce((s,u)=>s+(+u.amt||0),0); const loc = Sync.migrated ? 0 : state.giving.gifts.filter(g=>g.pid===pid && g.status==="received").reduce((s,g)=>s+(+g.amt||0), 0); return srv + loc; }
 function gRaised(p){ return (+p.raised0 || 0) + gReceived(p.id); }
 function gUpdates(p){ const seen = new Set(), out = [...(p.updates || [])]; for(const u of [...Sync.coll("givingUpdates").filter(u=>u.pid===p.id && u.t), ...state.giving.updates[p.id] || []]){ const k = (u.d || "") + "|" + (u.t || ""); if(seen.has(k)) continue; seen.add(k); out.push(u); } return out; }
-function gprojName(pid){ const p = GIVING_PROJECTS.find(x=>x.id===pid); return p ? p.name : pid; }
+function gprojName(pid){ const p = GIVING_PROJECTS.find(x=>x.id===pid); const e = (GPROJN_I18N[pid]||{})[getLang()]; if(e) return e; return p ? p.name : pid; }
 function gprojDesc(p){ const L = getLang(); if(L==="es") return p.desc; if(L==="en") return (p.descEn || p.desc); return (GPROJ_I18N[L]||{})[p.id] ?? (p.descEn || p.desc); }
 function sacrLoc(){ const L = getLang(); if(L === "es") return SACRAMENT_INFO.es; if(L === "en") return SACRAMENT_INFO.en; return SACRAMENT_I18N[L] || SACRAMENT_INFO.en; }
 function guideLoc(k){ const tab = (GUIDE_I18N[getLang()] || {})[k]; if(tab) return tab; const base = k === "adv" ? ADVIENTO_GUIDE : k === "fam" ? FAMILIA_ADVIENTO : REFLEX_FAMILIA; return getLang() === "en" ? base.en : base.es; }
@@ -727,7 +728,7 @@ function renderHome(){
     .sort((a,b2)=>daysUntil(a)-daysUntil(b2)).slice(0,3);
   const nw = allNews()[0];
   const hi = state.userName ? `${esc(state.userName.split(" ")[0])}` : t("hi");
-  const mt = (arr) => arr.map(x=>`<span class="chip">✳ ${esc(x)}</span>`).join("");
+  const mt = (arr) => arr.map(x=>`<span class="chip">✳ ${esc(parStr(x))}</span>`).join("");
   const cards = [];
   // ===== HOY EN LA PARROQUIA: 1 Misa (lecturas+ordinario) · 2 intenciones por Misa · 3 especiales · 4 santo · 5 próxima semana =====
   let todayHtml = "";
@@ -850,7 +851,7 @@ function renderHome(){
         <span class="heroKicker">✠ ${esc(w.weekday)} · ${esc((typeof tFeast !== "undefined" && tFeast) || w.feast)}</span>
         <div class="heroTitle"><h2>${esc(p.name)}</h2></div>
       </div>
-      <div class="heroBody"><p>${esc(p.greeting)}</p>
+      <div class="heroBody"><p>${esc(parStr(p.greeting))}</p>
       <div class="massRow">${mt(p.massTimes.Sunday)}</div>
       <div class="btnRow">
         <button class="btn btnGold" data-action="tab" data-tab="calendar">${t("massAndEvents")}</button>
@@ -878,7 +879,7 @@ function renderHome(){
     </section>`});
   if(state.modules.actions!==false) cards.push({id:"actions", html:`
     <section class="card"><h3>${hi}, ${t("famParish")}</h3>
-      <p class="sub">${t("confessionT")}: ${esc(p.confession)} · ${t("adorationT")}: ${esc(p.adoration)}</p>
+      <p class="sub">${t("confessionT")}: ${esc(parStr(p.confession))} · ${t("adorationT")}: ${esc(parStr(p.adoration))}</p>
       <div class="grid2">
         <button class="quickBtn" data-action="pray-mode" data-mode="rosario"><div class="ic">📿</div><div class="t">${t("prayRosary")}</div><div class="d">${t("prayRosarySub")}</div></button>
         <button class="quickBtn" data-action="tab" data-tab="calendar"><div class="ic">📅</div><div class="t">${t("thisWeek")}</div><div class="d">${((state.gcal&&state.gcal.events)||[]).filter(e=>!isRoutineMass(e.t)).length||allEvents().length} ${t("activitiesCount")}</div></button>
@@ -902,7 +903,7 @@ function renderHome(){
       <div class="btnRow"><button class="btn btnGhost" data-action="more-focus" data-focus="sec-alertas">${t("viewPublish").replace("→","").trim()} →</button></div>
     </section>`});
   if(nw) cards.push({id:"news", html:`
-    <section class="card"><h3>📰 ${esc(nw.title)}</h3><p class="sub">${esc(nw.cat)} · ${esc(nw.date)}</p>
+    <section class="card"><h3>📰 ${esc(nw.title)}</h3><p class="sub">${esc(newsCatLoc(nw.cat))} · ${esc(newsDateLoc(nw.date))}</p>
       <p style="font-size:14px">${esc(nw.body.slice(0,150))}…</p>
       <div class="btnRow"><button class="btn btnGhost" data-action="more-focus" data-focus="sec-noticias">${t("viewPublish")}</button></div>
     </section>`});
@@ -920,7 +921,7 @@ function renderHome(){
       </div></section>`});
   // — Pastoral en casa: confesión, oración y comunión (siempre visibles, en este orden) —
   const confessCard = `<section class="card" id="sec-home-confess" style="border-color:var(--gold)"><h3>🕊️ ${esc(t("confPrep"))}</h3>
-    <p class="sub">⛪ ${esc(t("confessionsLbl"))}: ${esc(p.confession)}</p>
+    <p class="sub">⛪ ${esc(t("confessionsLbl"))}: ${esc(parStr(p.confession))}</p>
     <h4 style="margin:8px 0 2px">💜 ${esc(t("actContr"))}</h4>
     <p class="prayerText">${esc(prayerText("acto-contricion"))}</p>
     <div class="btnRow"><button class="btn btnGhost" data-action="pray-aloud" data-id="acto-contricion">${esc(t("listen"))}</button></div>
@@ -1278,7 +1279,7 @@ function confessionHTML(){
   const actUS = (state.usccbList||[]).find(x=>/act of contrition/i.test(x.name||""));
   return `
   <section class="card"><h3>🕊️ ${esc(t("confSchedGuide"))}</h3>
-    <div class="kv"><span>⛪ ${esc(t("confessionsLbl"))}</span><b>${esc(p.confession)}</b></div>
+    <div class="kv"><span>⛪ ${esc(t("confessionsLbl"))}</span><b>${esc(parStr(p.confession))}</b></div>
     ${steps.map(([h,d])=>`<div class="ordSec"><b>${esc(h)}</b><div class="ordLine">${esc(d)}</div></div>`).join("")}
     <p class="small">${esc(t("examLinkNote"))}</p></section>
   <section class="card"><h3>💜 ${esc(t("actContrPart"))}</h3>
@@ -1614,8 +1615,23 @@ function dayHTML(){
 
 function dirFormOpen(){ return state.dirForm || state.editingId; }
 function dirAll(){ return mix(Sync.coll("directory"), state.directoryExtra, DIRECTORY_SEED).filter(m=>!state.directoryHidden.includes(m.id)); }
-function gname(id){ const g = GROUPS.find(x=>x.id===id); return g ? g.name : id; }
-function gdesc(g){ return (getLang()==="en" && g.descEn) ? g.descEn : (g.desc||""); }
+function gname(id){ const g = GROUPS.find(x=>x.id===id); if(!g) return id; const L = getLang(); if(L==="es") return g.name; const e = (GROUP_I18N[g.id]||{})[L]; return (e && e.n) || g.name; }
+function gdesc(g){ const L = getLang(); if(L==="es") return g.desc||""; const e = (GROUP_I18N[g.id]||{})[L]; if(e && e.d) return e.d; return (L==="en" && g.descEn) || g.desc||""; }
+// Clero: bio y horario traducidos por id (nombres propios no se tocan).
+function cloc(c){ const L = getLang(); if(!c || L==="es") return {bio:(c&&c.bio)||"", office:(c&&c.office)||""}; const e = (CLERGY_I18N[c.id]||{})[L]; if(e) return {bio:e.b||c.bio||"", office:e.o||c.office||""}; return {bio:c.bio||"", office:c.office||""}; }
+// Textos fijos de parroquia por coincidencia exacta (si el párroco los cambia, sale su texto).
+function parStr(s){ const L = getLang(); if(L==="es" || !s) return s||""; const e = (PARISHSTR_I18N[String(s)]||{})[L]; return e || s; }
+// Fechas relativas que escribe la oficina ("Ayer", "Hace 3 días"...) al idioma actual.
+function newsDateLoc(d){ const s = String(d||"").trim(); if(!s) return ""; let m; const T = (k,n)=>t(k).replace("{n}", n);
+  if(/^(hoy|today)$/i.test(s)) return t("dateToday");
+  if(/^(ayer|yesterday)$/i.test(s)) return t("dateYesterday");
+  if(/^(anteayer|day before yesterday)$/i.test(s)) return t("dateDayBefore");
+  if((m = s.match(/^hace\s+(\d+)\s+d[ií]as?$/i)) || (m = s.match(/^(\d+)\s+days?\s+ago$/i))) return T("dateDaysAgo", m[1]);
+  if((m = s.match(/^hace\s+(\d+)\s+horas?$/i)) || (m = s.match(/^(\d+)\s+hours?\s+ago$/i)) || (m = s.match(/^hace\s+(\d+)\s*h$/i))) return T("dateHoursAgo", m[1]);
+  if((m = s.match(/^hace\s+(\d+)\s+minutos?$/i)) || (m = s.match(/^(\d+)\s+minutes?\s+ago$/i)) || (m = s.match(/^hace\s+(\d+)\s*min$/i))) return T("dateMinsAgo", m[1]);
+  return s; }
+// Valor de ministerio sin asignar ("Por asignar" guardado) al idioma actual.
+function minVal(v){ return v === "Por asignar" ? t("unassigned") : (v || ""); }
 function gcatLabel(c){ const k = t("gcat_"+c); return k === ("gcat_"+c) ? c : k; }
 function clergyRoleName(r){ const key = "role_"+String(r||"").toLowerCase(); const k = t(key); return k === key ? r : k; }
 function dirListHTML(){
@@ -1732,7 +1748,7 @@ function givingHTML(){
     const pct = goal > 0 ? Math.min(100, Math.round(raised / goal * 100)) : 0;
     const ups = gUpdates(pr);
     const editing = state.goalOpen === pr.id;
-    return `<div class="eventRow"><div style="flex:1"><b>${esc(pr.name)}</b><div class="small">${esc(gprojDesc(pr))}</div>
+    return `<div class="eventRow"><div style="flex:1"><b>${esc(gprojName(pr.id))}</b><div class="small">${esc(gprojDesc(pr))}</div>
       <div class="progress"><div style="width:${pct}%"></div></div>
       <div class="small"><b>${t("raisedL")} ${fmt$(raised)}</b> / ${t("goalL")} ${fmt$(goal)} · ${pct}%${rest > 0 ? ` · ${t("toGoL")} ${fmt$(rest)}` : ` · <span class="tag gold">${t("reachedL")}</span>`}</div>
       <div class="btnRow">${[10,25,50,100].map(a=>`<button class="btn ${state.givingAmt===a?"btnNavy":"btnGhost"}" data-action="giving-amount" data-amt="${a}">$${a}</button>`).join("")}
@@ -1843,7 +1859,7 @@ function renderCommunity(){
     <section class="card" id="sec-directorio">
 <h3>${t("dirTitle")}</h3><p class="sub">${t("dirSub")}</p>
       <div class="searchRow"><input id="dirQ" placeholder="${esc(t("searchDir"))}" value="${esc(state.dirQ)}"></div>
-      <div class="searchRow"><select id="dirGroupSel" style="flex:1"><option value="Todas">${esc(t("allCats"))}</option>${GROUPS.map(g=>`<option value="${g.id}" ${state.dirGroup===g.id?"selected":""}>${esc(g.name)}</option>`).join("")}</select></div>
+      <div class="searchRow"><select id="dirGroupSel" style="flex:1"><option value="Todas">${esc(t("allCats"))}</option>${GROUPS.map(g=>`<option value="${g.id}" ${state.dirGroup===g.id?"selected":""}>${esc(gname(g.id))}</option>`).join("")}</select></div>
       ${dirListHTML()}
       ${dirFormOpen()? dirFormHTML() : (ED?`<div class="btnRow"><button class="btn btnNavy" data-action="dir-form">${t("addMember")}</button></div>`:lockNote())}
     </section>
@@ -1854,7 +1870,7 @@ function renderCommunity(){
       ${GROUPS.filter(g=>state.groupCat==="Todas"||g.cat===state.groupCat).map(g=>{ const j = state.joinedGroups.includes(g.id);
         const regs = dirAll().filter(m=>(m.groups||[]).includes(g.id));
         const open = state.groupOpen===g.id;
-        return `<div class="eventRow"><div style="flex:1"><b>${esc(g.name)}</b>
+        return `<div class="eventRow"><div style="flex:1"><b>${esc(gname(g.id))}</b>
         <div><span class="tag">${esc(gcatLabel(g.cat||"comunidad"))}</span> <span class="small">${esc(g.meets||"")} · ${esc(g.lang==="ambos"?"ES/EN":g.lang.toUpperCase())}</span></div>
         <div class="small">${esc(gdesc(g))}</div>
         ${open?`<div class="small" style="margin-top:4px">👥 <b>${esc(t("membersOf"))} (${regs.length}):</b> ${regs.length?regs.map(m=>esc(m.contact||m.family)).join(" · "):"—"}</div>`:""}
@@ -1872,20 +1888,20 @@ function renderCommunity(){
 
     <section class="card" id="sec-ministerios"><h3>${t("minTitle")}</h3><p class="sub">${t("minSub")}</p>
       <div class="subnav">${massOpts.map(m=>`<button class="${state.ministryMass===m?"active":""}" data-action="ministry-mass" data-m="${esc(m)}">${esc(m)}</button>`).join("")}</div>
-      <table class="minTable">${MINISTRY_ROLES.map(r=>`<tr><td>${esc(roleLoc(r))}</td><td>${ED?`<input data-minrole="${esc(r)}" value="${esc(mm[r]||"")}" placeholder="${esc(t("unassigned"))}">`:`<span>${esc(mm[r]||"—")}</span>`}</td></tr>`).join("")}</table>
+      <table class="minTable">${MINISTRY_ROLES.map(r=>`<tr><td>${esc(roleLoc(r))}</td><td>${ED?`<input data-minrole="${esc(r)}" value="${esc(mm[r]||"")}" placeholder="${esc(t("unassigned"))}">`:`<span>${esc(minVal(mm[r])||"—")}</span>`}</td></tr>`).join("")}</table>
       ${ED?`<div class="btnRow"><button class="btn btnGold" data-action="ministry-save">${t("saveProgram")}</button></div>
       <p class="small">${t("savedLocal")}</p>`:lockNote()}
     </section>
 
     <section class="card" id="sec-mensajes"><h3>${t("msgTitle")}</h3><p class="sub">${t("msgSub")}</p>
       ${canEdit()&&pastoralAll().length?`<div class="notice">🤲 ${t("teamHint")} <button class="backLink" data-action="jump" data-to="sec-pastoral">→</button></div>`:""}
-      ${allMessages().map(m=>`<div class="eventRow"><div style="flex:1"><div class="small">${esc(m.from)} · ${esc(m.time)} · ${esc(m.channel)}${m.to&&m.to!=="all"?` · 👥 ${esc(msgToName(m.to))}`:""}</div><b>${esc(m.title)}</b>
+      ${allMessages().map(m=>`<div class="eventRow"><div style="flex:1"><div class="small">${esc(m.from)} · ${esc(newsDateLoc(m.time))} · ${esc(m.channel)}${m.to&&m.to!=="all"?` · 👥 ${esc(msgToName(m.to))}`:""}</div><b>${esc(m.title)}</b>
         ${state.openMsg===m.id?`<p class="small" style="color:inherit">${esc(m.body)}</p>`:""}
         </div><button class="btn btnGhost" data-action="msg-open" data-id="${m.id}">${state.openMsg===m.id?t("hideBtn"):t("open")}</button></div>`).join("")}
       <h4 style="margin:10px 0 2px">${t("writeMsg")}</h4>
       <label>${t("npTitle")}</label><input id="msgTitle" placeholder="${esc(t("msgTitlePh"))}">
       <label>${t("messageL")}</label><textarea id="msgBody" placeholder="${esc(t("msgBodyPh"))}"></textarea>
-      <label>${t("msgToL")}</label><select id="msgTo"><option value="all">${esc(t("msgToAll"))}</option><option value="ministers">🙌 ${esc(t("msgMinisters"))}</option>${GROUPS.map(g=>`<option value="${g.id}">👥 ${esc(g.name)}</option>`).join("")}</select>
+      <label>${t("msgToL")}</label><select id="msgTo"><option value="all">${esc(t("msgToAll"))}</option><option value="ministers">🙌 ${esc(t("msgMinisters"))}</option>${GROUPS.map(g=>`<option value="${g.id}">👥 ${esc(gname(g.id))}</option>`).join("")}</select>
       <div class="btnRow"><button class="btn btnNavy" data-action="msg-add">${t("sendMsg")}</button></div>
     </section>
 
@@ -2014,10 +2030,10 @@ function renderMore(){
     ${contentMgrHTML(appCtx())}
 
     <section class="card" id="sec-clero"><h3>${t("clergyTitle")}</h3><p class="sub">${t("clergySub")}</p>
-      ${CLERGY.map(c=>`<div class="eventRow"><div class="avatar">${esc(c.name.replace(/^(P\.|Diác\.|Hna\.)\s*/,"").slice(0,1))}</div>
+      ${CLERGY.map(c=>{ const lc = cloc(c); return `<div class="eventRow"><div class="avatar">${esc(c.name.replace(/^(P\.|Diác\.|Hna\.)\s*/,"").slice(0,1))}</div>
         <div style="flex:1"><b>${esc(c.name)}</b> <span class="tag gold">${esc(clergyRoleName(c.role))}</span>
-        <div class="small">${esc(c.bio||"")}</div>
-        <div class="small">🕰️ ${esc(c.office||"")}${c.phone?` · <a href="tel:${c.phone.replace(/[^+\d]/g,"")}">${esc(c.phone)}</a>`:""}${c.email?` · <a href="mailto:${esc(c.email)}">✉️</a>`:""}</div></div></div>`).join("")}
+        <div class="small">${esc(lc.bio)}</div>
+        <div class="small">🕰️ ${esc(lc.office)}${c.phone?` · <a href="tel:${c.phone.replace(/[^+\d]/g,"")}">${esc(c.phone)}</a>`:""}${c.email?` · <a href="mailto:${esc(c.email)}">✉️</a>`:""}</div></div></div>`; }).join("")}
     </section>
 
     <section class="card" id="sec-alertas"><h3>${t("upcomingT")}</h3><p class="sub">${t("upcomingSub")}</p>
@@ -2084,7 +2100,7 @@ function renderMore(){
 
     <section class="card" id="sec-noticias"><h3>${t("newsTitle")}</h3>
       <div class="chipRow">${newsCats.map(c=>`<button class="fchip ${state.newsFilter===c?"active":""}" data-action="news-filter" data-c="${c}">${c==="Todas"?t("allCats"):esc(newsCatLoc(c))}</button>`).join("")}</div>
-      ${news.map(n=>`<div class="eventRow"><div style="flex:1"><span class="tag ${n.cat==="Iglesia"?"gold":n.cat==="País"?"green":""}">${esc(newsCatLoc(n.cat))}</span> <span class="small">· ${esc(n.date)}</span>
+      ${news.map(n=>`<div class="eventRow"><div style="flex:1"><span class="tag ${n.cat==="Iglesia"?"gold":n.cat==="País"?"green":""}">${esc(newsCatLoc(n.cat))}</span> <span class="small">· ${esc(newsDateLoc(n.date))}</span>
         <div><b>${esc(n.title)}</b></div><div class="small">${esc(n.body)}</div></div></div>`).join("") || `<p class="small">${t("noEvents")}</p>`}
       ${ED?`<h4 style="margin:10px 0 2px">${t("pubNews")}</h4>
       <div class="grid2"><div><label>${t("sectionL")}</label><select id="nwCat"><option value="Diócesis">${esc(newsCatLoc("Diócesis"))}</option><option value="País">${esc(newsCatLoc("País"))}</option><option value="Iglesia">${esc(newsCatLoc("Iglesia"))}</option></select></div>

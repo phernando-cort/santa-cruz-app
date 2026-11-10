@@ -1333,6 +1333,37 @@ SAINTS_PAR.ko = [
 {f:"10월 24일",p:"멕시코 주교",b:"행상인으로 변장하고 박해 중에 수천 명에게 견진을 준 주교."},
 {f:"11월 23일",p:"신앙 때문에 박해받는 이",b:"순교까지 기뻐한 멕시코 예수회원: “그리스도 왕 만세!”."},
 {f:"8월 11일",p:"텔레비전·클라라회",b:"프란치스코의 첫 추종자; 가난의 특전을 수호."}];
+SAINTS_PAR.en = [
+{f:"Jan 1",p:"Mother of the Church",b:"The Virgin of Nazareth, mother of Jesus and our mother. Her 'yes' opened the door of salvation."},
+{f:"Mar 19",p:"Fathers, workers, happy death",b:"Guardian of Jesus and Mary. A just and silent man who cared for the Holy Family with his work."},
+{f:"Jun 29",p:"The Church, fishermen",b:"Fisherman of Galilee, first Pope. He denied and wept, believed and strengthened his brothers."},
+{f:"Jun 29",p:"Missionaries, writers",b:"From persecutor to apostle of the nations. His letters sustain the faith of half the world."},
+{f:"Oct 4",p:"Ecology, animals, peace",b:"The poor man of Assisi who married Lady Poverty and sang to Brother Sun."},
+{f:"Oct 15",p:"Life of prayer",b:"Reformer of Carmel and Doctor of the Church. 'God alone suffices.'"},
+{f:"Oct 22",p:"Youth, families",b:"The pilgrim Pope who embraced the world and taught us not to be afraid."},
+{f:"Sep 5",p:"Poor, missionaries of charity",b:"She served 'the poorest of the poor' with a smile that hid dark nights of faith."},
+{f:"Nov 3",p:"Afro-descendants, barbers, the sick",b:"Mixed-race brother of Lima: broom, charity and humble miracles in the convent."},
+{f:"Aug 23",p:"America, Peru, gardeners",b:"First saint of America. A flower of Lima of prayer and penance for sinners."},
+{f:"Mar 23",p:"Bishops of Latin America",b:"Archbishop of Lima who walked his diocese defending the indigenous peoples."},
+{f:"Dec 9",p:"Indigenous peoples, lay people",b:"The humble messenger of the Virgin of Guadalupe on Tepeyac hill (1531)."},
+{f:"Dec 12",p:"America, Mexico",b:"The Morenita who left her image on the tilma and united two worlds into one people."},
+{f:"Jul 31",p:"Spiritual Exercises",b:"Wounded soldier turned pilgrim; he founded the Society of Jesus."},
+{f:"Dec 3",p:"Missions",b:"Tireless Jesuit who carried the Gospel to Asia."},
+{f:"Aug 8",p:"Rosary, preachers",b:"Founder of the Dominicans; tradition links him to the spread of the Rosary."},
+{f:"Apr 29",p:"Europe, nurses",b:"Young brave Doctor who advised popes and cared for plague victims."},
+{f:"Jan 28",p:"Students, theologians",b:"The Angelic Doctor: reason and faith embraced in the Summa Theologica."},
+{f:"Aug 28",p:"Converts, theologians",b:"'You made us for yourself, O Lord.' From restless life to bishop and doctor of grace."},
+{f:"Aug 27",p:"Mothers who pray for their children",b:"She wept and prayed for years for her son Augustine until she saw him converted."},
+{f:"Jun 13",p:"Lost objects, the poor",b:"Franciscan preacher to whom towns asked for bread and miracles."},
+{f:"Nov 22",p:"Musicians",b:"Roman martyr who sang to God in her heart; patroness of choirs."},
+{f:"Aug 10",p:"Deacons",b:"Deacon martyr who distributed goods to the poor before the gridiron."},
+{f:"Sep 29",p:"Police, soldiers, the Church",b:"'Who is like God?' Prince of the heavenly host."},
+{f:"Sep 29",p:"Travelers, the sick",b:"The guide of young Tobias: God's medicine on the journey."},
+{f:"Oct 12",p:"Youth, internet",b:"Italian teenager, computer genius in love with the Eucharist."},
+{f:"Feb 10",p:"Cristero youth",b:"Mexican boy martyr who died crying '¡Viva Cristo Rey!'"},
+{f:"Oct 24",p:"Mexican bishops",b:"Bishop disguised as a salesman who confirmed thousands in times of persecution."},
+{f:"Nov 23",p:"Persecuted for the faith",b:"Mexican Jesuit, joyful to martyrdom: '¡Viva Cristo Rey!'"},
+{f:"Aug 11",p:"Television, Poor Clares",b:"First follower of Francis; she defended her privilege of poverty."}];
 export const ERA_I18N = {
 pt: {"1st century":"séc. I","2nd century":"séc. II","3rd century":"séc. III","4th century":"séc. IV","4th-5th century":"séc. IV–V","5th century":"séc. V","6th century":"séc. VI","8th century":"séc. VIII","9th century":"séc. IX","11th century":"séc. XI","12th century":"séc. XII","13th century":"séc. XIII","14th century":"séc. XIV","16th century":"séc. XVI","17th century":"séc. XVII","18th century":"séc. XVIII","19th century":"séc. XIX","20th century":"séc. XX","Medieval":"Idade Média","Early Church":"Igreja primitiva","Early Christian":"Igreja primitiva","Modern":"Época moderna","Biblical":"Tempos bíblicos"},
 it: {"1st century":"sec. I","2nd century":"sec. II","3rd century":"sec. III","4th century":"sec. IV","4th-5th century":"sec. IV–V","5th century":"sec. V","6th century":"sec. VI","8th century":"sec. VIII","9th century":"sec. IX","11th century":"sec. XI","12th century":"sec. XII","13th century":"sec. XIII","14th century":"sec. XIV","16th century":"sec. XVI","17th century":"sec. XVII","18th century":"sec. XVIII","19th century":"sec. XIX","20th century":"sec. XX","Medieval":"Medioevo","Early Church":"Chiesa primitiva","Early Christian":"Chiesa primitiva","Modern":"Età moderna","Biblical":"Tempi biblici"},
@@ -1424,6 +1455,7 @@ offices: {pt:"Escritórios paroquiais — atendimento e administração.",it:"Uf
 maintenance: {pt:"Manutenção de toda a igreja e edifícios.",it:"Manutenzione di tutta la chiesa e degli edifici.",la:"Conservatio totius ecclesiae et aedificiorum.",fr:"Entretien de toute l’église et des bâtiments.",zh:"整个圣堂及建筑的维护。",tl:"Pagpapanatili ng buong simbahan at mga gusali.",vi:"Bảo trì toàn bộ nhà thờ và các tòa nhà.",ar:"صيانة الكنيسة والمباني كلها.",ko:"성당 전체와 건물 유지보수."}
 };
 export const NEWS_CAT = {
+en: {Diócesis:"Diocese",País:"Country",Iglesia:"Church"},
 pt: {Diócesis:"Diocese",País:"País",Iglesia:"Igreja"},
 it: {Diócesis:"Diocesi",País:"Paese",Iglesia:"Chiesa"},
 la: {Diócesis:"Dioecesis",País:"Patria",Iglesia:"Ecclesia"},
@@ -1435,6 +1467,7 @@ ar: {Diócesis:"الأبرشية",País:"البلد",Iglesia:"الكنيسة"},
 ko: {Diócesis:"교구",País:"나라",Iglesia:"교회"}
 };
 export const ROLE_I18N = {
+en: {Sacerdote:"Priest",Diácono:"Deacon","Encargado/a de Misa":"Mass coordinator",Lectores:"Lectors","Ministros de la Eucaristía":"Eucharistic ministers",Monaguillos:"Altar servers",Ujieres:"Ushers",Coro:"Choir","Apertura y cierre":"Opening and closing","Baño público":"Restroom"},
 pt: {Sacerdote:"Sacerdote",Diácono:"Diácono","Encargado/a de Misa":"Responsável da Missa",Lectores:"Leitores","Ministros de la Eucaristía":"Ministros da Eucaristia",Monaguillos:"Acólitos",Ujieres:"Porteiros",Coro:"Coro","Apertura y cierre":"Abertura e fechamento","Baño público":"Banheiro"},
 it: {Sacerdote:"Sacerdote",Diácono:"Diacono","Encargado/a de Misa":"Responsabile della Messa",Lectores:"Lettori","Ministros de la Eucaristía":"Ministri dell’Eucaristia",Monaguillos:"Chierichetti",Ujieres:"Uscieri",Coro:"Coro","Apertura y cierre":"Apertura e chiusura","Baño público":"Bagno"},
 la: {Sacerdote:"Sacerdos",Diácono:"Diaconus","Encargado/a de Misa":"Moderator Missae",Lectores:"Lectores","Ministros de la Eucaristía":"Ministri Eucharistiae",Monaguillos:"Acolythi",Ujieres:"Ostiarii",Coro:"Chorus","Apertura y cierre":"Apertura et clausura","Baño público":"Latrina"},

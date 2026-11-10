@@ -134,6 +134,80 @@ function eraLoc(era, lang) {
   if (lang === "en") return e;
   return (ERA_I18N[lang] || {})[e] ?? e;
 }
+// Mapa español -> idioma para patronazgos (el santoral trae los valores en español;
+// PATRON_I18N está claveado en inglés, así que se compone aquí). Más extras manuales.
+const ES2L = {};
+const PAT_EXTRA = {
+"rome": {pt:"Roma",it:"Roma",la:"Roma",fr:"Rome",zh:"罗马",tl:"Roma",vi:"Rôma",ar:"روما",ko:"로마"},
+"latin america": {pt:"América Latina",it:"America Latina",la:"America Latina",fr:"Amérique latine",zh:"拉丁美洲",tl:"Latin Amerika",vi:"Mỹ Latinh",ar:"أمريكا اللاتينية",ko:"라틴아메리카"},
+"mexico": {pt:"México",it:"Messico",la:"Mexicum",fr:"Mexique",zh:"墨西哥",tl:"Mehiko",vi:"Mêhicô",ar:"المكسيك",ko:"멕시코"},
+"america": {pt:"América",it:"America",la:"America",fr:"Amérique",zh:"美洲",tl:"Amerika",vi:"Châu Mỹ",ar:"أمريكا",ko:"아메리카"},
+"peru": {pt:"Peru",it:"Perù",la:"Peruvia",fr:"Pérou",zh:"秘鲁",tl:"Peru",vi:"Peru",ar:"بيرو",ko:"페루"},
+"sagrada familia": {pt:"Sagrada Família",it:"Santa Famiglia",la:"Sacra Familia",fr:"Sainte-Famille",zh:"圣家",tl:"Banal na Pamilya",vi:"Thánh Gia",ar:"العائلة المقدسة",ko:"성가정"},
+"madre de dios": {pt:"Mãe de Deus",it:"Madre di Dio",la:"Mater Dei",fr:"Mère de Dieu",zh:"天主之母",tl:"Ina ng Diyos",vi:"Mẹ Thiên Chúa",ar:"والدة الله",ko:"하느님의 어머니"},
+"madre de la iglesia": {pt:"Mãe da Igreja",it:"Madre della Chiesa",la:"Mater Ecclesiae",fr:"Mère de l'Église",zh:"教会之母",tl:"Ina ng Simbahan",vi:"Mẹ Giáo Hội",ar:"أم الكنيسة",ko:"교회의 어머니"},
+"cristo rey": {pt:"Cristo Rei",it:"Cristo Re",la:"Christus Rex",fr:"Christ-Roi",zh:"基督君王",tl:"Kristong Hari",vi:"Chúa Kitô Vua",ar:"المسيح الملك",ko:"그리스도 왕"},
+"ejercicios espirituales": {pt:"Exercícios espirituais",it:"Esercizi spirituali",la:"Exercitia spiritualia",fr:"Exercices spirituels",zh:"神操",tl:"Mga Espirituwal na Pagsasanay",vi:"Linh Thao",ar:"الرياضات الروحية",ko:"피정"},
+"jovenes cristeros": {pt:"jovens cristeros",it:"giovani cristeros",la:"iuvenes cristeri",fr:"jeunes cristeros",zh:"克里斯泰罗青年",tl:"kabataang Cristero",vi:"giới trẻ Cristero",ar:"شباب كريستيرو",ko:"크리스테로 청년"},
+"perseguidos por la fe": {pt:"perseguidos pela fé",it:"perseguitati per la fede",la:"pro fide persecuti",fr:"persécutés pour la foi",zh:"为信仰受迫害者",tl:"inuusig dahil sa pananampalataya",vi:"bị bách hại vì đức tin",ar:"المضطهدون بسبب الإيمان",ko:"신앙 때문에 박해받는 이들"},
+"buena muerte": {pt:"boa morte",it:"buona morte",la:"bona mors",fr:"bonne mort",zh:"善终",tl:"mabuting kamatayan",vi:"chết lành",ar:"ميتة صالحة",ko:"선종"},
+"objetos perdidos": {pt:"objetos perdidos",it:"oggetti smarriti",la:"res amissae",fr:"objets perdus",zh:"失物",tl:"nawawalang bagay",vi:"đồ thất lạc",ar:"المفقودات",ko:"분실물"},
+"vida de oracion": {pt:"vida de oração",it:"vita di preghiera",la:"vita orationis",fr:"vie de prière",zh:"祈祷生活",tl:"buhay ng panalangin",vi:"đời sống cầu nguyện",ar:"حياة الصلاة",ko:"기도 생활"},
+"television": {pt:"televisão",it:"televisione",la:"televisio",fr:"télévision",zh:"电视",tl:"telebisyon",vi:"truyền hình",ar:"التلفاز",ko:"텔레비전"},
+"madres que oran por sus hijos": {pt:"mães que oram pelos filhos",it:"madri che pregano per i figli",la:"matres quae pro filiis orant",fr:"mères qui prient pour leurs enfants",zh:"为子女祈祷的母亲",tl:"mga inang nananalangin para sa mga anak",vi:"những người mẹ cầu nguyện cho con",ar:"أمهات يصلين من أجل أبنائهن",ko:"자녀를 위해 기도하는 어머니들"},
+"obispos de america latina": {pt:"bispos da América Latina",it:"vescovi dell'America Latina",la:"episcopi Americae Latinae",fr:"évêques d'Amérique latine",zh:"拉丁美洲主教",tl:"mga obispo ng Latin Amerika",vi:"các giám mục Mỹ Latinh",ar:"أساقفة أمريكا اللاتينية",ko:"라틴아메리카 주교들"},
+"misioneros de la caridad": {pt:"missionários da caridade",it:"missionari della carità",la:"missionarii caritatis",fr:"missionnaires de la charité",zh:"仁爱传教会的会士",tl:"mga misyonero ng kawanggawa",vi:"thừa sai bác ái",ar:"مرسلو المحبة",ko:"사랑의 선교회원"},
+"internet": {pt:"internet",it:"internet",la:"interrete",fr:"internet",zh:"互联网",tl:"internet",vi:"internet",ar:"الإنترنت",ko:"인터넷"},
+"afrodescendientes": {pt:"afrodescendentes",it:"afrodiscendenti",la:"afrogeniti",fr:"afro-descendants",zh:"非洲裔",tl:"mga Afrodescendant",vi:"người gốc Phi",ar:"المنحدرون من أصل أفريقي",ko:"아프리카계"},
+"barberos": {pt:"barbeiros",it:"barbieri",la:"tonsores",fr:"barbiers",zh:"理发师",tl:"mga barbero",vi:"thợ cắt tóc",ar:"حلاقون",ko:"이발사"}
+};
+function esPatronMap(L){
+  if(ES2L[L]) return ES2L[L];
+  const foldD = (x) => String(x).toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const m = {};
+  for(const [enK, esV] of Object.entries(PAT_ES)){
+    const tv = (PATRON_I18N[L] || {})[enK];
+    if(tv) m[foldD(esV)] = tv;
+  }
+  for(const [k, tab] of Object.entries(PAT_EXTRA)){ if(tab[L]) m[k] = tab[L]; }
+  return (ES2L[L] = m);
+}
+function patronTok(p, L){
+  const foldD = (x) => String(x).toLowerCase().trim();
+  const k = foldD(p).normalize("NFD").replace(/[^a-z0-9 ]/g, "");
+  const raw = String(p).trim();
+  const m = esPatronMap(L);
+  const IK = Object.assign({}, PATRON_I18N[L] || {});
+  for(const [k2, tab] of Object.entries(PAT_EXTRA)){ if(tab[L]) IK[k2] = tab[L]; }
+  const minus = [k];
+  if(k.endsWith('es')) minus.push(k.slice(0, -2));
+  if(k.endsWith('s')) minus.push(k.slice(0, -1));
+  const plus = [k + 's', k + 'es'];
+  for(const kk of [...minus, ...plus]){ if(m[kk]) return m[kk]; }
+  for(const kk of [raw, raw.toLowerCase(), k, k + 's', k + 'es']){ if(IK[kk]) return IK[kk]; }
+  return raw;
+}
+const PAT_EN = { "madre de la iglesia": "Mother of the Church", "madre de dios": "Mother of God", "padres": "fathers", "trabajadores": "workers", "buena muerte": "happy death", "la iglesia": "the Church", "pescadores": "fishermen", "misioneros": "missionaries", "escritores": "writers", "ecología": "ecology", "animales": "animals", "paz": "peace", "vida de oración": "life of prayer", "jóvenes": "youth", "jovenes": "youth", "familias": "families", "pobres": "the poor", "misioneros de la caridad": "missionaries of charity", "misioneras de la caridad": "missionaries of charity", "afrodescendientes": "Afro-descendants", "barberos": "barbers", "enfermos": "the sick", "américa": "America", "america": "America", "perú": "Peru", "peru": "Peru", "jardineros": "gardeners", "obispos de américa latina": "bishops of Latin America", "obispos": "bishops", "indígenas": "indigenous peoples", "indigenas": "indigenous peoples", "laicos": "lay people", "méxico": "Mexico", "mexico": "Mexico", "ejercicios espirituales": "Spiritual Exercises", "misiones": "missions", "rosario": "Rosary", "predicadores": "preachers", "europa": "Europe", "enfermeras": "nurses", "estudiantes": "students", "teólogos": "theologians", "teologos": "theologians", "convertidos": "converts", "madres que oran por sus hijos": "mothers who pray for their children", "madres": "mothers", "objetos perdidos": "lost objects", "músicos": "musicians", "musicos": "musicians", "diáconos": "deacons", "diaconos": "deacons", "policías": "police", "policias": "police", "soldados": "soldiers", "viajeros": "travelers", "internet": "the internet", "jóvenes cristeros": "Cristero youth", "jovenes cristeros": "Cristero youth", "obispos mexicanos": "Mexican bishops", "perseguidos por la fe": "those persecuted for the faith", "televisión": "television", "television": "television", "clarisas": "Poor Clares", "papa": "pope", "papas": "popes", "obispo": "bishop", "arzobispo": "archbishop", "virgen": "virgin", "vírgenes": "virgins", "virgenes": "virgins", "mártir": "martyr", "martir": "martyr", "mártires": "martyrs", "martires": "martyrs", "apóstol": "apostle", "apostol": "apostle", "apóstoles": "apostles", "apostoles": "apostles", "evangelista": "evangelist", "doctor": "doctor", "doctores": "doctors", "confesor": "confessor", "abad": "abbot", "monje": "monk", "místico": "mystic", "mistico": "mystic", "misionero": "missionary", "madre": "mother", "iglesia": "Church", "roma": "Rome", "niños": "children", "ninos": "children", "sacerdotes": "priests", "sacerdote": "priest", "diácono": "deacon", "diacono": "deacon", "religiosos": "religious", "caridad": "charity", "música": "music", "musica": "music", "coros": "choirs" };
+const PAT_EN_FOLD = {};
+for(const [k, v] of Object.entries(PAT_EN)) PAT_EN_FOLD[k.normalize("NFD").replace(/[̀-ͯ]/g, "")] = v;
+function patronEn(list) {
+  if (!Array.isArray(list) || !list.length) return [];
+  const fold = (x) => x.toLowerCase();
+  const out = [];
+  for (const raw of list) {
+    for (const part of String(raw).split(/[,;·]/)) {
+      const k = part.trim().toLowerCase();
+      if (!k) continue;
+      const kf = k.normalize('NFD').replace(/[̀-ͯ]/g, '');
+      const cands = [k, kf];
+      for (const b of [k, kf]) { if (b.endsWith('es')) cands.push(b.slice(0, -2)); if (b.endsWith('s')) cands.push(b.slice(0, -1)); cands.push(b + 's', b + 'es'); }
+      let hit = null;
+      for (const kk of cands) { if (PAT_EN[kk] || PAT_EN_FOLD[kk]) { hit = PAT_EN[kk] || PAT_EN_FOLD[kk]; break; } }
+      out.push(hit || part.trim());
+    }
+  }
+  return out;
+}
 function patronEs(list, lang) {
   if (!Array.isArray(list) || !list.length) return [];
   if (lang === "en") return list;
@@ -142,9 +216,15 @@ function patronEs(list, lang) {
 function patronLoc(list, lang) {
   if (!Array.isArray(list) || !list.length) return [];
   if (lang === "es") return patronEs(list, lang);
-  if (lang === "en") return list;
-  const m = PATRON_I18N[lang] || {};
-  return list.map((p) => m[String(p)] ?? m[String(p).toLowerCase()] ?? p);
+  if (lang === "en") return patronEn(list);
+  const out = [];
+  for (const raw of list) {
+    for (const part of String(raw).split(/[,;·]/)) {
+      const t = part.trim();
+      if (t) out.push(patronTok(t, lang));
+    }
+  }
+  return out;
 }
 function bioLoc(name, summary, lang) {
   if (lang === "es") return esBio()[name] || summary;

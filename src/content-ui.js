@@ -41,7 +41,7 @@ export function contentMgrHTML(ctx){
   const ED = ctx && ctx.ED;
   const en = cbEN();
   let h = `<section class="card" id="sec-contenido"><h3>✏️ ${en ? "Site content" : "Contenidos"}</h3>
-    <p class="sub">${en ? "As an editor you can fix ALL parish info here, and reorder lists with ↑ ↓. Changes reach every phone." : "Como editor puedes corregir TODA la información aquí, y ordenar las listas con ↑ ↓. Los cambios llegan a todos los teléfonos."}</p>`;
+    <p class="sub">${esc(t("editorHint"))}</p>`;
   if(!ED) return h + lockNote() + `</section>`;
   const pid = (ctx && ctx.parishId) || "";
   if(!cui.pedit || !PARISHES.some(p => p.id === cui.pedit)) cui.pedit = PARISHES.some(p => p.id === pid) ? pid : (PARISHES[0] && PARISHES[0].id);
