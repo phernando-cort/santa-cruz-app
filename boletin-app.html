@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>¡Ya tenemos app parroquial! · Santa Cruz de la Cañada</title>
+<meta name="description" content="Entra a la app de la parroquia desde tu teléfono, sin invitación.">
+<meta name="theme-color" content="#1e2a4a">
+<style>
+:root{--navy:#1e2a4a;--gold:#c9a227;--paper:#faf7ef}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:#222;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;text-align:center}
+.sheet{max-width:700px;margin:16px auto;background:#fff;border:3px solid var(--navy);border-radius:18px;padding:22px 20px}
+h1{font-family:Georgia,"Times New Roman",serif;color:var(--navy);font-size:30px;margin:6px 0}
+.badge{display:inline-block;background:var(--navy);color:var(--gold);font-weight:700;border-radius:999px;padding:4px 16px;font-size:14px;margin-bottom:6px}
+.mark img{width:72px;height:72px;border-radius:18px}
+.qr img{width:250px;height:250px}
+.qr{margin:10px 0 4px}
+.url a{color:var(--navy);font-weight:700;font-size:17px;word-break:break-all}
+.steps{display:flex;gap:10px;margin:16px 0 6px;text-align:left}
+.step{flex:1;background:var(--paper);border:1px solid #e3dcc8;border-radius:12px;padding:10px;font-size:14px}
+.step b{display:block;color:var(--navy);font-size:26px}
+.note{font-size:14px;color:#555;margin:10px 0 0}
+.en{border-top:2px solid var(--navy);margin-top:14px;padding-top:8px;font-size:14px;color:#333}
+.printbtn{background:var(--navy);color:#fff;border:2px solid var(--gold);border-radius:12px;padding:10px 22px;font-size:16px;margin-top:12px;cursor:pointer}
+@media print{
+  body{background:#fff}
+  .sheet{border:2px solid #000;margin:0;max-width:none;border-radius:0}
+  .printbtn{display:none}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="mark"><img src="src/icono-parroquia.png" alt="Santa Cruz de la Cañada"></div>
+  <div class="badge">BOLETÍN PARROQUIAL · PARISH BULLETIN</div>
+  <h1>¡Ya tenemos app parroquial! 📱</h1>
+  <p style="margin:4px 0 0;font-size:16px">Misas, lecturas, oraciones y más — directo en tu teléfono, <b>sin invitación</b>.</p>
+  <div class="qr"><img src="src/pwa/qr-app.png" alt="Escanea para entrar a la app"></div>
+  <p class="url"><a href="https://phernando-cort.github.io/santa-cruz-app/#visita">phernando-cort.github.io/santa-cruz-app/#visita</a></p>
+  <div class="steps">
+    <div class="step"><b>1.</b> Escanea el código o toca el enlace.</div>
+    <div class="step"><b>2.</b> Android: menú ⋮ → “Instalar app”. iPhone (Safari): Compartir → “Agregar a pantalla de inicio”.</div>
+    <div class="step"><b>3.</b> ¡Listo! ✠ Entras como visita. Para publicar, pide tu código gratis en la oficina.</div>
+  </div>
+  <p class="note">Tutorial completo con dibujos: <b>/instalar.html</b> en esta misma página.</p>
+  <div class="en"><b>Our parish has an app!</b> Scan the code or tap the link — no invitation needed. Android: menu ⋮ → “Install app”. iPhone (Safari): Share → “Add to Home Screen”. You enter as a visitor; to post, ask the office for your free code.</div>
+  <button class="printbtn" onclick="window.print()">🖨️ Imprimir este volante</button>
+</div>
+</body>
+</html>
