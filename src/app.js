@@ -698,14 +698,18 @@ function renderHome(){
     const genSched = isEn
       ? "General schedule (Santa Cruz): Mon–Wed 7am & 6pm (Tue evening in Spanish) · Thu–Fri 7am · Sat 5:30pm Vigil · Sun 7am, 8:30am Spanish, 10:30am, 12:30pm, 6pm. Confessions Sat 4pm."
       : "Horario general (Santa Cruz): Lun–Mié 7am y 6pm (mar. en español) · Jue–Vie 7am · Sáb 5:30pm Vigilia · Dom 7am, 8:30am español, 10:30am, 12:30pm, 6pm. Confesiones sáb 4pm.";
+    const gEvT = (state.gcal && state.gcal.events) || [];
     const massHtml = schedList.length ? schedList.map((mm)=>{
       const nInt = (mm.int||[]).length;
+      // Misa especial del calendario a esta misma hora (funeral, boda...): se muestra como aparece.
+      const spec = gEvT.find(e=>e && e.date===tIso && isSpecialMass(e.t) && String(e.s||"").slice(11,16)===String(mm.t||"").slice(0,5));
+      const sumTail = spec ? `✝ ${esc(String(spec.t||"").slice(0,90))}` : `🕯️ ${nInt||(isEn?"no intentions":"sin intenciones")}`;
       const mins = ministryForTime(mm.t);
       const cel = String(mm.ce||"").split("·").map(s=>celebFull(s)).filter(Boolean).join(" · ");
       const ints = (mm.int||[]).map(x=>`<div class="intentLine">• ${esc(x)}</div>`).join("");
       const minList = mins ? ["Sacerdote","Diácono","Encargado/a de Misa","Lectores","Coro"]
         .map(r=>mins.roles[r]&&mins.roles[r]!=="Por asignar"?`${esc(r)}: <b>${esc(mins.roles[r])}</b>`:"").filter(Boolean).join(" · ") : "";
-      return `<details class="massToday"><summary>⏰ <b>${esc(mm.t||"")}</b> · ⛪ ${esc(mm.pl||parish().name)} · 🕯️ ${nInt||(isEn?"no intentions":"sin intenciones")}</summary>
+      return `<details class="massToday"><summary>⏰ <b>${esc(mm.t||"")}</b> · ⛪ ${esc(mm.pl||parish().name)} · ${sumTail}</summary>
         ${cel?`<div class="small">🙏 <b>${isEn?"Celebrant":"Celebrante"}:</b> ${esc(cel)}${mm.de?` · Diác. ${esc(mm.de)}`:""}</div>`:""}
         ${ints?`<div style="margin-top:4px">${ints}</div>`:""}
         ${mins&&minList?`<div class="small" style="margin-top:4px">🙌 <b>${esc(t("ministersL"))}:</b> ${minList}</div>`:""}</details>`;
