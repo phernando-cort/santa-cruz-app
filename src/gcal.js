@@ -261,9 +261,7 @@ function dedupe(evs) {
   return out;
 }
 // Eventos próximos (hoy → +7 días), ordenados. Incluye todo menos Misas de rutina.
-export async function getWeekEvents() {
-  const now = denverNow();
-  const fromD = now.date, toD = addDays(now.date, 7);
+export async function getRangeEvents(fromD, toD) {
   const seed = await loadSeed().catch(() => null);
   let rules = [], singles = [], overrides = [];
   if (seed) { rules = rules.concat(seed.rules || []); singles = singles.concat(seed.singles || []); overrides = overrides.concat(seed.overrides || []); }
@@ -278,11 +276,13 @@ export async function getWeekEvents() {
   const overByKey = {};
   for (const o of overrides) overByKey[`${o.u}|${o.for}`] = o;
   let evs = [];
+  const now = denverNow();
+  const skipPast = fromD === now.date; // solo filtrar lo ya pasado si el rango empieza hoy
   for (const sg of singles) {
     const date = sg.s.slice(0, 10);
     if (date < fromD || date > toD) continue;
     if (isExcludedCal(sg.t, sg.l, sg.d)) continue;
-    if (sg.e && sg.e < now.wall && date === fromD) continue;
+    if (skipPast && sg.e && sg.e < now.wall && date === fromD) continue;
     evs.push({ date, s: sg.s, e: sg.e, t: sg.t, l: sg.l, d: sg.d, src: "cal", live: !!sg.live });
   }
   for (const r of rules) {
@@ -291,11 +291,15 @@ export async function getWeekEvents() {
       const ev = ov || { t: r.t, l: r.l, d: r.d };
       if (isExcludedCal(ev.t, ev.l, ev.d)) continue;
       const s = ov ? ov.s : occ.s, e = ov ? ov.e : occ.e;
-      if (occ.date === fromD && e && e < now.wall) continue;
-      if (occ.date === fromD && s && s < now.wall && (!e || e <= s)) continue;
+      if (skipPast && occ.date === fromD && e && e < now.wall) continue;
+      if (skipPast && occ.date === fromD && s && s < now.wall && (!e || e <= s)) continue;
       evs.push({ date: occ.date, s, e, t: ev.t, l: ev.l, d: ev.d, src: "cal", live: !!(ov ? ov.live : r.live) });
     }
   }
   evs = dedupe(evs).sort((a, b) => (a.s < b.s ? -1 : 1));
   return { events: evs, live: !!live };
+}
+export async function getWeekEvents() {
+  const now = denverNow();
+  return getRangeEvents(now.date, addDays(now.date, 7));
 }

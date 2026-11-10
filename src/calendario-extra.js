@@ -58,5 +58,5 @@ en: [
   { h: "Parish office", p: "Mon–Thu 9 AM–4 PM (closed 1–2 PM) · Fri 9 AM–1 PM · (505) 753-3345 · holycross.admoffice@gmail.com · P.O. Box 1228, Santa Cruz, NM 87567" }
 ]};
 
-export const PARISH_YT = "https://youtube.com/@santacruzparishespanola3397";
+export const PARISH_YT = "https://www.youtube.com/@holycrosscatholicchurchsan309";
 export const PARISH_BULLETIN_PAGE = "https://www.hcccsantacruz.org/bulletin";

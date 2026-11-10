@@ -46,6 +46,7 @@ export let GIVING_PROJECTS = D.GIVING_PROJECTS;
 export let REAL_EVENTS = _RE;
 export let DATED_SEEDS = _DS;
 export let BULLETIN_FALLBACK = _BF;
+export let PADRE = null; // {es:{title,body,sign}, en:{title,body,sign}} — carta semanal del párroco (override en Contenidos)
 export let SACRAMENT_INFO = _SI;
 export let PARISH_YT = _PYT;
 export let PARISH_BULLETIN_PAGE = _PBP;
@@ -63,6 +64,8 @@ const REG = {
                       current: () => ({ yt: PARISH_YT, bulletin: PARISH_BULLETIN_PAGE }),
                       check: v => v && typeof v.yt === "string" && typeof v.bulletin === "string" ? "" : "Debe ser {yt, bulletin}" },
   "bulletin.fallback": { kind: "json", apply: v => { BULLETIN_FALLBACK = v; }, current: () => BULLETIN_FALLBACK, check: isObj },
+  "padre": { kind: "json", apply: v => { PADRE = v; }, current: () => PADRE,
+    check: v => v && v.es && v.en && typeof v.es.body === "string" && typeof v.en.body === "string" ? "" : "Debe ser {es:{title,body,sign}, en:{title,body,sign}}" },
   "sacraments":     { kind: "json", apply: v => { SACRAMENT_INFO = v; }, current: () => SACRAMENT_INFO,
                       check: v => v && Array.isArray(v.es) && Array.isArray(v.en) ? "" : "Debe ser {es: [...], en: [...]}" },
   "inspirations":   { kind: "json", apply: v => { INSPIRATIONS = v.es; INSP_EN = v.en; },
@@ -104,6 +107,7 @@ export const CONTENT_TITLES = {
   "schedule": "⛪ Misas e intenciones por fecha",
   "links": "🔗 Enlaces (YouTube, boletín)",
   "bulletin.fallback": "📄 Boletín de respaldo",
+  "padre": "💌 Carta del párroco (Inicio)",
   "sacraments": "🤲 Sacramentos y oficina (ES+EN)",
   "inspirations": "✨ Inspiraciones (ES+EN)",
   "week": "📖 Lecturas semanales (ES+EN)",
@@ -121,11 +125,11 @@ export const CONTENT_TITLES = {
   "directory.seed": "📇 Directorio inicial",
   "ministry.seed": "🙌 Quién sirve en cada Misa",
   "ministry.roles": "🙌 Nombres de roles",
-  "fieles": "👥 Lista de fieles ejemplo",
+  "fieles": "👥 Lista de fieles",
   "art": "🖼️ Imágenes (URLs)",
   "categories": "🏷️ Categorías",
 };
-export const CONTENT_ORDER = ["parishes","events.seed","events.real","events.dated","schedule","links","sacraments","bulletin.fallback","clergy","groups","giving","news.seed","bulletins.seed","messages.seed","muro.seed","intenciones.seed","directory.seed","ministry.seed","cantos.seed","prayers.trad","inspirations","week","saints","art","categories","ministry.roles","fieles"];
+export const CONTENT_ORDER = ["parishes","events.seed","events.real","events.dated","schedule","links","sacraments","bulletin.fallback","padre","clergy","groups","giving","news.seed","bulletins.seed","messages.seed","muro.seed","intenciones.seed","directory.seed","ministry.seed","cantos.seed","prayers.trad","inspirations","week","saints","art","categories","ministry.roles","fieles"];
 
 // Misas de una fecha: override (editor) gana al generado (parish-schedule.js).
 export function schedMasses(iso){
@@ -261,7 +265,7 @@ export const Content = {
         "ministry.seed": D0.MINISTRY_SEED, "ministry.roles": D0.MINISTRY_ROLES,
         "fieles": D0.FIELES_SEED, "art": D0.ART, "categories": D0.CATEGORIES,
       };
-      if(key === "schedule"){ /* sin binding: basta con borrar el override */ }
+      if(key === "schedule" || key === "padre"){ if(key === "padre"){ try { def.apply(null); } catch(e){} } /* sin binding fijo: basta con borrar el override */ }
       else if(back[key] !== undefined) def.apply(back[key]);
     } catch(e){}
     writeCache();

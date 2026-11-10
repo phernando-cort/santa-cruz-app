@@ -1,7 +1,7 @@
 // UI de contenidos editables — COMPARTIDA entre la app y la página de admin.
 // No depende de app.js: recibe un ctx { ED, parishId, parishName, refresh }.
 import { Content, CONTENT_ORDER, CONTENT_TITLES, PARISHES, CATEGORIES, EVENTS, REAL_EVENTS, DATED_SEEDS,
-  schedMasses, schedBaseMasses, schedOverridden } from "./content.js";
+  schedMasses, schedBaseMasses, schedOverridden, PADRE } from "./content.js";
 import { getLang, t } from "./i18n.js";
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -31,7 +31,7 @@ export function cSave(promise, done, ctx){
   return true;
 }
 
-const CB_SHORT = { parishes:"⛪ Parroquia", "events.seed":"📅 Semanales", "events.real":"📅 Verificados", "events.dated":"📅 Fechas únicas", schedule:"⛪ Misas/fecha", links:"🔗 Enlaces", sacraments:"🤲 Sacramentos", "bulletin.fallback":"📄 Boletín", clergy:"⛪ Clero", groups:"👥 Grupos", giving:"💛 Donativos", "news.seed":"🌎 Noticias", "bulletins.seed":"📄 Boletines", "messages.seed":"🔔 Avisos", "cantos.seed":"🎵 Cantos", "prayers.trad":"🙏 Oraciones", inspirations:"✨ Inspiración", week:"📖 Lecturas", saints:"✨ Santos", "muro.seed":"🧱 Muro", "intenciones.seed":"🎉 Intenciones", "directory.seed":"📇 Directorio", "ministry.seed":"🙌 Ministerio", art:"🖼️ Imágenes", categories:"🏷️ Categorías", "ministry.roles":"🙌 Roles", fieles:"👥 Fieles" };
+const CB_SHORT = { parishes:"⛪ Parroquia", "events.seed":"📅 Semanales", "events.real":"📅 Verificados", "events.dated":"📅 Fechas únicas", schedule:"⛪ Misas/fecha", links:"🔗 Enlaces", padre:"💌 Carta", sacraments:"🤲 Sacramentos", "bulletin.fallback":"📄 Boletín", clergy:"⛪ Clero", groups:"👥 Grupos", giving:"💛 Donativos", "news.seed":"🌎 Noticias", "bulletins.seed":"📄 Boletines", "messages.seed":"🔔 Avisos", "cantos.seed":"🎵 Cantos", "prayers.trad":"🙏 Oraciones", inspirations:"✨ Inspiración", week:"📖 Lecturas", saints:"✨ Santos", "muro.seed":"🧱 Muro", "intenciones.seed":"🎉 Intenciones", "directory.seed":"📇 Directorio", "ministry.seed":"🙌 Ministerio", art:"🖼️ Imágenes", categories:"🏷️ Categorías", "ministry.roles":"🙌 Roles", fieles:"👥 Fieles" };
 const CB_DAYS = [["sun","Dom","Sun"],["mon","Lun","Mon"],["tue","Mar","Tue"],["wed","Mié","Wed"],["thu","Jue","Thu"],["fri","Vie","Fri"],["sat","Sáb","Sat"]];
 export function cbEN(){ return getLang() === "en"; }
 function cEvList(key){ return key === "events.real" ? REAL_EVENTS : key === "events.dated" ? DATED_SEEDS : EVENTS; }
@@ -231,7 +231,7 @@ const SCH = {
   "intenciones.seed": { hint: ["Intenciones iniciales (cumpleaños, bodas, difuntos…).", "Starter intentions (birthdays, weddings, departed…)."],
     add: ["＋ Añadir intención", "＋ Add intention"], t: x => x.names || "—", s: x => [x.type, x.date].filter(Boolean).join(" · "),
     fields: [
-      { k: "type", es: "Tipo", en: "Type", t: "select", opts: ["Cumpleaños", "Aniversarios", "Nacimientos", "Matrimonios", "Quinceañeras", "Exequias", "Defunciones"] },
+      { k: "type", es: "Tipo", en: "Type", t: "select", opts: ["Cumpleaños", "Aniversarios", "Nacimientos", "Enfermos", "Matrimonios", "Quinceañeras", "Exequias", "Defunciones"] },
       { k: "names", es: "Nombres", en: "Names", t: "text", req: 1 },
       { k: "date", es: "Fecha (texto libre)", en: "Date (free text)", t: "text" },
       { k: "mass", es: "Misa (opcional)", en: "Mass (optional)", t: "text" },
@@ -380,6 +380,23 @@ function linksHTML(){
     <div class="btnRow"><button class="btn btnNavy" data-action="content-linksave">${en ? "Save" : "Guardar"}</button>
     <button class="btn btnGhost" data-action="content-reset" data-b="links">${en ? "Reset" : "Restablecer"}</button></div>`;
 }
+function padreHTML(){
+  const en = cbEN();
+  const o = formObj("padre", null) || {};
+  const es = o.es || {}, ine = o.en || {};
+  const cur = (v, fb) => (v === undefined || v === null || v === "") ? fb : v;
+  return `<h4 style="margin:8px 0 2px">${esc(CONTENT_TITLES.padre)}${cOvTag("padre")}</h4>
+    <p class="small">${esc(en ? "Weekly letter shown at the end of Home. Leave English empty to show the Spanish text." : "Carta semanal que sale al final del Inicio. Si dejas el inglés vacío, se muestra el español.")}</p>
+    ${cui.err ? `<div class="notice">⚠️ ${esc(cui.err)}</div>` : ""}
+    <label>${en ? "Title (Spanish)" : "Título (español)"}</label><input id="cfp-estitle" value="${esc(cur(es.title, t("padreMsgT")))}">
+    <label>${en ? "Letter (Spanish)" : "Carta (español)"} *</label><textarea id="cfp-esbody" rows="8">${esc(cur(es.body, t("padreBody")))}</textarea>
+    <label>${en ? "Signature (Spanish)" : "Firma (español)"}</label><input id="cfp-essign" value="${esc(cur(es.sign, t("padreSig")))}">
+    <label>${en ? "Title (English)" : "Título (inglés)"}</label><input id="cfp-entitle" value="${esc(ine.title || "")}" placeholder="${esc(t("padreMsgT"))}">
+    <label>${en ? "Letter (English, optional)" : "Carta (inglés, opcional)"}</label><textarea id="cfp-enbody" rows="8" placeholder="${esc(en ? "Empty = shows the Spanish text." : "Vacío = se muestra el español.")}">${esc(ine.body || "")}</textarea>
+    <label>${en ? "Signature (English)" : "Firma (inglés)"}</label><input id="cfp-ensign" value="${esc(ine.sign || "")}">
+    <div class="btnRow"><button class="btn btnNavy" data-action="content-padresave">${en ? "Save" : "Guardar"}</button>
+    <button class="btn btnGhost" data-action="content-reset" data-b="padre">${en ? "Reset" : "Restablecer"}</button></div>`;
+}
 function bulletinHTML(){
   const en = cbEN(), o = formObj("bulletin.fallback", {});
   return `<h4 style="margin:8px 0 2px">${esc(CONTENT_TITLES["bulletin.fallback"])}${cOvTag("bulletin.fallback")}</h4>
@@ -499,6 +516,7 @@ function contentFormHTML(key){
   if(key === "parishes") return "";
   if(key === "schedule" || (key && key.indexOf("events.") === 0)) return "";
   if(key === "links") return linksHTML();
+  if(key === "padre") return padreHTML();
   if(key === "bulletin.fallback") return bulletinHTML();
   if(key === "sacraments") return itemListHTML(key);
   if(key === "week") return weekHTML();
@@ -507,7 +525,7 @@ function contentFormHTML(key){
   if(key === "art") return artHTML();
   if(key === "ministry.roles" || key === "fieles" || key === "categories"){
     const en = cbEN(), arr = formArr(key);
-    const ph = key === "ministry.roles" ? "Sacerdote\nDiácono\nLectores" : (key === "fieles" ? "Familia Hernández\nMaría Torres" : "Misa\nAdoración\nJóvenes");
+    const ph = key === "ministry.roles" ? "Sacerdote\nDiácono\nLectores" : (key === "fieles" ? "Familia Hernández\nMaría Torres\nDon Efraín" : "Misa\nAdoración\nJóvenes");
     return linesHTML(key, arr, ph);
   }
   if(SCH[key]) return itemListHTML(key);
@@ -747,6 +765,14 @@ export function handleContentAction(a, el, ctx){
   if(a === "content-linksave"){ if(needEd()) return true;
     cui.err = "";
     cSave(Content.save("links", { yt: SV("#cfl-yt"), bulletin: SV("#cfl-bulletin") }), () => refresh(), ctx); return true; }
+  if(a === "content-padresave"){ if(needEd()) return true;
+    const en = cbEN();
+    const eb = SV("#cfp-esbody");
+    if(!eb){ cui.err = en ? "The letter text (Spanish) is required." : "Falta el texto de la carta (español)."; refresh(); return true; }
+    const v = { es: { title: SV("#cfp-estitle"), body: eb, sign: SV("#cfp-essign") },
+      en: { title: SV("#cfp-entitle"), body: SV("#cfp-enbody"), sign: SV("#cfp-ensign") } };
+    cui.err = "";
+    cSave(Content.save("padre", v), () => refresh(), ctx); return true; }
   if(a === "content-bulsave"){ if(needEd()) return true;
     const v = { y: parseInt(SV("#cfb-y")) || 0, mo: parseInt(SV("#cfb-mo")) || 0, d1: parseInt(SV("#cfb-d1")) || 0, d2: parseInt(SV("#cfb-d2")) || 0, pdf: SV("#cfb-pdf"), view: SV("#cfb-view") };
     cui.err = "";

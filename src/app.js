@@ -1,4 +1,4 @@
-import { PARISHES, WEEK, WEEK_EN, INSPIRATIONS, INSP_EN, PRAYERS, ROSARY_MYSTERIES, mysteriesForWeekday, EVENTS, BULLETINS, GROUPS, CLERGY, MESSAGES, CATEGORIES, SAINTS, CANTOS, NEWS, MINISTRY_ROLES, MINISTRY_SEED, FIELES_SEED, MURO_SEED, INTENCIONES_SEED, ART, DIRECTORY_SEED, GIVING_PROJECTS, REAL_EVENTS, DATED_SEEDS, BULLETIN_FALLBACK, SACRAMENT_INFO, PARISH_YT, PARISH_BULLETIN_PAGE, Content, schedMasses } from "./content.js";
+import { PARISHES, WEEK, WEEK_EN, INSPIRATIONS, INSP_EN, PRAYERS, ROSARY_MYSTERIES, mysteriesForWeekday, EVENTS, BULLETINS, GROUPS, CLERGY, MESSAGES, CATEGORIES, SAINTS, CANTOS, NEWS, MINISTRY_ROLES, MINISTRY_SEED, FIELES_SEED, MURO_SEED, INTENCIONES_SEED, ART, DIRECTORY_SEED, GIVING_PROJECTS, REAL_EVENTS, DATED_SEEDS, BULLETIN_FALLBACK, SACRAMENT_INFO, PARISH_YT, PARISH_BULLETIN_PAGE, Content, PADRE, schedMasses } from "./content.js";
 import { contentMgrHTML, handleContentAction } from "./content-ui.js";
 import { Sync } from "./sync.js";
 window.Sync = Sync; // handle de diagnóstico (consola/tests): Sync.online, Sync.data, Sync.auth(...)
@@ -6,7 +6,7 @@ import { LANGS, setLang, getLang, t, catName, recName, dayName, localeOf, MON_, 
 import { getDayData } from "./lectionary/litcal.js";
 import { dailyFor } from "./daily-citations.js";
 import { rankOf, saintsForDay, saintPrayerText } from "./saints.js";
-import { getWeekEvents, isRoutineMass, isSpecialMass, isGroupMeeting, fmtDay, fmtTime } from "./gcal.js";
+import { getWeekEvents, getRangeEvents, isRoutineMass, isSpecialMass, isGroupMeeting, fmtDay, fmtTime } from "./gcal.js";
 import { fetchUsccbDay, usccbWhich, usccbUrl } from "./usccb.js";
 import { ORDINARY } from "./missal.js";
 import { CONFESION_EXAMS } from "./confesion.js";
@@ -384,6 +384,27 @@ function gprojDesc(p){ const L = getLang(); if(L==="es") return p.desc; if(L==="
 function sacrLoc(){ const L = getLang(); if(L === "es") return SACRAMENT_INFO.es; if(L === "en") return SACRAMENT_INFO.en; return SACRAMENT_I18N[L] || SACRAMENT_INFO.en; }
 function guideLoc(k){ const tab = (GUIDE_I18N[getLang()] || {})[k]; if(tab) return tab; const base = k === "adv" ? ADVIENTO_GUIDE : k === "fam" ? FAMILIA_ADVIENTO : REFLEX_FAMILIA; return getLang() === "en" ? base.en : base.es; }
 function turnoLabel(id){ return (TURNOS_I18N[getLang()] || TURNOS_I18N.es)[id] ?? TURNOS_I18N.en[id] ?? id; }
+// Carta del párroco: override editable (Contenidos → 💌 Carta); si el párroco aún no
+// escribe, se muestra el mensaje de bienvenida fijo en el idioma actual.
+function padreMsg(){
+  const L = getLang();
+  const o = (typeof PADRE === "object" && PADRE) ? PADRE : null;
+  const pick = (o && (L === "en" ? o.en : o.es)) || (o && o.es) || null;
+  if(pick && pick.body) return { title: pick.title || t("padreMsgT"), body: pick.body, sign: pick.sign || t("padreSig") };
+  return { title: t("padreMsgT"), body: t("padreBody"), sign: t("padreSig") };
+}
+// Rango litúrgico: prefiere el rango real del leccionario en vivo (dayData.rank:
+// "Memorial", "memoria", "Solemnity"... según fuente e idioma); si no lo hay,
+// lo deduce del nombre de la fiesta con rankOf(). Devuelve "" si es feria.
+function rankFor(ddRank, feast){
+  const f = String(ddRank || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if(/solemn/.test(f)) return "solemnity";
+  if(/optional|opcional|facultat/.test(f)) return "optional";
+  if(/memorial|memoria|memoire/.test(f)) return "memorial";
+  if(/feast|fiesta|festa|fete/.test(f)) return "feast";
+  if(/sunday|domingo|domenica|dimanche|lord's day/.test(f)) return "sunday";
+  return rankOf(feast);
+}
 function newsCatLoc(c){ return (NEWS_CAT[getLang()] || {})[c] ?? c; }
 function roleLoc(r){ return (ROLE_I18N[getLang()] || {})[r] ?? r; }
 function giftDate(g){ try{ return new Date(g.date).toLocaleString(localeOf(), { day:"numeric", month:"short", year:"numeric" }); }catch{ return g.date || ""; } }
@@ -611,6 +632,27 @@ async function refreshGCal(){
   gcalBusy = false;
   try { if(state.tab === "home") renderHome(); } catch(e) {}
 }
+// ---------- mes visible: Google Calendar fusionado con los eventos fijos ----------
+// Los eventos en vivo (funerales, Misas especiales, reuniones) se adaptan al formato
+// de eventos fijos para que mes/semana/día muestren TODO junto, sin duplicar Misas de rutina.
+function calAdapter(e){ const d=new Date((e.date||"")+"T12:00:00"); const dk=["sun","mon","tue","wed","thu","fri","sat"][d.getDay()]||"sun";
+  const spec=isSpecialMass(e.t); return {id:"g:"+e.date+"|"+(e.s||"")+"|"+String(e.t||"").slice(0,60), title:String(e.t||"").slice(0,140), day:dk, date:e.date, time:fmtTime(e.s||""), location:e.l||"", category:spec?"Misa":"Comunidad", recurring:"Única", live:1}; }
+function liveCalEvents(){ return ((state.calLive && state.calLive.events)||[]).filter(e=>!isRoutineMass(e.t)).map(calAdapter); }
+function mergedEvents(filter){ const base=visibleEvents(filter); const seen=new Set(base.map(e=>((e.date||"")+"|"+String(e.title||"").toLowerCase().slice(0,28)))); const out=base.slice();
+  for(const ev of liveCalEvents()){ if(filter!=="Todas"&&filter!=="All"&&ev.category!==filter) continue; const k=(ev.date||"")+"|"+ev.title.toLowerCase().slice(0,28); if(seen.has(k)) continue; seen.add(k); out.push(ev); } return out; }
+let calLiveBusy = false;
+async function ensureCalLive(){
+  if(calLiveBusy) return; calLiveBusy = true;
+  try{
+    const c=state.calCursor||new Date(); const key=c.getFullYear()+"-"+c.getMonth();
+    if(!(state.calLive&&state.calLive.key===key)){
+      const first=toISO(new Date(c.getFullYear(),c.getMonth(),1)), last=toISO(new Date(c.getFullYear(),c.getMonth()+1,0));
+      const r=await getRangeEvents(first,last); state.calLive={key, events:(r&&r.events)||[]};
+      try { if(state.tab==="calendar"||state.tab==="more") renderCalendar(); } catch(e) {}
+    }
+  }catch(e){}
+  calLiveBusy = false;
+}
 
 // ---------- sheets ----------
 function openSheet(id){ $("#"+id)?.classList.add("open"); }
@@ -637,8 +679,14 @@ function renderTop(){
   $("#parishNameEl").textContent = p.name;
   $("#parishCityEl").textContent = p.city;
   const wdi = new Date(state.readingDate+"T12:00:00").getDay();
-  const w = weekDay(wdi);
-  const season = w.season, feast = w.feast, rank = w.rank;
+  const wStatic = weekDay(wdi);
+  // Fiesta/rango reales del día (leccionario), no la semana fija de ejemplo:
+  const ddTop = (state.litcalDate === toISO(new Date()) && state.dayData) ? state.dayData : null;
+  const dlTop = dailyFor(state.readingDate);
+  const feast = (ddTop && ddTop.feast) || (dlTop && dlTop.feast) || wStatic.feast;
+  const season = (ddTop && ddTop.season) || wStatic.season;
+  const rkTop = rankFor(ddTop && ddTop.rank, feast);
+  const rank = rkTop ? saintRankLabel(rkTop) : wStatic.rank;
   $("#seasonEl").innerHTML = `<span class="pill">${esc(season)}</span><span>${esc(feast)} · ${esc(rank)}</span>`;
   $("#unreadDot").hidden = !store.get("msgs.unread", true);
   // tab labels
@@ -672,7 +720,8 @@ function renderHome(){
   const p = parish();
   const w = weekDay(new Date().getDay());
   const upcoming = [...allEvents()].sort((a,b)=>daysUntil(a)-daysUntil(b)).slice(0,4);
-  const ins = insp(0);
+  const doy = Math.floor((Date.now() - new Date(new Date().getFullYear(),0,0).getTime())/864e5);
+  const ins = insp(doy % Math.max(1, INSPIRATIONS.length));
   const b = allBulletins()[0];
   const rems = state.reminders.map(id=>allEvents().find(e=>e.id===id)).filter(Boolean)
     .sort((a,b2)=>daysUntil(a)-daysUntil(b2)).slice(0,3);
@@ -798,7 +847,7 @@ function renderHome(){
       <div class="heroTop">
         <img class="heroImg" src="${esc(ART.hero)}" alt="Iglesia histórica de Santa Cruz de la Cañada">
         <img class="heroSeal" src="${APP_ICON}" alt="Sello de Santa Cruz de la Cañada">
-        <span class="heroKicker">✠ ${esc(w.weekday)} · ${esc(w.feast)}</span>
+        <span class="heroKicker">✠ ${esc(w.weekday)} · ${esc((typeof tFeast !== "undefined" && tFeast) || w.feast)}</span>
         <div class="heroTitle"><h2>${esc(p.name)}</h2></div>
       </div>
       <div class="heroBody"><p>${esc(p.greeting)}</p>
@@ -812,13 +861,20 @@ function renderHome(){
         ${p.phone?`<button class="btn btnGhost" data-action="ext" data-url="tel:${esc(p.phone.replace(/[^+\d]/g,""))}">${t("callOffice")} ${esc(p.phone)}</button>`:""}
       </div></div>
     </section>`});
-  // 💌 Mensaje de bienvenida del P. Hernando (fijo al FINAL del Inicio).
-  const padreBody = t("padreBody");
+  // 💌 Carta del P. Hernando (editable en Contenidos → 💌 Carta; al FINAL del Inicio).
+  const pm = padreMsg();
   if(state.modules.hero!==false) cards.push({id:"padre", html:`
     <section class="card" style="border-color:var(--gold)"><img class="artBanner" src="${ART.retablo}" alt="Sagrada Familia" loading="lazy">
-      <h3>${t("padreMsgT")}</h3>
-      <p style="font-size:14.5px;line-height:1.65;white-space:pre-line">${esc(padreBody)}</p>
-      <p style="font-size:14px;margin:6px 0 0"><b>— ${esc(t("padreSig"))}</b></p>
+      <h3>${esc(pm.title)}</h3>
+      <p style="font-size:14.5px;line-height:1.65;white-space:pre-line">${esc(pm.body)}</p>
+      <p style="font-size:14px;margin:6px 0 0"><b>— ${esc(pm.sign)}</b></p>
+    </section>`});
+  // ✦ Inspiración diaria: va de ÚLTIMA, después de la carta (rota cada día del año).
+  if(state.modules.inspire!==false) cards.push({id:"inspire", html:`
+    <section class="inspire"><span class="badge">✦ ${t("inspireDaily")}</span>
+      <img class="artBanner" src="${ART.desert}" alt="Nuevo México" loading="lazy">
+      <h3 class="serif">${esc(ins.title)}</h3><p>${esc(ins.body)}</p>
+      <div class="btnRow"><button class="btn btnNavy" data-action="tab" data-tab="readings">${t("reflectScripture")}</button></div>
     </section>`});
   if(state.modules.actions!==false) cards.push({id:"actions", html:`
     <section class="card"><h3>${hi}, ${t("famParish")}</h3>
@@ -829,12 +885,6 @@ function renderHome(){
         <button class="quickBtn" data-action="more-focus" data-focus="sec-donativos"><div class="ic">💛</div><div class="t">${t("give")}</div><div class="d">${t("giveSub")}</div></button>
         <button class="quickBtn" data-action="pray-mode" data-mode="santos"><div class="ic">✨</div><div class="t">${t("saintDay")}</div><div class="d">${SAINTS.length} ${t("saintsCount")}</div></button>
       </div></section>`});
-  if(state.modules.inspire!==false) cards.push({id:"inspire", html:`
-    <section class="inspire"><span class="badge">✦ ${t("inspireDaily")}</span>
-      <img class="artBanner" src="${ART.desert}" alt="Nuevo México" loading="lazy">
-      <h3 class="serif">${esc(ins.title)}</h3><p>${esc(ins.body)}</p>
-      <div class="btnRow"><button class="btn btnNavy" data-action="tab" data-tab="readings">${t("reflectScripture")}</button></div>
-    </section>`});
   if(rems.length) cards.push({id:"rems", html:`
     <section class="card"><h3>⏰ ${t("myReminders")}</h3>
       ${rems.map(ev=>{const d=daysUntil(ev); return `<div class="eventRow"><div class="dateBox"><div class="dw">${esc(dayName(ev.day).slice(0,3).toUpperCase())}</div><div class="dn">${d===0?"¡HOY":d+"d"}</div></div>
@@ -868,7 +918,6 @@ function renderHome(){
         ${[10,25,50].map(a=>`<button class="btn ${state.givingAmt===a?"btnNavy":"btnGhost"}" data-action="giving-amount" data-amt="${a}">$${a}</button>`).join("")}
         <button class="btn btnGold" data-action="more-focus" data-focus="sec-donativos">${t("donateTo")} $${state.givingAmt}</button>
       </div></section>`});
-  cards.push({id:"tail", html:`<div class="notice">${t("demoNotice")} <button class="backLink" data-action="builder-open">${t("customizeHome")} →</button></div>`});
   // — Pastoral en casa: confesión, oración y comunión (siempre visibles, en este orden) —
   const confessCard = `<section class="card" id="sec-home-confess" style="border-color:var(--gold)"><h3>🕊️ ${esc(t("confPrep"))}</h3>
     <p class="sub">⛪ ${esc(t("confessionsLbl"))}: ${esc(p.confession)}</p>
@@ -885,6 +934,7 @@ function renderHome(){
     ${state._homePrayerSent?`<div class="notice">${esc(state._homePrayerSent)}</div>`:""}
     <label>${t("pvNamesL")}</label><textarea id="hpNames" placeholder="…"></textarea>
     <label>${t("pvKindL")}</label><select id="hpKind"><option value="enfermos">${t("pvSick")}</option><option value="difuntos">${t("pvDep")}</option></select>
+    <label><input type="checkbox" id="hpPub" style="width:auto"> ${esc(t("pubPetition"))}</label>
     <div class="btnRow"><button class="btn btnGold" data-action="home-prayer-add">${t("sendMsg")}</button></div>
   </section>`;
   const visitCard = `<section class="card" id="sec-home-visit"><h3>🏠 ${esc(t("needCommunion"))}</h3>
@@ -902,9 +952,10 @@ function renderHome(){
   const heroCard = cards.find(c=>c.id==="hero");
   const todayCard = cards.find(c=>c.id==="today");
   const padreCard = cards.find(c=>c.id==="padre");
-  const rest = cards.filter(c=>c.id!=="hero"&&c.id!=="today"&&c.id!=="padre");
+  const inspireCard = cards.find(c=>c.id==="inspire");
+  const rest = cards.filter(c=>c.id!=="hero"&&c.id!=="today"&&c.id!=="padre"&&c.id!=="inspire");
   rest.sort((a,b2)=>(rank[a.id]??99)-(rank[b2.id]??99));
-  $("#view-home").innerHTML = (heroCard?heroCard.html:"") + (todayCard?todayCard.html:"") + confessCard + prayCard + visitCard + rest.map(c=>c.html).join("") + (padreCard?padreCard.html:"");
+  $("#view-home").innerHTML = (heroCard?heroCard.html:"") + (todayCard?todayCard.html:"") + confessCard + prayCard + visitCard + rest.map(c=>c.html).join("") + (padreCard?padreCard.html:"") + (inspireCard?inspireCard.html:"");
 }
 
 // ---------- LECTURAS ----------
@@ -919,7 +970,7 @@ function ensureLitCal(){
   if(state.litcalDate === iso) return;
   state.litcalDate = iso;
   getDayData(new Date(), "US", getLang()).then(dd=>{
-    if(dd){ state.dayData = dd; if(state.tab==="readings") renderReadings(); }
+    if(dd){ state.dayData = dd; renderTop(); if(state.tab==="readings") renderReadings(); }
   }).catch(()=>{});
 }
 // Unified readings for one date: live Layer 1 when it's today, else offline daily data.
@@ -941,7 +992,7 @@ function readingDayData(){
   }
   const feast = (dd && dd.feast) ? dd.feast : (daily ? daily.feast : "");
   const color = (dd && dd.color) ? dd.color : (daily ? daily.color : "");
-  const rank = feast ? rankOf(feast) : "";
+  const rank = rankFor(dd && dd.rank, feast);
   return {iso, isToday, dd, daily, feast, color, rank, list};
 }
 // ---------- Lecturas: SOLO texto oficial USCCB dentro de la app ----------
@@ -1035,8 +1086,6 @@ function renderReadings(){
   }
   const R = readingDayData();
   const d = new Date(R.iso+"T12:00:00");
-  const wdIdx = d.getDay();
-  const wM = weekLoc(wdIdx);
   const dateStr = d.toLocaleDateString(localeOf(), { weekday:"long", day:"numeric", month:"long", year:"numeric" });
   const prevD = new Date(d); prevD.setDate(prevD.getDate()-1);
   const nextD = new Date(d); nextD.setDate(nextD.getDate()+1);
@@ -1065,13 +1114,6 @@ function renderReadings(){
       ${(R.isToday&&R.dd&&R.dd.quote)?`<div class="verseBox">“${esc(R.dd.quote)}”<br><span class="small">— ${esc(R.feast)}</span></div>`:""}`
       :`<p class="small">${esc(t("noResults"))}</p>`}`
       :`<p class="small">${esc(t("readingsRange"))}</p>`}
-    </section>
-    <section class="card"><div class="small"><b>${esc(t("meditation"))}</b> · ${esc(wM.weekday)}</div>
-      <h3 class="serif" style="font-size:19px">${esc(wM.reflectionTitle)}</h3>
-      <div class="verseBox">“${esc(wM.verse.text)}”<br><span class="small">— ${esc(wM.verse.ref)}</span></div>
-      <p style="line-height:1.6">${esc(wM.reflection)}</p>
-      <div class="btnRow"><button class="btn btnGhost" data-action="read-aloud">${t("listen")}</button>
-      ${state.speaking?`<button class="btn btnGhost" data-action="stop-voice">${esc(t("stop"))}</button>`:""}</div>
     </section>`;
   $("#readingDate")?.addEventListener("change", e=>{ state.readingDate = clampReadingDate(e.target.value); renderReadings(); });
 }
@@ -1351,7 +1393,7 @@ function saintDayHTML(){
   const daily = dailyFor(iso);
   const feast = (dd && dd.feast) ? dd.feast : (daily ? daily.feast : "");
   const color = (dd && dd.color) ? dd.color : (daily ? daily.color : "");
-  const rank = feast ? rankOf(feast) : "";
+  const rank = rankFor(dd && dd.rank, feast);
   const saint = saintsForDay(feast, iso.slice(5), getLang())[0] || null;
   let cites = [];
   if(dd && dd.citations && (dd.citations.first || dd.citations.gospel)){
@@ -1438,6 +1480,7 @@ async function loadBulletinLive(){
 }
 function renderCalendar(){
   if (!$("#view-calendar")) return; // el shell publicado puede no traer calendario
+  ensureCalLive(); // carga el mes en vivo y repinta al llegar
   const cur = state.calCursor;
   const ED = canEdit();
   const monthName = cur.toLocaleString(localeOf(),{month:"long", year:"numeric"});
@@ -1458,7 +1501,7 @@ function renderCalendar(){
   if(state.calView==="mes") cal += monthHTML(cur, monthName);
   else if(state.calView==="semana") cal += weekHTML();
   else cal += dayHTML();
-  cal += `<section class="card"><h3>📋 ${state.calFilter==="Todas"?t("allEventsT"):t("eventsCat")+": "+catName(state.calFilter)}</h3>${eventListHTML(visibleEvents(state.calFilter))}</section>`;
+  cal += `<section class="card"><h3>📋 ${state.calFilter==="Todas"?t("allEventsT"):t("eventsCat")+": "+catName(state.calFilter)}</h3>${eventListHTML(mergedEvents(state.calFilter))}</section>`;
   cal += `<section class="card"><h3>${t("sacrT")}</h3><p class="sub">${t("sacrSub")}</p>
     ${sacrLoc().map(s=>`<div class="eventRow"><div style="flex:1"><b>${esc(s.h)}</b><div class="small">${esc(s.p)}</div></div></div>`).join("")}
     <div class="btnRow"><button class="btn btnGhost" data-action="ext" data-url="https://www.hcccsantacruz.org/sacraments">hcccsantacruz.org ↗</button></div></section>`;
@@ -1518,7 +1561,7 @@ function monthHTML(cur, monthName){
   const firstDow=(new Date(y,m,1).getDay()+6)%7;
   const days=new Date(y,m+1,0).getDate();
   const byISO={};
-  visibleEvents(state.calFilter).forEach(ev=>{ eventDates(ev,cur).forEach(d=>{ const k=toISO(d); (byISO[k]=byISO[k]||[]).push(ev); }); });
+  mergedEvents(state.calFilter).forEach(ev=>{ eventDates(ev,cur).forEach(d=>{ const k=toISO(d); (byISO[k]=byISO[k]||[]).push(ev); }); });
   const dows = DOWS[getLang()] || ["L","M","X","J","V","S","D"];
   let cells=dows.map(d=>`<div class="dow">${d}</div>`).join("");
   for(let i=0;i<firstDow;i++) cells+=`<div></div>`;
@@ -1549,7 +1592,7 @@ function weekHTML(){
       <button class="btn btnGhost" data-action="cal-weekmove" data-dir="1">→</button></div>
       ${days.map(d=>{
         const iso=toISO(d);
-        const evs=visibleEvents(state.calFilter).filter(ev=>ev.date?ev.date===iso:(DAYKEY_IDX[ev.day]===d.getDay() && (ev.recurring==="Semanal" || d>=new Date(new Date().setHours(0,0,0,0)))));
+        const evs=mergedEvents(state.calFilter).filter(ev=>ev.date?ev.date===iso:(DAYKEY_IDX[ev.day]===d.getDay() && (ev.recurring==="Semanal" || d>=new Date(new Date().setHours(0,0,0,0)))));
         return `<div class="eventRow"><div class="dateBox"><div class="dw">${esc(d.toLocaleString(localeOf(),{weekday:"short"}).toUpperCase())}</div><div class="dn">${d.getDate()}</div></div>
           <div style="flex:1">${evs.length? evs.map(ev=>`<div><span class="catDot" style="background:${catColor(ev.category)}"></span><b>${esc(ev.title)}</b> <span class="small">${esc(ev.time)}</span></div>`).join("") : `<span class="small">${t("noEvents")}</span>`}</div>
           <button class="btn btnGhost" data-action="cal-dayjump" data-iso="${iso}">${t("seeBtn")}</button></div>`;
@@ -1559,7 +1602,7 @@ function weekHTML(){
 function dayHTML(){
   const d=new Date(state.calSel+"T12:00:00");
   const iso=toISO(d);
-  const evs=visibleEvents(state.calFilter).filter(ev=>ev.date?ev.date===iso:DAYKEY_IDX[ev.day]===d.getDay());
+  const evs=mergedEvents(state.calFilter).filter(ev=>ev.date?ev.date===iso:DAYKEY_IDX[ev.day]===d.getDay());
   const title = isNaN(d) ? state.calSel : d.toLocaleString(localeOf(),{weekday:"long", day:"numeric", month:"long"});
   return `<section class="card"><div style="display:flex;align-items:center;gap:8px">
       <button class="btn btnGhost" data-action="cal-daymove" data-dir="-1">←</button>
@@ -1752,6 +1795,7 @@ function pastoralHTML(){
     <h4 style="margin:12px 0 2px">${t("privT")}</h4><p class="small">🔒 ${t("privSub")}</p>
     <label>${t("pvNamesL")}</label><textarea id="ppNames" placeholder="…"></textarea>
     <label>${t("pvKindL")}</label><select id="ppKind"><option value="enfermos">${t("pvSick")}</option><option value="difuntos">${t("pvDep")}</option></select>
+    <label><input type="checkbox" id="ppPub" style="width:auto"> ${esc(t("pubPetition"))}</label>
     <div class="btnRow"><button class="btn btnNavy" data-action="pastoral-privada">${t("sendMsg")}</button></div>
     <h4 style="margin:12px 0 2px">${t("rinconT")}</h4><p class="small">${t("rinconSub")}</p>
     <p style="font-size:14.5px;line-height:1.6;white-space:pre-line">${esc(refl)}</p>
@@ -1762,9 +1806,10 @@ function pastoralHTML(){
     <div class="btnRow"><button class="btn btnNavy bigBtn" data-action="pray-aloud" data-id="avemaria">${t("aveBtn")}</button>
       <button class="btn btnNavy bigBtn" data-action="pray-aloud" data-id="padrenuestro">${t("patBtn")}</button></div>
     ${ED?`<h4 style="margin:12px 0 2px">🤲 ${t("teamT")} (${team.length})</h4>
-      ${team.length?team.map(m=>`<div class="eventRow"><div style="flex:1"><b>${esc(m.title||"—")}</b> <span class="tag">${esc(m.channel||"")}</span>
+      ${team.length?team.map(m=>`<div class="eventRow"><div style="flex:1">${m.pub==="intent"?`<span class="tag gold">${esc(t("reviewBadge"))}</span> `:""}<b>${esc(m.title||"—")}</b> <span class="tag">${esc(m.channel||"")}</span>
         <div class="small">${esc(m.from||"")} · ${esc(m.time||"")}</div>
-        <div class="small" style="white-space:pre-line">${esc(m.body||"")}</div></div>
+        <div class="small" style="white-space:pre-line">${esc(m.body||"")}</div>
+        ${m.pub==="intent"?`<div class="btnRow"><button class="btn btnNavy" data-action="intent-publish" data-id="${esc(m.id)}">${t("publish")}</button><button class="btn btnGhost" data-action="intent-discard" data-id="${esc(m.id)}">${t("discardBtn")}</button></div>`:""}</div>
         <button class="btn btnGhost" data-action="pastoral-del" data-id="${esc(m.id)}">${t("delete")}</button></div>`).join(""):`<p class="small">${t("teamEmpty")}</p>`}`:""}
   </section>`;
 }
@@ -1809,7 +1854,7 @@ function renderCommunity(){
       ${GROUPS.filter(g=>state.groupCat==="Todas"||g.cat===state.groupCat).map(g=>{ const j = state.joinedGroups.includes(g.id);
         const regs = dirAll().filter(m=>(m.groups||[]).includes(g.id));
         const open = state.groupOpen===g.id;
-        return `<div class="eventRow"><div style="flex:1"><b>${esc(g.name)}</b> <span class="small">· ${g.members+(j?1:0)} ${t("members")}</span>
+        return `<div class="eventRow"><div style="flex:1"><b>${esc(g.name)}</b>
         <div><span class="tag">${esc(gcatLabel(g.cat||"comunidad"))}</span> <span class="small">${esc(g.meets||"")} · ${esc(g.lang==="ambos"?"ES/EN":g.lang.toUpperCase())}</span></div>
         <div class="small">${esc(gdesc(g))}</div>
         ${open?`<div class="small" style="margin-top:4px">👥 <b>${esc(t("membersOf"))} (${regs.length}):</b> ${regs.length?regs.map(m=>esc(m.contact||m.family)).join(" · "):"—"}</div>`:""}
@@ -2052,8 +2097,7 @@ function renderMore(){
 
     <section class="card"><h3>${t("builderTitle")}</h3><p class="sub">${t("builderSub")}</p>
       <div class="btnRow"><button class="btn btnNavy" data-action="builder-open">${t("customizeHome")}</button>
-      <button class="btn btnGhost" data-action="builder-reset">${t("reset")}</button></div></section>
-    <div class="notice">${t("demoAffil")}</div>`;
+      <button class="btn btnGhost" data-action="builder-reset">${t("reset")}</button></div></section>`;
   renderCommunity();
 }
 
@@ -2111,7 +2155,7 @@ document.addEventListener("click", e=>{
   if(!el) return;
   const a = el.dataset.action;
   const val = (id) => $(id)?.value.trim() || "";
-  if(a==="tab"){ const tb = el.dataset.tab; if(!document.getElementById("view-"+tb)) return; stopSpeak(); state.tab = tb; render(); window.scrollTo({top:0}); }
+  if(a==="tab"){ const tb = el.dataset.tab; if(!document.getElementById("view-"+tb)) return; stopSpeak(); state.tab = tb; render(); window.scrollTo({top:0}); if(tb==="calendar") ensureCalLive(); }
   else if(a==="jump"){ $("#"+el.dataset.to)?.scrollIntoView({behavior:"smooth"}); }
   else if(a==="more-focus"){ stopSpeak(); state.tab="more"; render(); setTimeout(()=>{ $("#"+el.dataset.focus)?.scrollIntoView({behavior:"smooth"}); },80); }
   else if(a==="pray-mode"){ stopSpeak(); state.prayMode = el.dataset.mode; state.tab="pray"; state.prayerOpen=null; render(); window.scrollTo({top:0}); }
@@ -2133,7 +2177,7 @@ document.addEventListener("click", e=>{
   else if(a==="saint-pray"){ speak(saintPrayerText(el.dataset.name||"", getLang())); if(state.tab==="readings") renderReadings(); }
   else if(a==="font-inc"){ state.readingFont = Math.min(24, (state.readingFont||17)+1); store.set("readings.font", state.readingFont); renderReadings(); }
   else if(a==="font-dec"){ state.readingFont = Math.max(14, (state.readingFont||17)-1); store.set("readings.font", state.readingFont); renderReadings(); }
-  else if(a==="read-aloud"){ const wdi = new Date(state.readingDate+"T12:00:00").getDay(); const w0 = weekLoc(wdi); speak(w0.reflectionTitle+". "+w0.reflection); renderReadings(); }
+  else if(a==="read-aloud"){ const R = readingDayData(); const txt = R.feast + ". " + R.list.map(r=>r.citation).join(". "); speak(txt || t("readingsTitle")); renderReadings(); }
   else if(a==="mass-readings"){ stopSpeak(); state.readingDate = nextDateForDayKey(el.dataset.day); state.tab="readings"; render(); window.scrollTo({top:0}); }
   else if(a==="pray-aloud"){ const pr=ALL_PRAYERS().find(p=>p.id===el.dataset.id); if(pr) speak(prayerName(pr.id, pr.name)+". "+(prayerText(pr.id)||pr.text)); }
   else if(a==="stop-voice"){ state.rosaryAuto=false; state.chapletAuto=false; stopSpeak(); renderPray(); renderReadings(); }
@@ -2204,12 +2248,12 @@ document.addEventListener("click", e=>{
     state.videosExtra=state.videosExtra.filter(v=>v.id!==el.dataset.id); store.set("videos.extra", state.videosExtra); renderMore(); }
   else if(a==="cal-view"){ state.calView=el.dataset.v; renderCalendar(); }
   else if(a==="cal-day"){ state.calSel = el.dataset.iso; renderCalendar(); }
-  else if(a==="cal-dayjump"){ state.calSel = el.dataset.iso; state.calView="dia"; renderCalendar(); window.scrollTo({top:0}); }
+  else if(a==="cal-dayjump"){ state.calSel = el.dataset.iso; state.calView="dia"; const dd=new Date(state.calSel+"T12:00:00"); if(!isNaN(dd)) state.calCursor = startMonth(dd); renderCalendar(); ensureCalLive(); window.scrollTo({top:0}); }
   else if(a==="cal-filter"){ state.calFilter = el.dataset.cat; renderCalendar(); }
-  else if(a==="cal-move"){ state.calCursor = new Date(state.calCursor.getFullYear(), state.calCursor.getMonth()+ (+el.dataset.dir), 1); renderCalendar(); }
+  else if(a==="cal-move"){ state.calCursor = new Date(state.calCursor.getFullYear(), state.calCursor.getMonth()+ (+el.dataset.dir), 1); renderCalendar(); ensureCalLive(); }
   else if(a==="cal-weekmove"){ const d=new Date(state.calSel+"T12:00:00"); d.setDate(d.getDate()+7*(+el.dataset.dir)); state.calSel=toISO(d); renderCalendar(); }
   else if(a==="cal-daymove"){ const d=new Date(state.calSel+"T12:00:00"); d.setDate(d.getDate()+(+el.dataset.dir)); state.calSel=toISO(d); renderCalendar(); }
-  else if(a==="cal-today"){ state.calCursor = startMonth(new Date()); state.calSel = toISO(new Date()); renderCalendar(); }
+  else if(a==="cal-today"){ state.calCursor = startMonth(new Date()); state.calSel = toISO(new Date()); renderCalendar(); ensureCalLive(); }
   else if(a==="ics"){ const ev = allEvents().find(x=>x.id===el.dataset.id); if(ev) downloadICS(ev); }
   else if(a==="rem-toggle"){ const id=el.dataset.id; const i=state.reminders.indexOf(id);
     if(i>=0) state.reminders.splice(i,1); else state.reminders.push(id);
@@ -2520,17 +2564,43 @@ document.addEventListener("click", e=>{
   else if(a==="pastoral-privada"){ const nms=val("#ppNames"); if(!nms) return;
     const dstr = new Date().toLocaleString(localeOf(),{day:"numeric",month:"short"});
     const k=$("#ppKind")?.value||"enfermos";
+    const pub=$("#ppPub")?.checked;
+    if(pub && canEdit()){ // el editor publica directo en Intenciones
+      const rec={id:"i"+Date.now(), type:k==="difuntos"?"Defunciones":"Enfermos", names:nms, date:dstr, text:nms};
+      const done=()=>{ state._pastoralSent=t("sentOk"); renderMore(); };
+      if(pubBoth(3, rec, done)) return;
+      state.intencionesExtra.unshift({...rec, mine:true}); store.set("intenciones.extra", state.intencionesExtra); done(); return;
+    }
+    // Petición a revisión: la lee el párroco en Equipo pastoral y decide si la publica.
     const rec={id:"pp"+Date.now(), from:state.userName||"Feligresía", time:dstr, channel:"Oración privada", to:"all",
-      title:"🙏 "+(k==="difuntos"?t("pvDep"):t("pvSick"))+" (privado)", body:nms, priv:"privada"};
-    const done=()=>{ store.set("msgs.unread", true); state._pastoralSent=t("sentOk"); renderMore(); setTimeout(()=>{ $("#sec-pastoral")?.scrollIntoView({behavior:"smooth"}); },80); };
+      title:"🙏 "+(k==="difuntos"?t("pvDep"):t("pvSick"))+(pub?" (⏳)":""), body:nms, priv:"privada",
+      ...(pub?{pub:"intent", kind:k, names:nms, pdate:dstr}:{})};
+    const done=()=>{ store.set("msgs.unread", true); state._pastoralSent=t(pub?"pendingReview":"sentOk"); renderMore(); setTimeout(()=>{ $("#sec-pastoral")?.scrollIntoView({behavior:"smooth"}); },80); };
     if(pubBoth(2, rec, done)) return;
     state.pastoralExtra.unshift({...rec, mine:true}); store.set("pastoral.extra", state.pastoralExtra); done(); }
+  else if(a==="intent-publish"){ if(!canEdit()) return; const m=pastoralAll().find(x=>x.id===el.dataset.id); if(!m||m.pub!=="intent") return;
+    const rec={id:"i"+Date.now(), type:(m.kind==="difuntos")?"Defunciones":"Enfermos", names:m.names||m.body, date:m.pdate||m.time, text:m.body};
+    const done=()=>{ state.pastoralExtra=state.pastoralExtra.filter(r=>r.id!==m.id); store.set("pastoral.extra", state.pastoralExtra); renderMore(); renderHome(); };
+    if(Sync.online){ srvOp((async()=>{ await Sync.push(3, rec); await Sync.del(2, m.id); })(), done); return; }
+    state.intencionesExtra.unshift({...rec, mine:true}); store.set("intenciones.extra", state.intencionesExtra); done(); }
+  else if(a==="intent-discard"){ if(!canEdit()) return; const id=el.dataset.id;
+    if(Sync.online){ srvOp(Sync.del(2, id), renderMore); }
+    state.pastoralExtra=state.pastoralExtra.filter(r=>r.id!==id); store.set("pastoral.extra", state.pastoralExtra); renderMore(); }
   else if(a==="home-prayer-add"){ const nms=val("#hpNames"); if(!nms) return;
     const dstr = new Date().toLocaleString(localeOf(),{day:"numeric",month:"short"});
     const k=$("#hpKind")?.value||"enfermos";
+    const pub=$("#hpPub")?.checked;
+    if(pub && canEdit()){ // el editor publica directo en Intenciones
+      const rec={id:"i"+Date.now(), type:k==="difuntos"?"Defunciones":"Enfermos", names:nms, date:dstr, text:nms};
+      const done=()=>{ state._homePrayerSent=t("sentOk"); renderHome(); setTimeout(()=>{ $("#sec-home-pray")?.scrollIntoView({behavior:"smooth"}); },80); };
+      if(pubBoth(3, rec, done)) return;
+      state.intencionesExtra.unshift({...rec, mine:true}); store.set("intenciones.extra", state.intencionesExtra); done(); return;
+    }
+    // Petición a revisión: la lee el párroco en Equipo pastoral y decide si la publica.
     const rec={id:"pp"+Date.now(), from:state.userName||"Feligresía", time:dstr, channel:"Oración privada", to:"all",
-      title:"🙏 "+(k==="difuntos"?t("pvDep"):t("pvSick"))+" (privado)", body:nms, priv:"privada"};
-    const done=()=>{ store.set("msgs.unread", true); state._homePrayerSent=t("sentOk"); renderHome(); setTimeout(()=>{ $("#sec-home-pray")?.scrollIntoView({behavior:"smooth"}); },80); };
+      title:"🙏 "+(k==="difuntos"?t("pvDep"):t("pvSick"))+(pub?" (⏳)":""), body:nms, priv:"privada",
+      ...(pub?{pub:"intent", kind:k, names:nms, pdate:dstr}:{})};
+    const done=()=>{ store.set("msgs.unread", true); state._homePrayerSent=t(pub?"pendingReview":"sentOk"); renderHome(); setTimeout(()=>{ $("#sec-home-pray")?.scrollIntoView({behavior:"smooth"}); },80); };
     if(pubBoth(2, rec, done)) return;
     state.pastoralExtra.unshift({...rec, mine:true}); store.set("pastoral.extra", state.pastoralExtra); done(); }
   else if(a==="home-visit-add"){ const s=val("#hcSick"); if(!s) return;

@@ -122,7 +122,7 @@ export const INSPIRATIONS = [
   { day: "Hoy", title: "Empieza con silencio", body: "Antes de las notificaciones, antes de las noticias: treinta segundos con la Señal de la Cruz y un Padrenuestro despacio. El día puede esperar. El Cielo está deseando encontrarte.", tag: "Mañana" },
   { day: "Hoy", title: "Lleva un nombre contigo", body: "Escribe hoy un nombre en tu mano: alguien que necesite oración. Cada vez que lo veas, reza un Avemaría. Al anochecer habrás rezado un rosario sin darte cuenta.", tag: "Práctica" },
   { day: "Archivo", title: "El ministerio del banco", body: "Siéntate cerca de los recién llegados. Aprende un nombre cada domingo. Las parroquias no crecen primero con programas, sino con nombres recordados.", tag: "Comunidad" },
-  { day: "Archivo", title: "La confesión es un reinicio, no un informe", body: "No vas a enumerar fracasos; vas a ser encontrado. Sábado 3:30 PM. Diez minutos. Saldrás más ligero de lo que entraste.", tag: "Misericordia" },
+  { day: "Archivo", title: "La confesión es un reinicio, no un informe", body: "No vas a enumerar fracasos; vas a ser encontrado. Sábado 4 PM. Diez minutos. Saldrás más ligero de lo que entraste.", tag: "Misericordia" },
   { day: "Archivo", title: "Adoración a mediodía", body: "Doce minutos en una capilla silenciosa valen más que una hora de pantalla. No lleves nada más que tu cansancio. Él pidió tu compañía, no tu rendimiento.", tag: "Oración" }
 ];
 
@@ -202,7 +202,7 @@ export function mysteriesForWeekday(jsDay){
 }
 
 export const EVENTS = [
-  { id: "e1", title: "Misa dominical · 10:30 AM (en vivo)", day: "sun", time: "10:30 AM", category: "Misa", location: "Templo histórico", desc: "Misa con transmisión en vivo. Vela por YouTube o radio 96.7 FM.", recurring: "Semanal", mass: "10:30 AM" },
+  { id: "e1", title: "Misa dominical · 10:30 AM (en vivo)", day: "sun", time: "10:30 AM", category: "Misa", location: "Templo histórico", desc: "Misa con transmisión en vivo. Vela por YouTube.", recurring: "Semanal", mass: "10:30 AM" },
   { id: "e1b", title: "Misa dominical en español · 8:30 AM", day: "sun", time: "8:30 AM", category: "Misa", location: "Templo histórico", desc: "Misa dominical en español. ¡Toda la familia es bienvenida!", recurring: "Semanal", mass: "8:30 AM (Español)" },
   { id: "e2", title: "Adoración eucarística · primer viernes", day: "fri", time: "7:30 AM – 4:00 PM", category: "Adoración", location: "Capilla", desc: "Adoración del primer viernes, 7:30 AM a 4 PM. Rosario todos los días antes de Misa.", recurring: "Mensual" },
   { id: "e3", title: "Noche de RICA (iniciación)", day: "tue", time: "7:00 PM", category: "Formación", location: "Salón parroquial", desc: "¿Curiosidad por la fe católica? Sin presión ni exámenes: conversación y café.", recurring: "Semanal" },
@@ -223,32 +223,15 @@ export const EVENTS = [
   { id: "e18", title: "Clases prematrimoniales", day: "thu", time: "7:00 PM", category: "Sacramentos", location: "Salón parroquial", desc: "Preparación para el matrimonio por la Iglesia. Requisito para apartar fecha de boda.", recurring: "Mensual", special: true }
 ];
 
-export const BULLETINS = [
-  {
-    id: "b1", title: "Este domingo en Santa Cruz", date: "Semana del 8 de junio", cover: "Pentecostés",
-    sections: [
-      { h: "Del párroco", p: "Ven, Espíritu Santo. Esta semana vi a nuestros niños de segunda recibir la Primera Comunión con manos temblorosas y ojos enormes, y pensé: esta es toda la parroquia en miniatura. Temblorosa, hambrienta y amadísima. Gracias por hacer sitio a sus risas y su asombro." },
-      { h: "Esta semana", p: "Lun — Plática prebautismal 6:30 PM (204) · Mar — RICA 7 PM · Mié — Fogata juvenil 6:30 PM · Vie — Adoración 1–6 PM, confesiones 4–5:30 PM · Sáb — Despensa 9 AM." },
-      { h: "Corresponsabilidad", p: "Colecta pasada: $18,420 (meta $17,500). La despensa sirvió a 214 familias. Bienvenidas las 11 familias nuevas: salúdenlas después de Misa." }
-    ]
-  },
-  {
-    id: "b2", title: "Procesión de Corpus Christi", date: "Semana del 1 de junio", cover: "Eucaristía",
-    sections: [
-      { h: "Del párroco", p: "El próximo domingo llevaremos al Señor por nuestras calles. Traigan flores para los altares, niños que arrojen pétalos, vecinos que nunca hayan visto algo así. Plan de lluvia: procesión interior; el Cielo no se detiene por nubes." },
-      { h: "Servicio", p: "La despensa necesita arroz, frijoles y crema de maní. Donaciones en los cestos del nártex. Voluntarios: sábado 9 AM, sin registro." },
-      { h: "Aparte la fecha", p: "Convivio parroquial: sábado 4 PM en los terrenos. La subasta de pasteles apoya la peregrinación juvenil. Vayan practicando su masa." }
-    ]
-  }
-];
+export const BULLETINS = [];
 
 export const CLERGY = [
-  { id: "c1", name: "Rev Father Hernando Cortes, SF", role: "parroco", phone: "(505) 753-3345", email: "parroco@ejemplo.org", office: "Lun–Vie 9 AM–4 PM", bio: "Párroco y religioso Hijo de la Sagrada Familia." },
-  { id: "c2", name: "Rev Father Sebastian Lee, SF", role: "vicario", phone: "(505) 753-3345", email: "vicario@ejemplo.org", office: "Mar–Jue 9 AM–1 PM", bio: "Vicario parroquial y religioso Hijo de la Sagrada Familia." },
-  { id: "c6", name: "Rev Father John Plans, SF", role: "sacerdote", phone: "(505) 753-3345", email: "vicario@ejemplo.org", office: "Con cita", bio: "Sacerdote y religioso Hijo de la Sagrada Familia. Atiende las capillas de misión." },
-  { id: "c3", name: "Diác. José Delgado", role: "diacono", phone: "(505) 555-0140", email: "diacono@ejemplo.org", office: "Con cita", bio: "Diácono permanente. Bautizos y matrimonios." },
-  { id: "c4", name: "Diác. Pablo Herrera", role: "diacono", phone: "(505) 555-0141", email: "", office: "Con cita", bio: "Diácono permanente. Pastoral de enfermos." },
-  { id: "c5", name: "Hna. María Lucía, SF", role: "religiosa", phone: "(505) 555-0142", email: "formacion@ejemplo.org", office: "Lun–Mié 10 AM–2 PM", bio: "Religiosa. Catequesis y formación en la fe." }
+  { id: "c1", name: "Rev Father Hernando Cortes, SF", role: "parroco", phone: "(505) 753-3345", email: "", office: "Lun–Vie 9 AM–4 PM", bio: "Párroco y religioso Hijo de la Sagrada Familia." },
+  { id: "c2", name: "Rev Father Sebastian Lee, SF", role: "vicario", phone: "(505) 753-3345", email: "", office: "Mar–Jue 9 AM–1 PM", bio: "Vicario parroquial y religioso Hijo de la Sagrada Familia." },
+  { id: "c6", name: "Rev Father John Plans, SF", role: "sacerdote", phone: "(505) 753-3345", email: "", office: "Con cita", bio: "Sacerdote y religioso Hijo de la Sagrada Familia. Atiende las capillas de misión." },
+  { id: "c3", name: "Diác. José Delgado", role: "diacono", phone: "", email: "", office: "Con cita", bio: "Diácono permanente. Bautizos y matrimonios." },
+  { id: "c4", name: "Diác. Pablo Herrera", role: "diacono", phone: "", email: "", office: "Con cita", bio: "Diácono permanente. Pastoral de enfermos." },
+  { id: "c5", name: "Hna. María Lucía, SF", role: "religiosa", phone: "", email: "", office: "Lun–Mié 10 AM–2 PM", bio: "Religiosa. Catequesis y formación en la fe." }
 ];
 
 export const GROUPS = [
@@ -275,11 +258,7 @@ export const GROUPS = [
   { id: "g21", name: "Coro San José (español)", members: 15, desc: "Música para la Misa dominical en español.", descEn: "Music for the Spanish Sunday Mass.", open: true, cat: "liturgia", for: "Jóvenes y adultos (Misa en español)", forEn: "Youth and adults (Spanish Mass)", lead: "", when: "Mié 7 PM", where: "Coro alto", lang: "es" }
 ]
 
-export const MESSAGES = [
-  { id: "m1", from: "Oficina parroquial", time: "hace 2 h", channel: "Aviso", title: "Misa de 10:30 con transmisión en vivo", body: "Acompáñanos por YouTube o radio 96.7 FM St. Joseph Manyanet. El boletín semanal ya está disponible." },
-  { id: "m2", from: "Oficina parroquial", time: "Ayer", channel: "Correo", title: "Boletín + voluntarios para la fiesta patronal", body: "Faltan voluntarios para la fiesta patronal. Confesiones los sábados a las 4 PM. Llama al (505) 753-3345." },
-  { id: "m3", from: "Oasis de Paz", time: "hace 2 días", channel: "SMS", title: "Juvenil miércoles 6:30", body: "Grupo Juvenil Oasis de Paz este miércoles 6:30 PM. Trae un amigo." }
-];
+export const MESSAGES = [];
 
 export const CATEGORIES = ["Misa", "Adoración", "Formación", "Jóvenes", "Servicio", "Comunidad", "Sacramentos"];
 
@@ -321,43 +300,36 @@ export const CANTOS = [
   { id: "c2", title: "Venid, adoremos (Adeste fideles)", origin: "Letra tradicional · dominio público", lyrics: "Venid, adoremos; venid, adoremos; venid, adoremos a Cristo el Señor.", notes: [392,392,440,523,523,440,392,330,330,392,392,330,294,330] },
   { id: "c3", title: "Salve, Reina y Madre", origin: "Letra tradicional · dominio público", lyrics: "Salve, Reina y Madre, salve, dulzura de nuestras vidas, esperanza nuestra, salve.", notes: [440,440,523,587,659,587,523,523,440,392,440,440] },
   { id: "c4", title: "Vamos cantando al Señor", origin: "Canto popular tradicional", lyrics: "Vamos cantando al Señor: Él es nuestra alegría. / Vamos cantando al Señor: Él es nuestra salvación.", notes: [523,587,659,659,587,523,587,659,659,659,587,587,523,523] },
-  { id: "c5", title: "Madre del Salvador (comunitaria)", origin: "Canto original de la comunidad", lyrics: "Madre del Salvador, enséñanos a orar; / guarda nuestra familia bajo tu manto de paz.", notes: [440,523,587,523,440,392,440,523,523,440,392,392] },
-  { id: "c6", title: "Pan de vida (comunitaria)", origin: "Canto original de la comunidad", lyrics: "Pan de vida, Cáliz de amor: quédate con nosotros, Señor. / Pan de vida, Cáliz de amor: danos tu Cuerpo, danos tu paz.", notes: [392,440,523,523,587,523,440,440,392,330,392,392] },
+  { id: "c5", title: "Madre del Salvador (comunitaria)", origin: "Letra original para la comunidad", lyrics: "Madre del Salvador, enséñanos a orar; / guarda nuestra familia bajo tu manto de paz.", notes: [440,523,587,523,440,392,440,523,523,440,392,392] },
+  { id: "c6", title: "Pan de vida (comunitaria)", origin: "Letra original para la comunidad", lyrics: "Pan de vida, Cáliz de amor: quédate con nosotros, Señor. / Pan de vida, Cáliz de amor: danos tu Cuerpo, danos tu paz.", notes: [392,440,523,523,587,523,440,440,392,330,392,392] },
   { id: "c7", title: "Tantum Ergo", origin: "Himno eucarístico tradicional · dominio público", lyrics: "Veneremos, pues, echados, tan augusto Sacramento; / y el antiguo documento ceda al nuevo rito. / Fe supliendo los sentidos al pecho cristiano. / Al Padre y al Hijo, gloria y honor, salud, virtud y bendición. / Amén.", notes: [523,523,440,392,392,440,523,523,587,523,440,392] },
   { id: "c8", title: "Adoro te devote", origin: "Himno eucarístico tradicional · dominio público", lyrics: "Te adoro con devoción, Dios escondido, / oculto verdaderamente bajo estas apariencias. / A Ti se somete mi corazón por completo, / pues al contemplarte, todo desfallece.", notes: [440,440,523,587,587,523,523,440,440,392,440,392] },
   { id: "c9", title: "Bendito, bendito", origin: "Canto tradicional · dominio público", lyrics: "Bendito, bendito, bendito sea Dios; / los ángeles cantan y alaban a Dios.", notes: [523,587,659,659,659,587,587,523,523,523,440,440] },
   { id: "c10", title: "Regina Coeli (canto)", origin: "Antífona pascual tradicional · dominio público", lyrics: "Reina del cielo, alégrate, aleluya, / porque el que mereciste llevar, aleluya, / resucitó como dijo, aleluya. / Ruega por nosotros a Dios, aleluya.", notes: [523,523,523,587,659,587,523,587,659,659,587,523] }
 ];
 
-export const NEWS = [
-  { id: "n1", cat: "Diócesis", date: "Esta semana", title: "Retiro diocesano de Cuaresma para servidores", body: "La diócesis invita a todos los ministerios a un retiro de un día: oración, confesiones y formación. Confirmen asistencia con su coordinador parroquial." },
-  { id: "n2", cat: "Diócesis", date: "Esta semana", title: "Colecta anual para el seminario", body: "El próximo fin de semana la segunda colecta apoyará la formación de nuestros seminaristas. Oren por las vocaciones de la diócesis." },
-  { id: "n3", cat: "País", date: "Hace 3 días", title: "Obispos llaman a orar por las familias", body: "En su mensaje, los obispos piden a cada parroquia una hora santa mensual por las familias y por la paz del país." },
-  { id: "n4", cat: "País", date: "Hace 5 días", title: "Jornada nacional de servicio juvenil", body: "Miles de jóvenes católicos saldrán a servir comedores y asilos el último sábado del mes. El grupo juvenil parroquial ya se anotó." },
-  { id: "n5", cat: "Iglesia", date: "Ayer", title: "El Papa anuncia un año de oración por la paz", body: "Desde Roma, el Santo Padre invitó a todas las parroquias del mundo a rezar el Rosario por la paz cada primer sábado de mes." },
-  { id: "n6", cat: "Iglesia", date: "Hace 2 días", title: "Nuevo documento sobre la Eucaristía dominical", body: "La Santa Sede recuerda la centralidad de la Misa del domingo y anima a invitar personalmente a quienes se han alejado." }
-];
+export const NEWS = [];
 
 export const MINISTRY_ROLES = ["Sacerdote", "Diácono", "Encargado/a de Misa", "Lectores", "Ministros de la Eucaristía", "Monaguillos", "Ujieres", "Coro", "Apertura y cierre", "Baño público"];
 export const GIVING_PROJECTS = [
-  { id: "offertory", name: "Colecta dominical", desc: "Sostiene la vida diaria de la parroquia.", descEn: "Supports the daily life of the parish.", goal: 17500, raised0: 12300,
-    updates: [{ d: "Junio", t: "La colecta de mayo sostuvo la luz, el agua y el estipendio del personal. Gracias a las familias que aportan cada domingo." }] },
-  { id: "pantry", name: "Despensa de alimentos", desc: "Alimentos para las familias de la Cañada.", descEn: "Food for families in need.", goal: 8000, raised0: 5210,
-    updates: [{ d: "Esta semana", t: "La despensa sirvió a 214 familias. Urgen frijol, arroz y aceite para el sábado." }] },
-  { id: "youth-pilgrimage", name: "Peregrinación juvenil", desc: "Apoya a los jóvenes en retiros y peregrinaciones.", descEn: "Supports youth retreats and pilgrimages.", goal: 6000, raised0: 2350,
-    updates: [{ d: "Mayo", t: "12 jóvenes se inscribieron al retiro. Ya se apartó el autobús." }] },
-  { id: "blessed-sacrament", name: "Blessed Sacrament Chapel", desc: "Capilla del Santísimo Sacramento — construcción y adecuación para la adoración.", descEn: "Blessed Sacrament Chapel — construction and fitting for adoration.", goal: 45000, raised0: 18750,
-    updates: [{ d: "Mayo", t: "Se aprobó el plano arquitectónico de la capilla. Siguiente paso: los cimientos." }] },
-  { id: "mariam-hall", name: "Mariam Hall for Events", desc: "Salón Mariam para eventos y convivencia parroquial.", descEn: "Mariam Hall for parish events and gatherings.", goal: 30000, raised0: 9200,
-    updates: [{ d: "Abril", t: "Se compró la mitad de las sillas del salón. Falta el equipo de sonido." }] },
-  { id: "offices", name: "Parish Offices", desc: "Oficinas parroquiales — atención y administración.", descEn: "Parish offices — welcome and administration.", goal: 25000, raised0: 6100,
-    updates: [{ d: "Marzo", t: "Se terminó la instalación eléctrica de las oficinas." }] },
-  { id: "security-parking", name: "Security and Parking Lot", desc: "Seguridad y estacionamiento para Misas y eventos.", descEn: "Security and parking lot for Masses and events.", goal: 18000, raised0: 12400,
-    updates: [{ d: "Junio", t: "Se pintaron 40 cajones del estacionamiento. Siguen las lámparas." }] },
-  { id: "stations-garden", name: "Stations of the Cross Garden", desc: "Jardín del Vía Crucis para oración al aire libre.", descEn: "Outdoor Stations of the Cross prayer garden.", goal: 12000, raised0: 3800,
-    updates: [{ d: "Mayo", t: "Se plantaron los primeros 6 árboles del jardín del Vía Crucis." }] },
-  { id: "maintenance", name: "Church & Buildings Maintenance", desc: "Mantenimiento de toda la iglesia y los edificios.", descEn: "Upkeep of the whole church and all buildings.", goal: 20000, raised0: 7650,
-    updates: [{ d: "Junio", t: "Se impermeabilizó el techo del templo histórico antes de las lluvias." }] }
+  { id: "offertory", name: "Colecta dominical", desc: "Sostiene la vida diaria de la parroquia.", descEn: "Supports the daily life of the parish.", goal: 17500, raised0: 0,
+    updates: [] },
+  { id: "pantry", name: "Despensa de alimentos", desc: "Alimentos para las familias de la Cañada.", descEn: "Food for families in need.", goal: 8000, raised0: 0,
+    updates: [] },
+  { id: "youth-pilgrimage", name: "Peregrinación juvenil", desc: "Apoya a los jóvenes en retiros y peregrinaciones.", descEn: "Supports youth retreats and pilgrimages.", goal: 6000, raised0: 0,
+    updates: [] },
+  { id: "blessed-sacrament", name: "Blessed Sacrament Chapel", desc: "Capilla del Santísimo Sacramento — construcción y adecuación para la adoración.", descEn: "Blessed Sacrament Chapel — construction and fitting for adoration.", goal: 45000, raised0: 0,
+    updates: [] },
+  { id: "mariam-hall", name: "Mariam Hall for Events", desc: "Salón Mariam para eventos y convivencia parroquial.", descEn: "Mariam Hall for parish events and gatherings.", goal: 30000, raised0: 0,
+    updates: [] },
+  { id: "offices", name: "Parish Offices", desc: "Oficinas parroquiales — atención y administración.", descEn: "Parish offices — welcome and administration.", goal: 25000, raised0: 0,
+    updates: [] },
+  { id: "security-parking", name: "Security and Parking Lot", desc: "Seguridad y estacionamiento para Misas y eventos.", descEn: "Security and parking lot for Masses and events.", goal: 18000, raised0: 0,
+    updates: [] },
+  { id: "stations-garden", name: "Stations of the Cross Garden", desc: "Jardín del Vía Crucis para oración al aire libre.", descEn: "Outdoor Stations of the Cross prayer garden.", goal: 12000, raised0: 0,
+    updates: [] },
+  { id: "maintenance", name: "Church & Buildings Maintenance", desc: "Mantenimiento de toda la iglesia y los edificios.", descEn: "Upkeep of the whole church and all buildings.", goal: 20000, raised0: 0,
+    updates: [] }
 ];
 export const MINISTRY_SEED = {
   "7:00 AM": { "Sacerdote": "Rev Father Hernando Cortes, SF", "Diácono": "Por asignar", "Encargado/a de Misa": "Por asignar", "Lectores": "Por asignar", "Ministros de la Eucaristía": "Por asignar", "Monaguillos": "Por asignar", "Ujieres": "Por asignar", "Coro": "Por asignar", "Apertura y cierre": "Por asignar", "Baño público": "Por asignar" },
@@ -368,24 +340,9 @@ export const MINISTRY_SEED = {
   "Sanación": { "Sacerdote": "Rev Father Hernando Cortes, SF", "Diácono": "Diác. Pablo Herrera", "Encargado/a de Misa": "Por asignar", "Lectores": "Por asignar", "Ministros de la Eucaristía": "Por asignar", "Monaguillos": "Por asignar", "Ujieres": "Por asignar", "Coro": "Por asignar", "Apertura y cierre": "Por asignar", "Baño público": "Por asignar" }
 }
 
-export const FIELES_SEED = ["Familia Hernández", "María Torres", "José Rivas", "Ana Beltrán", "Luis Peña", "Carmen Ruiz", "Don Efraín", "Coro Ángeles"];
-export const MURO_SEED = [
-  { id: "w1", name: "María Torres", kind: "Saludo", text: "¡Bienvenidos a las familias nuevas! Pasen por el salón después de Misa por un cafecito.", when: "Ayer" },
-  { id: "w2", name: "José Rivas", kind: "Nota", text: "Se buscan 2 ujieres para la Misa de 10:30. Hablen conmigo al salir.", when: "Hace 2 días" },
-  { id: "w3", name: "Coro Ángeles", kind: "Nota", text: "Ensayo extra el jueves 7 PM para la fiesta patronal. ¡Traigan su voz!", when: "Hace 3 días" }
-];
-export const INTENCIONES_SEED = [
-  { id: "i1", type: "Cumpleaños", names: "Sofía Hernández", date: "8 jun", text: "¡Felices 15 años! Tu familia y tu grupo juvenil celebran contigo." },
-  { id: "i2", type: "Cumpleaños", names: "Don Efraín", date: "10 jun", text: "80 años de fe y servicio. ¡La parroquia lo felicita!" },
-  { id: "i3", type: "Matrimonios", names: "Pablo y Lucía", date: "14 jun", mass: "Misa sáb 2 PM", place: "Templo histórico", text: "Se casan el sábado. Oremos por su nuevo hogar." },
-  { id: "i4", type: "Aniversarios", names: "Fam. Herrera — 25 años", date: "20 jun", mass: "Misa de 10:30", massId: "10:30 AM", place: "Templo histórico", text: "Bodas de plata. Renovarán sus votos en la Misa de 10:30." },
-  { id: "i5", type: "Defunciones", names: "D. Manuel Ortiz", date: "Q.E.P.D.", text: "Acompañemos a su familia. Rosario lunes 7 PM en la capilla." },
-  { id: "i6", type: "Defunciones", names: "Dña. Rosa Gil", date: "Q.E.P.D.", text: "Misa de cuerpo presente martes 11 AM. Descanse en paz." },
-  { id: "i7", type: "Nacimientos", names: "Bebé Mateo Reyes", date: "2 jun", text: "¡Bienvenido a la familia parroquial! Bautizo: plática el lunes 6:30 PM." },
-  { id: "i8", type: "Quinceañeras", names: "Valeria Reyes", date: "21 jun", mass: "Misa sáb 12 PM", place: "Templo histórico", text: "Quinceañera de Valeria. Acompañemos a su familia con nuestra oración." },
-  { id: "i9", type: "Exequias", names: "D. Felipe Baca", date: "Q.E.P.D.", mass: "Misa exequial vie 11 AM", massId: "Santo Niño", place: "Capilla del Santo Niño", text: "Misa de cuerpo presente. Acompañemos a la familia Baca." },
-  { id: "i10", type: "Matrimonios", names: "Diego y Mariana", date: "28 jun", mass: "Misa sáb 3 PM", place: "Capilla de San Isidro", text: "Boda en la capilla misión. ¡Felicidades!" }
-];
+export const FIELES_SEED = [];
+export const MURO_SEED = [];
+export const INTENCIONES_SEED = [];
 
 
 export const WEEK_EN = {
