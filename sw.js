@@ -1,7 +1,7 @@
 // Santa Cruz App — Service Worker PWA (funciona sin internet).
 // Este archivo va en la RAÍZ del repo (al lado de index.html), NO dentro de src/.
 // En cada nueva versión publicada, subir V a sc-v2, sc-v3...
-const V = "sc-v2";
+const V = "sc-v3";
 const CACHE = "santacruz-" + V;
 const CORE = [
   "./",
@@ -13,6 +13,7 @@ const CORE = [
   "src/gcal-seed.json",
   "src/app.js",
   "src/i18n.js",
+  "src/i18n-content.js",
   "src/content.js",
   "src/content-ui.js",
   "src/sync.js",
